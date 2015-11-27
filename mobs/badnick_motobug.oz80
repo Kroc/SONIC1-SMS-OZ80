@@ -1,0 +1,101 @@
+;; Sonic 1 Master System Disassembly
+   -------------------------------------------------------------------------------------------------
+   created by Kroc Camen <kroc@camendesign.com> and given to the Public Domain; you may do anything
+   you like with this code as long as you respect the TradeMarks and (any) Copyrights within.
+   absolutely no warranty implied
+   =================================================================================================
+;;
+
+;badnick - motobug
+
+PROC    :mob_badnick_motobug                    SECTION ::mobs                  ;$6E0C
+        ;==============================================================================
+PARAMS  IX`mob          ``Address of the current mob being processed
+{
+        res     5,[ix+#mob.flags]               ;mob adheres to the floor
+        ld      [ix+#mob.width], 10
+        ld      [ix+#mob.height],16
+        ld      e,[ix+$12]
+        ld      d,$00
+._1     ld      hl,._6e96
+        add     hl,de
+        ld      [$.TEMP6],hl
+        ld      a,[hl]
+        and     a
+        jr      nz,._2
+        ld      [ix+$12],a
+        ld      e,a
+        jp      ._1
+        
+._2     dec     a
+        jr      nz,._3
+        ld      c,$ff
+        ld      hl,$ff00
+        jp      ._5
+        
+._3     dec     a
+        jr      nz,._4
+        ld      c,$00
+        ld      hl,$0100
+        jp      ._5
+._4     ld      c,$00
+        ld      l,c
+        ld      h,c
+._5     ld      [ix+#mob.Xspeed+0],l
+        ld      [ix+#mob.Xspeed+1],h
+        ld      [ix+#mob.Xdirection],c
+        ld      l,[ix+#mob.unknown11]
+        ld      h,[ix+$12]
+        ld      de,$0008
+        add     hl,de
+        ld      [ix+#mob.unknown11],l
+        ld      [ix+$12],h
+        ld      [ix+#mob.Yspeed+0],$00
+        ld      [ix+#mob.Yspeed+1],$02
+        ld      [ix+#mob.Ydirection],$00
+        ld      hl,[$.TEMP6]
+        ld      a,[hl]
+        add     a,a
+        ld      e,a
+        ld      d,$00
+        ld      hl,._6eb1
+        add     hl,de
+        ld      c,[hl]
+        inc     hl
+        ld      b,[hl]
+        ld      de,._6ecb
+        call    :_7c41
+        ld      hl,$0203
+        ld      [$.TEMP6],hl
+        call    :detectCollisionWithSonic
+        ld      hl,$0000
+        ld      [$.TEMP1],hl
+        call    nc,:hitPlayer
+        ret
+
+._6e96  BYTE $01, $01, $01, $01, $01, $01, $01, $01, $01
+        BYTE $03, $03, $03, $03, $02, $02, $02, $02, $02
+        BYTE $02, $02, $02, $02, $04, $04, $04, $04, $00
+
+._6eb1  WORD ._6ebb, ._6ebb, ._6ec0, ._6ec5, ._6ec8
+._6ebb  BYTE $00, $08, $01, $08, $FF
+._6ec0  BYTE $02, $08, $03, $08, $FF
+._6ec5  BYTE $00, $FF, $FF
+._6ec8  BYTE $02, $FF, $FF
+
+;sprite layout
+._6ecb  BYTE $60, $62, $FF, $FF, $FF, $FF
+        BYTE $FF, $FF, $FF, $FF, $FF, $FF
+        BYTE $FF, $FF, $FF, $FF, $FF, $FF
+
+        BYTE $64, $66, $FF, $FF, $FF, $FF
+        BYTE $FF, $FF, $FF, $FF, $FF, $FF
+        BYTE $FF, $FF, $FF, $FF, $FF, $FF
+
+        BYTE $68, $6A, $FF, $FF, $FF, $FF
+        BYTE $FF, $FF, $FF, $FF, $FF, $FF
+        BYTE $FF, $FF, $FF, $FF, $FF, $FF
+
+        BYTE $6C, $6E, $FF, $FF, $FF, $FF
+        BYTE $FF
+}

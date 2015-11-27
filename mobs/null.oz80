@@ -1,0 +1,13 @@
+;; Sonic 1 Master System Disassembly
+   -------------------------------------------------------------------------------------------------
+   created by Kroc Camen <kroc@camendesign.com> and given to the Public Domain; you may do anything
+   you like with this code as long as you respect the TradeMarks and (any) Copyrights within.
+   absolutely no warranty implied
+   =================================================================================================
+;;
+
+PROC    :mob_null                               SECTION ::mobs                  ;$8F6C
+        ;==============================================================================
+{
+        ret                                     ;object nullified!
+}

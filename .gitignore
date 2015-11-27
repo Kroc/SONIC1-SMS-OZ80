@@ -1,0 +1,8 @@
+*
+!.gitignore
+!.gitattributes
+
+!mobs
+!sound
+
+!*.oz80

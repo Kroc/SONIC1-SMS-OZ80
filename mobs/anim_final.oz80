@@ -1,0 +1,142 @@
+;; Sonic 1 Master System Disassembly
+   -------------------------------------------------------------------------------------------------
+   created by Kroc Camen <kroc@camendesign.com> and given to the Public Domain; you may do anything
+   you like with this code as long as you respect the TradeMarks and (any) Copyrights within.
+   absolutely no warranty implied
+   =================================================================================================
+;;
+
+;final animation
+
+PROC    :mob_anim_final                         SECTION ::mobs                  ;$BDF9
+        ;==============================================================================
+PARAMS  IX`mob          ``Address of the current mob being processed
+{
+        set     5,[ix+#mob.flags]               ;mob does not collide with the floor
+        ld      [iy+#vars.joypad],$ff
+        bit     1,[ix+#mob.flags]
+        jr      nz,._1
+        ld      hl,:S1_BossPalette
+        ld      a,%00000010
+        call    ::interrupts:loadPaletteOnInterrupt
+        ld      a,$FF
+        ld      [$.SONIC],a
+        ld      hl,$0000
+        ld      [$.SONIC.Y],hl
+        ld      [ix+$12],$ff
+        set     6,[iy+#vars.timeLightningFlags]
+        set     1,[ix+#mob.flags]
+._1     ld      a,[$.FRAMECOUNT]
+        rrca    
+        jr      c,._2
+        ld      a,[ix+$12]
+        and     a
+        jr      z,._2
+        dec     [ix+$12]
+        jr      nz,._2
+        ld      l,[ix+#mob.X+0]
+        ld      h,[ix+#mob.X+1]
+        ld      de,$003c
+        add     hl,de
+        ld      [$.SONIC.X],hl
+        ld      l,[ix+#mob.Y+0]
+        ld      h,[ix+#mob.Y+1]
+        ld      de,$ffc0
+        add     hl,de
+        ld      [$.SONIC.Y],hl
+        xor     a`zero                          ;set A to 0
+        ld      [$.SONIC],a`zero
+        set     6,[iy+#vars.unknown0]
+        
+        ld      a,::sound:S1_MusicPointers.titleScreen.index   ;=$06
+        rst     :rst_playSFX
+        
+._2     ld      [ix+#mob.width], 32
+        ld      [ix+#mob.height],28
+        xor     a`zero
+        ld      [ix+#mob.Xspeed+0],a`zero
+        ld      [ix+#mob.Xspeed+1],$01
+        ld      [ix+#mob.Xdirection],a`zero
+        ld      [ix+#mob.Yspeed+0],a`zero
+        ld      [ix+#mob.Yspeed+1],a`zero
+        ld      [ix+#mob.Ydirection],a`zero
+        bit     6,[iy+#vars.timeLightningFlags]
+        jr      z,._3
+        ld      de,[$.CAMERA_X]
+        ld      hl,$0040
+        add     hl,de
+        ld      c,[ix+#mob.X+0]
+        ld      b,[ix+#mob.X+1]
+        and     a
+        sbc     hl,bc
+        jr      nc,._3
+        inc     de
+        ld      [$.CAMERA_X],de
+._3     ld      [ix+#mob.spriteLayout+0],LO ._bf21
+        ld      [ix+#mob.spriteLayout+1],HI ._bf21
+        bit     0,[ix+#mob.flags]
+        jr      nz,._4
+        ld      hl,$1008
+        ld      [$.TEMP6],hl
+        call    :detectCollisionWithSonic
+        jr      c,._4
+        ld      de,$0001
+        ld      hl,[$.SONIC.Yspeed]
+        ld      a,l
+        cpl     
+        ld      l,a
+        ld      a,h
+        cpl     
+        ld      h,a
+        ld      a,[$.SONIC.Ydirection]
+        cpl     
+        add     hl,de
+        adc     a,$00
+        ld      [$.SONIC.Yspeed],hl
+        ld      [$.SONIC.Ydirection],a
+        res     6,[iy+#vars.timeLightningFlags]
+        set     0,[ix+#mob.flags]
+        ld      [ix+#mob.unknown11],$01
+        ld      a,$01
+        rst     :rst_playSFX
+._4     call    :_79fa
+        bit     0,[ix+#mob.flags]
+        ret     z
+        xor     a`zero
+        ld      [ix+#mob.Yspeed+0],$40
+        ld      [ix+#mob.Yspeed+1],a`zero
+        ld      [ix+#mob.Ydirection],a`zero
+        ld      [ix+#mob.spriteLayout+0], LO ._bf33
+        ld      [ix+#mob.spriteLayout+1], HI ._bf33
+        dec     [ix+#mob.unknown11]
+        ret     nz
+        call    :_7a3a
+        ld      [ix+#mob.unknown11],$18
+        inc     [ix+#mob.unknown13]
+        ld      a,[ix+#mob.unknown13]
+        cp      $0a
+        ret     c
+        ld      a,[$.D27F]
+        cp      $06
+        jr      c,._5
+        set     7,[iy+#vars.unknown0]
+        ret
+        
+._5     ld      a,[$.D289]
+        and     a
+        ret     nz
+        ld      a,$20
+        ld      [$.D289],a
+        set     2,[iy+#vars.unknown_0D]
+        ret
+
+._bf21  BYTE $2A $2C $2E $30 $32 $FF $4A $4C $4E $50 $52 $FF $6A $6C $6E $70
+        BYTE $72 $FF
+
+        ;sprite layout
+._bf33  BYTE $2A, $34, $36, $38, $32, $FF
+        BYTE $4A, $4C, $4E, $50, $52, $FF
+        BYTE $6A, $6C, $6E, $70, $72, $FF
+        BYTE $5C, $5E, $FF, $FF, $FF, $FF
+        BYTE $FF
+}

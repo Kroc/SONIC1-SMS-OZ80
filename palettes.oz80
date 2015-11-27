@@ -1,0 +1,114 @@
+;; Sonic 1 Master System Disassembly
+   -------------------------------------------------------------------------------------------------
+   created by Kroc Camen <kroc@camendesign.com> and given to the Public Domain; you may do anything
+   you like with this code as long as you respect the TradeMarks and (any) Copyrights within.
+   absolutely no warranty implied
+   =================================================================================================
+;;
+
+TABLE   :S1_Palette_Pointers                    SECTION ::mobs                  ;$627C
+{
+        .greenHill      WORD    :S1_PaletteData.greenHill
+        .bridge         WORD    :S1_PaletteData.bridge
+        .jungle         WORD    :S1_PaletteData.jungle
+        .labyrinth      WORD    :S1_PaletteData.labyrinth
+        .scrapBrain     WORD    :S1_PaletteData.scrapBrain
+        .skyBaseExt     WORD    :S1_PaletteData.skyBaseExt
+        .skyBaseInt     WORD    :S1_PaletteData.skyBaseInt
+        .specialStage   WORD    :S1_PaletteData.specialStage
+}
+
+TABLE   :S1_PaletteCycle_Pointers               SECTION ::mobs                  ;$628C
+{
+        .greenHill      WORD    :S1_PaletteData.greenHill_cycles
+        .bridge         WORD    :S1_PaletteData.bridge_cycles
+        .jungle         WORD    :S1_PaletteData.jungle_cycles
+        .labyrinth      WORD    :S1_PaletteData.labyrinth_cycles
+        .scrapBrain     WORD    :S1_PaletteData.scrapBrain_cycles
+        .skyBase1       WORD    :S1_PaletteData.skyBase_cycles
+        .skyBaseInt     WORD    :S1_PaletteData.skyBaseInt_cycles
+        .specialStage   WORD    :S1_PaletteData.specialStage_cycles
+        .skyBaseExt     WORD    :S1_PaletteData.skyBaseExt_cycles
+}
+
+        ;;the regular and cycle palettes are lumped together in one data-block,
+          the pointer tables above sort them into an order;;
+        
+TABLE   :S1_PaletteData                         SECTION ::mobs                  ;$629E
+{
+        .greenHill                              ;Green Hill                     ;$629E
+        BYTE    $38 $01 $06 $0B $04 $08 $0C $3D $3B $34 $3C $3E $3F $0F $00 $3F
+        BYTE    $38 $20 $35 $1B $16 $2A $00 $3F $01 $03 $3A $06 $0F $00 $00 $00
+        .greenHill_cycles                       ;Green Hill Cycles x 3          ;$62BE 
+        BYTE    $38 $01 $06 $0B $04 $08 $0C $3D $3B $34 $3C $3E $3F $0F $00 $3F
+        BYTE    $38 $01 $06 $0B $04 $08 $0C $3D $3B $34 $3F $3C $3E $0F $00 $3F
+        BYTE    $38 $01 $06 $0B $04 $08 $0C $3D $3B $34 $3E $3F $3C $0F $00 $3F
+        .bridge                                 ;Bridge                         ;$62EE
+        BYTE    $38 $01 $06 $0B $2A $3A $0C $19 $3D $24 $38 $3C $3F $1F $00 $3F
+        BYTE    $38 $20 $35 $1B $16 $2A $00 $3F $01 $03 $3A $06 $0F $27 $0B $00
+        .bridge_cycles                          ;Bridge Cycles                  ;$630E 
+        BYTE    $38 $01 $06 $0B $3A $08 $0C $19 $3C $24 $38 $3C $3F $1F $00 $3F
+        BYTE    $38 $01 $06 $0B $3A $08 $0C $19 $3C $24 $3F $38 $3C $1F $00 $3F
+        BYTE    $38 $01 $06 $0B $3A $08 $0C $19 $3C $24 $3C $3F $38 $1F $00 $3F
+        .jungle                                 ;Jungle                         ;$633E
+        BYTE    $04 $08 $0C $06 $0B $05 $25 $01 $03 $10 $34 $38 $3E $1F $00 $3F
+        BYTE    $04 $20 $35 $1B $16 $2A $00 $3F $01 $03 $3A $06 $0F $27 $0B $00
+        .jungle_cycles                          ;Jungle Cycles                  ;$635E
+        BYTE    $04 $08 $0C $06 $0B $05 $26 $01 $03 $10 $34 $38 $3E $0F $00 $3F
+        BYTE    $04 $08 $0C $06 $0B $05 $26 $01 $03 $10 $3E $34 $38 $0F $00 $3F
+        BYTE    $04 $08 $0C $06 $0B $05 $26 $01 $03 $10 $38 $3E $34 $0F $00 $3F
+        .labyrinth                              ;Labyrinth                      ;$638E
+        BYTE    $00 $01 $06 $0B $27 $14 $18 $29 $12 $10 $1E $09 $04 $0F $00 $3F
+        ;the water line raster split refers directly to this sprite palette:
+        BYTE    $00 $20 $35 $1B $16 $2A $00 $3F $01 $03 $3A $06 $0F $27 $0B $15
+        .labyrinth_cycles                       ;Labyrinth Cycles               ;$63AE
+        BYTE    $00 $01 $06 $0B $27 $14 $18 $29 $12 $10 $1E $09 $04 $0F $00 $3F
+        BYTE    $00 $01 $06 $0B $27 $14 $18 $29 $12 $10 $09 $04 $1E $0F $00 $3F
+        BYTE    $00 $01 $06 $0B $27 $14 $18 $29 $12 $10 $04 $1E $09 $0F $00 $3F
+        .scrapBrain                             ;Scrap Brain                    ;$63DE
+        BYTE    $00 $10 $15 $29 $3D $01 $14 $02 $05 $0A $0F $3F $07 $0F $00 $3F
+        BYTE    $00 $20 $35 $1B $16 $2A $00 $3F $01 $03 $3D $15 $0F $27 $10 $29
+        .scrapBrain_cycles                      ;Scrap Brain Cycles             ;$63FE
+        BYTE    $00 $10 $15 $29 $3D $01 $14 $02 $05 $0A $0F $3F $07 $0F $00 $3F
+        BYTE    $00 $10 $15 $29 $3D $01 $14 $02 $3F $05 $0A $0F $07 $0F $00 $3F
+        BYTE    $00 $10 $15 $29 $3D $01 $14 $02 $0F $3F $05 $0A $07 $0F $00 $3F
+        BYTE    $00 $10 $15 $29 $3D $01 $14 $02 $0A $0F $3F $05 $07 $0F $00 $3F
+        .skyBaseExt                             ;Sky Base 1/2 Exterior          ;$643E
+        BYTE    $10 $10 $20 $34 $30 $10 $11 $25 $10 $3D $39 $3D $3F $24 $00 $38
+        BYTE    $10 $20 $35 $1B $16 $2A $00 $3F $01 $03 $3A $06 $0F $27 $15 $00
+        
+        .skyBase_cycles                         ;Sky Base 1 Cycles              ;$645E
+        BYTE    $10 $10 $20 $34 $30 $10 $11 $25 $10 $3D $39 $3D $3F $24 $00 $38
+        BYTE    $10 $10 $20 $34 $30 $10 $11 $25 $10 $3F $3D $39 $3D $24 $00 $38
+        BYTE    $10 $10 $20 $34 $30 $10 $11 $25 $10 $3D $3F $3D $39 $24 $00 $38
+        BYTE    $10 $10 $20 $34 $30 $10 $11 $25 $10 $39 $3D $3F $3D $24 $00 $38
+        .skyBase_cycles_Lightning1              ;Sky Base 1 Lightning Cycles 1  ;$649E
+        BYTE    $10 $10 $20 $34 $30 $10 $11 $25 $10 $3D $39 $3D $3F $24 $00 $38
+        BYTE    $10 $10 $20 $34 $30 $10 $11 $25 $10 $3F $3D $39 $3D $24 $00 $38
+        BYTE    $10 $10 $20 $34 $30 $10 $11 $25 $20 $3D $3F $3D $39 $24 $00 $38
+        BYTE    $10 $10 $20 $34 $30 $10 $11 $25 $2A $39 $3D $3F $3D $24 $00 $38
+        .skyBase_cycles_Lightning2              ;Sky Base 1 Lightning Cycles 2  ;$64DE
+        BYTE    $10 $10 $20 $34 $30 $10 $11 $25 $2F $3D $39 $3D $3F $24 $00 $38
+        BYTE    $30 $14 $29 $2E $3A $01 $02 $17 $10 $3F $3D $39 $3D $0F $00 $3F
+        BYTE    $10 $10 $20 $34 $30 $10 $11 $25 $3F $3D $3F $3D $39 $24 $00 $38
+        BYTE    $30 $14 $29 $2E $3A $01 $02 $17 $10 $3F $3D $39 $3D $0F $00 $3F
+
+        .skyBaseExt_cycles                      ;Sky Base 2                     ;$651E
+        BYTE    $10 $14 $29 $2E $3A $01 $02 $17 $10 $3D $39 $3D $3F $0F $00 $3F
+        BYTE    $10 $14 $29 $2E $3A $01 $02 $17 $10 $3F $3D $39 $3D $0F $00 $3F
+        BYTE    $10 $14 $29 $2E $3A $01 $02 $17 $10 $3D $3F $3D $39 $0F $00 $3F
+        BYTE    $10 $14 $29 $2E $3A $01 $02 $17 $10 $39 $3D $3F $3D $0F $00 $3F
+        .specialStage                           ;Special Stage                  ;$655E
+        BYTE    $10 $04 $3B $1B $19 $2D $21 $32 $17 $13 $12 $27 $30 $1F $00 $3F
+        BYTE    $10 $20 $35 $1B $16 $2A $00 $3F $19 $13 $12 $27 $04 $1F $21 $30
+        .specialStage_cycles                    ;Special Stage Cycles           ;$657E
+        BYTE    $10 $04 $3B $1B $19 $2D $11 $32 $17 $13 $12 $27 $30 $1F $00 $3F
+        .skyBaseInt                             ;Sky Base 2/3 Interior          ;$658E
+        BYTE    $00 $14 $39 $3D $28 $10 $20 $34 $0F $07 $3C $14 $39 $0F $00 $3F
+        BYTE    $00 $20 $35 $1B $16 $2A $00 $3F $15 $3A $0F $03 $01 $02 $3E $00
+        .skyBaseInt_cycles                      ;Sky Base 2/3 Interior Cycles   ;$65AE
+        BYTE    $00 $14 $39 $3D $28 $10 $20 $34 $0F $07 $3C $14 $39 $0F $00 $3F
+        BYTE    $00 $14 $39 $3D $28 $10 $20 $34 $07 $0F $28 $14 $39 $0F $00 $3F
+        BYTE    $00 $14 $39 $3D $28 $10 $20 $34 $0F $07 $14 $14 $39 $0F $00 $3F
+        BYTE    $00 $14 $39 $3D $28 $10 $20 $34 $07 $0F $00 $14 $39 $0F $00 $3F
+}

@@ -1,0 +1,121 @@
+;; Sonic 1 Master System Disassembly
+   -------------------------------------------------------------------------------------------------
+   created by Kroc Camen <kroc@camendesign.com> and given to the Public Domain; you may do anything
+   you like with this code as long as you respect the TradeMarks and (any) Copyrights within.
+   absolutely no warranty implied
+   =================================================================================================
+;;
+
+PROC    :mob_meta_water                         SECTION ::mobs                  ;$8D48
+        ;==============================================================================
+PARAMS  IX`mob          ``Address of the current mob being processed
+{
+        set     5,[ix+#mob.flags]               ;mob does not collide with the floor
+        ld      a,[ix+#mob.unknown11]
+        ld      e,a
+        ld      d,$00
+        ld      hl,._8e36
+        add     hl,de
+        ld      e,[hl]
+        ld      a,d
+        bit     7,e
+        jr      z,._1
+        dec     a
+        dec     d
+._1     ld      l,[ix+#mob.Ysubpixel]
+        ld      h,[ix+#mob.Y+0]
+        add     hl,de
+        adc     a,[ix+#mob.Y+1]
+        ld      [ix+#mob.Ysubpixel],l
+        ld      [ix+#mob.Y+0],h
+        ld      [ix+#mob.Y+1],a
+        ld      l,h
+        ld      h,[ix+#mob.Y+1]
+        ld      a,[$.FRAMECOUNT]
+        and     $0f
+        jr      nz,._2
+        inc     [ix+#mob.unknown11]
+        ld      a,[ix+#mob.unknown11]
+        cp      $20
+        jr      c,._2
+        ld      [ix+#mob.unknown11],$00
+._2     ld      [$.D2DC],hl
+        ld      de,[$.CAMERA_Y]
+        and     a
+        ld      a,$ff
+        sbc     hl,de
+        jr      c,._3
+        ex      de,hl
+        ld      hl,$000c
+        ld      a,$ff
+        sbc     hl,de
+        jr      nc,._3
+        ld      hl,$00b4
+        xor     a`zero
+        sbc     hl,de
+        jr      c,._3
+        ld      a,e
+._3     ld      [$.WATERLINE],a
+        and     a
+        ret     z
+        cp      $ff
+        ret     z
+        add     a,$09
+        ld      l,a
+        ld      h,$00
+        ld      [$.TEMP6],hl
+        ld      hl,[$.CAMERA_X]
+        ld      [$.TEMP1],hl
+        ld      hl,[$.CAMERA_Y]
+        ld      [$.TEMP3],hl
+        ld      a,[iy+#vars.spriteUpdateCount]
+        ld      hl,[$.SPRITETABLE_ADDR]
+        push    af
+        push    hl
+        ld      hl,$.SPRITETABLE
+        ld      [$.SPRITETABLE_ADDR],hl
+        ld      a,[$.FRAMECOUNT]
+        and     $03
+        add     a,a
+        add     a,a
+        ld      c,a
+        ld      b,$00
+        ld      hl,._8e16
+        add     hl,bc
+        ld      b,$04
+        
+.loop   push    bc
+        ld      c,[hl]
+        inc     hl
+        push    hl
+        ld      a,[$.FRAMECOUNT]
+        and     $0f
+        add     a,c
+        ld      l,a
+        ld      h,$00
+        ld      [$.TEMP4],hl
+        ld      a,$00
+        call    :_3581
+        ld      hl,[$.TEMP4]
+        ld      de,$0008
+        add     hl,de
+        ld      [$.TEMP4],hl
+        ld      a,$02
+        call    :_3581
+        pop     hl
+        pop     bc
+        djnz    .loop
+        
+        pop     hl
+        pop     af
+        ld      [$.SPRITETABLE_ADDR],hl
+        ld      [iy+#vars.spriteUpdateCount],a
+        ret
+        
+        ;------------------------------------------------------------------------------
+
+._8e16  BYTE $00 $40 $80 $C0 $10 $50 $90 $D0 $20 $60 $A0 $E0 $30 $70 $B0 $F0
+        BYTE $08 $48 $88 $C8 $18 $58 $98 $D8 $28 $68 $A8 $E8 $38 $78 $B8 $F8
+._8e36  BYTE $FE $FC $F8 $F0 $E8 $D8 $C8 $C8 $C8 $C8 $D8 $E8 $F0 $F8 $FC $FE
+        BYTE $02 $04 $08 $10 $18 $28 $38 $38 $38 $38 $28 $18 $10 $08 $04 $02
+}

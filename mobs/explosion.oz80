@@ -1,0 +1,81 @@
+;; Sonic 1 Master System Disassembly
+   -------------------------------------------------------------------------------------------------
+   created by Kroc Camen <kroc@camendesign.com> and given to the Public Domain; you may do anything
+   you like with this code as long as you respect the TradeMarks and (any) Copyrights within.
+   absolutely no warranty implied
+   =================================================================================================
+;;
+
+PROC    :mob_explosion                          SECTION ::mobs                  ;$693F
+        ;==============================================================================
+PARAMS  IX`mob          ``Address of the current mob being processed
+{
+        set     5,[ix+#mob.flags]               ;mob does not collide with the floor
+        ld      a,[ix+#mob.unknown15]
+        cp      $aa
+        jr      z,._1
+        xor     a`zero
+        ld      [ix+#mob.unknown11],a`zero
+        ld      [ix+#mob.unknown15],$aa
+        ld      [ix+#mob.unknown16],a`zero
+        ld      [ix+#mob.unknown17],a`zero
+        bit     5,[iy+#vars.flags0]
+        jr      z,._1
+        ld      a,[$.CURRENT_LEVEL]
+        cp      $12
+        jr      z,._1
+        ld      a,[$.SONIC.flags]
+        rlca    
+        jr      c,._1
+        ld      a,[$.D2E8]
+        ld      de,[$.D2E6]
+        inc     de
+        ld      c,a
+        ld      hl,[$.SONIC.Yspeed]
+        ld      a,l
+        cpl     
+        ld      l,a
+        ld      a,h
+        cpl     
+        ld      h,a
+        
+        ld      a,[$.SONIC.Ydirection]
+        and     a
+        jp      m,._1
+        
+        cpl     
+        add     hl,de
+        adc     a,c
+        ld      [$.SONIC.Yspeed],hl
+        ld      [$.SONIC.Ydirection],a
+        
+._1     xor     a`zero                          ;set A to 0
+        ld      [ix+#mob.Xspeed+0],a`zero
+        ld      [ix+#mob.Xspeed+1],a`zero
+        ld      [ix+#mob.Xdirection],a`zero
+        ld      [ix+#mob.Yspeed+0],a`zero
+        ld      [ix+#mob.Yspeed+1],a`zerp
+        ld      [ix+#mob.Ydirection],a`zero
+        ld      de,._69be
+        ld      bc,._69b7
+        call    :_7c41
+        inc     [ix+#mob.unknown11]
+        ld      a,[ix+#mob.unknown11]
+        cp      $18
+        ret     c
+        ld      [ix+#mob.type],$FF              ;remove object?
+        ret
+        
+._69b7  BYTE $00, $08, $01, $08, $02, $08, $ff
+._69be  ;sprite layout
+        BYTE $74, $76, $FF, $FF, $FF, $FF
+        BYTE $FF, $FF, $FF, $FF, $FF, $FF
+        BYTE $FF, $FF, $FF, $FF, $FF, $FF
+
+        BYTE $78, $7A, $FF, $FF, $FF, $FF
+        BYTE $FF, $FF, $FF, $FF, $FF, $FF
+        BYTE $FF, $FF, $FF, $FF, $FF, $FF
+
+        BYTE $7C, $7E, $FF, $FF, $FF, $FF
+        BYTE $FF
+}

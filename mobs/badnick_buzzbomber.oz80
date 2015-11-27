@@ -1,0 +1,201 @@
+;; Sonic 1 Master System Disassembly
+   -------------------------------------------------------------------------------------------------
+   created by Kroc Camen <kroc@camendesign.com> and given to the Public Domain; you may do anything
+   you like with this code as long as you respect the TradeMarks and (any) Copyrights within.
+   absolutely no warranty implied
+   =================================================================================================
+;;
+
+;badnick - buzz bomber
+
+PROC    :mob_badnick_buzzBomber                 SECTION ::mobs                  ;$6B74
+        ;==============================================================================
+PARAMS  IX`mob          ``Address of the current mob being processed
+{        
+        set     5,[ix+#mob.flags]               ;mob does not collide with the floor
+        bit     0,[ix+#mob.flags]
+        jr      nz,._1
+        ld      e,[ix+#mob.X+0]
+        ld      d,[ix+#mob.X+1]
+        ld      [ix+#mob.unknown14],e
+        ld      [ix+#mob.unknown15],d
+        
+        xor     a`zero
+        ld      [ix+#mob.spriteLayout+0],a`zero
+        ld      [ix+#mob.spriteLayout+1],a`zero
+        ld      [ix+$12],a`zero
+        ld      [ix+#mob.Xspeed+0],a`zero
+        ld      [ix+#mob.Xspeed+1],a`zero
+        ld      [ix+#mob.Xdirection],a`zero
+        
+        ld      hl,[$.CAMERA_X]
+        ld      bc,$0100
+        add     hl,bc
+        sbc     hl,de
+        ret     nc
+        set     0,[ix+#mob.flags]
+._1     ld      [ix+#mob.width], 20
+        ld      [ix+#mob.height],32
+        ld      l,[ix+#mob.X+0]
+        ld      h,[ix+#mob.X+1]
+        ld      de,[$.SONIC.X]
+        and     a
+        sbc     hl,de
+        jr      c,._2
+        ld      de,$0040
+        sbc     hl,de
+        jr      nc,._2
+        ld      a,[ix+$12]
+        cp      $05
+        jr      nc,._2
+        ld      [ix+$12],$05
+._2     ld      e,[ix+$12]
+        ld      d,$00
+        
+._3     ld      hl,$6cd7
+        add     hl,de
+        ld      [$.TEMP6],hl
+        ld      a,[hl]
+        and     a
+        jr      nz,._4
+        ld      [ix+$12],a
+        ld      e,a
+        jp      ._3
+        
+._4     dec     a
+        jr      nz,._6
+        ld      l,[ix+#mob.X+0]
+        ld      h,[ix+#mob.X+1]
+        ld      de,$0030
+        add     hl,de
+        ld      de,[$.CAMERA_X]
+        xor     a`zero
+        sbc     hl,de
+        jr      nc,._5
+        ld      [ix+#mob.spriteLayout+0],a`zero
+        ld      [ix+#mob.spriteLayout+1],a`zero
+        ld      a,[ix+#mob.unknown14]
+        ld      [ix+#mob.X+0],a
+        ld      a,[ix+#mob.unknown15]
+        ld      [ix+#mob.X+1],a
+        res     0,[ix+#mob.flags]
+        ret
+        
+._5     ld      c,$ff
+        ld      hl,$fe00
+        jp      ._8
+        
+._6     dec     a
+        jr      nz,._7
+        ld      c,$00
+        ld      l,c
+        ld      h,c
+        jp      ._8
+        
+._7     ld      a,[ix+#mob.unknown11]
+        cp      $20
+        jp      nz,._9
+        call    :findEmptyMob
+        jp      c,._9
+        push    bc
+        ld      e,[ix+#mob.X+0]
+        ld      d,[ix+#mob.X+1]
+        ld      c,[ix+#mob.Y+0]
+        ld      b,[ix+#mob.Y+1]
+        push    ix
+        push    hl
+        pop     ix
+        
+        xor     a`zero                          ;set A to 0
+        ld      [ix+#mob.type],$0D              ;unknown object
+        ld      [ix+#mob.Xsubpixel],a`zero
+        ld      [ix+#mob.X+0],e
+        ld      [ix+#mob.X+1],d
+        ld      [ix+#mob.Ysubpixel],a`zero
+        ld      hl,$0020
+        add     hl,bc
+        ld      [ix+#mob.Y+0],l
+        ld      [ix+#mob.Y+1],h
+        ld      [ix+#mob.unknown11],a`zero
+        ld      [ix+#mob.unknown13],a`zero
+        ld      [ix+#mob.unknown14],a`zero
+        ld      [ix+#mob.unknown15],a`zero
+        ld      [ix+#mob.unknown16],a`zero
+        ld      [ix+#mob.unknown17],a`zero
+        ld      [ix+#mob.Xspeed+0],$00
+        ld      [ix+#mob.Xspeed+1],$ff
+        ld      [ix+#mob.Xdirection],$ff
+        ld      [ix+#mob.Yspeed+0],$80
+        ld      [ix+#mob.Yspeed+1],$01
+        ld      [ix+#mob.Ydirection],a`zero
+        
+        pop     ix, bc
+        ld      a,$0a
+        rst     :rst_playSFX
+        ld      c,$00
+        ld      l,c
+        ld      h,c
+        
+._8     ld      [ix+#mob.Xspeed+0],l
+        ld      [ix+#mob.Xspeed+1],h
+        ld      [ix+#mob.Xdirection],c
+._9     ld      l,[ix+#mob.unknown11]
+        ld      h,[ix+$12]
+        ld      de,$0008
+        add     hl,de
+        ld      [ix+#mob.unknown11],l
+        ld      [ix+$12],h
+        ld      hl,[$.TEMP6]
+        ld      a,[hl]
+        add     a,a
+        ld      e,a
+        ld      hl,._6ce2
+        add     hl,de
+        ld      c,[hl]
+        inc     hl
+        ld      b,[hl]
+        ld      de,._6cf9
+        call    :_7c41
+        ld      hl,$1000
+        ld      [$.TEMP6],hl
+        call    :detectCollisionWithSonic
+        ld      hl,$1004
+        ld      [$.TEMP1],hl
+        call    nc,:hitPlayer
+        ret
+        
+        ;no reference to this?
+._6cd7  BYTE $01, $01, $01, $01, $00, $02, $02, $03, $01, $01, $00
+        
+        ;animation frame order
+._6ce2  WORD ._6cea, ._6cea, ._6cef, ._6cf4
+._6cea  BYTE $00, $02, $01, $02, $FF
+._6cef  BYTE $02, $02, $03, $02, $FF
+._6cf4  BYTE $04, $02, $05, $02, $FF
+
+;sprite layout
+._6cf9  BYTE $FE, $0A, $FF, $FF, $FF, $FF
+        BYTE $0C, $0E, $10, $FF, $FF, $FF
+        BYTE $FF, $FF, $FF, $FF, $FF, $FF
+        
+        BYTE $FE, $FF, $FF, $FF, $FF, $FF
+        BYTE $0C, $0E, $2C, $FF, $FF, $FF
+        BYTE $FF, $FF, $FF, $FF, $FF, $FF
+        
+        BYTE $FE, $0A, $FF, $FF, $FF, $FF
+        BYTE $12, $14, $16, $FF, $FF, $FF
+        BYTE $32, $34, $FF, $FF, $FF, $FF
+        
+        BYTE $FE, $FF, $FF, $FF, $FF, $FF
+        BYTE $12, $14, $16, $FF, $FF, $FF
+        BYTE $32, $34, $FF, $FF, $FF, $FF
+        
+        BYTE $FE, $0A, $FF, $FF, $FF, $FF
+        BYTE $12, $14, $16, $FF, $FF, $FF
+        BYTE $30, $34, $FF, $FF, $FF, $FF
+        
+        BYTE $FE, $FF, $FF, $FF, $FF, $FF
+        BYTE $12, $14, $16, $FF, $FF, $FF
+        BYTE $30, $34, $FF, $FF, $FF, $FF
+
+}

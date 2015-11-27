@@ -1,0 +1,60 @@
+;; Sonic 1 Master System Disassembly
+   -------------------------------------------------------------------------------------------------
+   created by Kroc Camen <kroc@camendesign.com> and given to the Public Domain; you may do anything
+   you like with this code as long as you respect the TradeMarks and (any) Copyrights within.
+   absolutely no warranty implied
+   =================================================================================================
+;;
+
+;OBJECT: bubbles (Labyrinth)
+
+PROC    :mob_powerUp_bubbles                    SECTION ::mobs                  ;$8E56
+        ;==============================================================================
+PARAMS  IX`mob          ``Address of the current mob being processed
+{
+        set     5,[ix+#mob.flags]               ;mob does not collide with the floor
+        ld      a,[ix+$12]
+        and     $7f
+        jr      nz,._1
+        call    ::main:_LABEL_625_57
+        and     $07
+        ld      e,a
+        ld      d,$00
+        ld      hl,._8ec2
+        add     hl,de
+        bit     0,[hl]
+        call    nz,:_91eb
+._1     ld      l,[ix+#mob.X+0]
+        ld      h,[ix+#mob.X+1]
+        ld      [$.TEMP1],hl
+        ld      l,[ix+#mob.Y+0]
+        ld      h,[ix+#mob.Y+1]
+        ld      [$.TEMP3],hl
+        ld      a,[ix+#mob.unknown11]
+        add     a,a
+        ld      e,a
+        ld      d,$00
+        ld      hl,._8eb6
+        add     hl,de
+        ld      e,[hl]
+        ld      [$.TEMP4],de
+        inc     hl
+        ld      e,[hl]
+        ld      [$.TEMP6],de
+        ld      a,$0c
+        call    :_3581
+        inc     [ix+$12]
+        ld      a,[$.FRAMECOUNT]
+        and     $07
+        ret     nz
+        inc     [ix+#mob.unknown11]
+        ld      a,[ix+#mob.unknown11]
+        cp      $06
+        ret     c
+        ld      [ix+#mob.unknown11],$00
+        ret
+        
+._8eb6  BYTE $08, $05, $08, $04, $07, $03, $06, $02, $07, $01, $06, $00
+._8ec2  BYTE $01, $00, $01, $01, $00, $01, $00, $01
+
+}

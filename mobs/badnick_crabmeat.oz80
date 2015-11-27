@@ -1,0 +1,139 @@
+;; Sonic 1 Master System Disassembly
+   -------------------------------------------------------------------------------------------------
+   created by Kroc Camen <kroc@camendesign.com> and given to the Public Domain; you may do anything
+   you like with this code as long as you respect the TradeMarks and (any) Copyrights within.
+   absolutely no warranty implied
+   =================================================================================================
+;;
+
+;badnick - crabmeat
+
+PROC    :mob_badnick_crabMeat                   SECTION ::mobs                  ;$65EE
+        ;==============================================================================
+PARAMS  IX`mob          ``Address of the current mob being processed
+{       
+        ld      [ix+#mob.width],$10
+        ld      [ix+#mob.height],$1F
+        ld      e,[ix+$12]
+        ld      d,$00
+._1     ld      hl,._66c5
+        add     hl,de
+        ld      [$.TEMP6],hl
+        ld      a,[hl]
+        and     a
+        jr      nz,._2
+        ld      [ix+$12],a
+        ld      e,a
+        jp      ._1
+        
+._2     dec     a
+        jr      nz,._3
+        ld      c,$00
+        ld      h,c
+        ld      l,$28
+        jp      ._6
+        
+._3     dec     a
+        jr      nz,._4
+        ld      c,$ff
+        ld      hl,$ffd8
+        jp      ._6
+        
+._4     dec     a
+        jr      nz,._5
+        ld      c,$00
+        ld      l,c
+        ld      h,c
+        jp      ._6
+        
+._5     ld      a,[ix+#mob.unknown11]
+        cp      $20
+        jp      nz,._7
+        ld      hl,$ffff
+        ld      [$.TEMP4],hl
+        ld      hl,$fffc
+        ld      [$.TEMP6],hl
+        call    :findEmptyMob
+        jp      c,._7
+        ld      de,$0000
+        ld      c,e
+        ld      b,d
+        call    :_ac96
+        ld      hl,$0001
+        ld      [$.TEMP4],hl
+        ld      hl,$fffc
+        ld      [$.TEMP6],hl
+        call    :findEmptyMob
+        jr      c,._7
+        ld      de,$000e
+        ld      bc,$0000
+        call    :_ac96
+        ld      a,$0a
+        rst     :rst_playSFX
+        jp      ._7
+        
+._6     ld      [ix+#mob.Xspeed+0],l
+        ld      [ix+#mob.Xspeed+1],h
+        ld      [ix+#mob.Xdirection],c
+        
+._7     ld      l,[ix+#mob.unknown11]
+        ld      h,[ix+$12]
+        ld      de,$0008
+        add     hl,de
+        ld      [ix+#mob.unknown11],l
+        ld      [ix+$12],h
+        ld      l,[ix+#mob.Yspeed+0]
+        ld      h,[ix+#mob.Yspeed+1]
+        ld      a,[ix+#mob.Ydirection]
+        ld      de,$0020
+        add     hl,de
+        adc     a,d
+        ld      [ix+#mob.Yspeed+0],l
+        ld      [ix+#mob.Yspeed+1],h
+        ld      [ix+#mob.Ydirection],a
+        ld      hl,[$.TEMP6]
+        ld      a,[hl]
+        add     a,a
+        ld      e,a
+        ld      hl,._66e0
+        add     hl,de
+        ld      c,[hl]
+        inc     hl
+        ld      b,[hl]
+        ld      de,.layout
+        call    :_7c41
+        ld      hl,$0a04
+        ld      [$.TEMP6],hl
+        call    :detectCollisionWithSonic
+        ld      hl,$0804
+        ld      [$.TEMP1],hl
+        call    nc,:hitPlayer
+        ret
+
+._66c5  BYTE $01 $01 $01 $01 $01 $01 $01 $01 $01 $01 $03 $03 $04 $02 $02 $02
+        BYTE $02 $02 $02 $02 $02 $02 $02 $03 $03 $04 $00
+
+._66e0  WORD ._66ea ._66ea ._66ea ._66f3 ._66f6
+
+._66ea  BYTE $00 $0C $01 $0C $02 $0C $01 $0C $FF
+._66f3  BYTE $01 $01 $FF
+._66f6  BYTE $03 $01 $FF        
+        
+        ;sprite layouts                                                         ;$66F9
+.layout BYTE $00 $02 $04 $FF $FF $FF
+        BYTE $20 $22 $24 $FF $FF $FF
+        BYTE $FF $FF $FF $FF $FF $FF
+
+        BYTE $00 $02 $44 $FF $FF $FF
+        BYTE $46 $22 $4A $FF $FF $FF
+        BYTE $FF $FF $FF $FF $FF $FF
+
+        BYTE $40 $02 $44 $FF $FF $FF
+        BYTE $26 $22 $2A $FF $FF $FF
+        BYTE $FF $FF $FF $FF $FF $FF
+
+        BYTE $40 $02 $04 $FF $FF $FF
+        BYTE $46 $22 $4A $FF $FF $FF
+        BYTE $FF
+        
+}

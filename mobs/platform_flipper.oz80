@@ -1,0 +1,220 @@
+;; Sonic 1 Master System Disassembly
+   -------------------------------------------------------------------------------------------------
+   created by Kroc Camen <kroc@camendesign.com> and given to the Public Domain; you may do anything
+   you like with this code as long as you respect the TradeMarks and (any) Copyrights within.
+   absolutely no warranty implied
+   =================================================================================================
+;;
+
+;flipper (Special Stage)
+
+PROC    :mob_platform_flipper                   SECTION ::mobs                  ;$9866
+        ;==============================================================================
+PARAMS  IX`mob          ``Address of the current mob being processed
+{
+        set     5,[ix+#mob.flags]               ;mob does not collide with the floor
+        ld      [ix+#mob.spriteLayout+0],LO ._9a7e
+        ld      [ix+#mob.spriteLayout+1],HI ._9a7e
+        bit     5,[iy+#vars.joypad]
+        jr      nz,._1
+        ld      a,[ix+#mob.unknown11]
+        ld      [ix+$12],a
+        ld      a,[ix+#mob.unknown11]
+        cp      $05
+        jr      nc,._2
+        inc     [ix+#mob.unknown11]
+        jp      ._2
+        
+._1     ld      a,[ix+#mob.unknown11]
+        and     a
+        jr      z,._2
+        dec     [ix+#mob.unknown11]
+._2     ld      a,[ix+#mob.unknown11]
+        cp      $01
+        jr      nc,._3
+        ld      hl,$140c
+        ld      [$.TEMP6],hl
+        ld      [ix+#mob.width],$1e
+        ld      [ix+#mob.height],$16
+        call    :detectCollisionWithSonic
+        ret     c
+        ld      bc,._999e
+        call    ._9aaf
+        ret     nc
+        ld      a,[$.D2E8]
+        ld      hl,[$.D2E6]
+        ld      [$.SONIC.Yspeed],hl
+        ld      [$.SONIC.Ydirection],a
+        ld      de,$fffc
+        ld      hl,[$.SONIC.Xspeed]
+        ld      a,[$.SONIC.Xdirection]
+        add     hl,de
+        adc     a,$ff
+        ld      [$.SONIC.Xspeed],hl
+        ld      [$.SONIC.Xdirection],a
+        ret
+        
+._3     cp      $04
+        jp      nc,._4
+        ld      [ix+#mob.spriteLayout+0],LO ._9a90
+        ld      [ix+#mob.spriteLayout+1],HI ._9a90
+        ld      hl,$080f
+        ld      [$.TEMP6],hl
+        ld      [ix+#mob.width],$1e
+        ld      [ix+#mob.height],$16
+        call    :detectCollisionWithSonic
+        ret     c
+        ld      bc,._99be
+        call    ._9aaf
+        ret     nc
+        ld      a,[ix+$12]
+        cp      [ix+#mob.unknown11]
+        ret     nc
+        ld      a,[$.SONIC.X]
+        add     a,$0c
+        and     $1f
+        add     a,a
+        ld      c,a
+        ld      b,$00
+        ld      hl,._99fe
+        add     hl,bc
+        ld      e,[hl]
+        inc     hl
+        ld      d,[hl]
+        ld      hl,[$.SONIC.Xspeed]
+        ld      a,[$.SONIC.Xdirection]
+        add     hl,de
+        adc     a,$ff
+        ld      [$.SONIC.Xspeed],hl
+        ld      [$.SONIC.Xdirection],a
+        ld      hl,._9a3e
+        add     hl,bc
+        ld      e,[hl]
+        inc     hl
+        ld      d,[hl]
+        ld      hl,[$.SONIC.Yspeed]
+        ld      a,l
+        cpl     
+        ld      l,a
+        ld      a,h
+        cpl     
+        ld      h,a
+        ld      a,[$.SONIC.Ydirection]
+        cpl     
+        add     hl,de
+        adc     a,$ff
+        ld      [$.SONIC.Yspeed],hl
+        ld      [$.SONIC.Ydirection],a
+        ret
+
+        ;unused section of code?
+        ld      a,[$.D2E8]
+        ld      hl,[$.D2E6]
+        ld      [$.SONIC.Yspeed],hl
+        ld      [$.SONIC.Ydirection],a
+        ld      de,$0008
+        ld      hl,[$.SONIC.Xspeed]
+        ld      a,[$.SONIC.Xdirection]
+        add     hl,de
+        adc     a,$00
+        ld      [$.SONIC.Xspeed],hl
+        ld      [$.SONIC.Xdirection],a
+        ret
+        
+._4     ld      [ix+#mob.spriteLayout+0],LO ._9aa2
+        ld      [ix+#mob.spriteLayout+1],HI ._9aa2
+        ld      hl,$021a
+        ld      [$.TEMP6],hl
+        ld      [ix+#mob.width],$1e
+        ld      [ix+#mob.height],$16
+        call    :detectCollisionWithSonic
+        ret     c
+        ld      bc,._99de
+        call    ._9aaf
+        ret     nc
+        ld      a,[$.D2E8]
+        ld      hl,[$.D2E6]
+        ld      [$.SONIC.Yspeed],hl
+        ld      [$.SONIC.Ydirection],a
+        ld      de,$001a
+        ld      hl,[$.SONIC.Xspeed]
+        ld      a,[$.SONIC.Xdirection]
+        add     hl,de
+        adc     a,$00
+        ld      [$.SONIC.Xspeed],hl
+        ld      [$.SONIC.Xdirection],a
+        ret
+
+._999e  BYTE $FF $FF $FE $FE $FE $FD $FD $FD $FC $FC $FC $FC $FB $FB $FB $FB
+        BYTE $FA $FA $FA $FA $FA $F9 $F9 $F9 $F9 $F9 $F9 $FA $FA $FB $FC $FE
+._99be  BYTE $EA $EA $EA $F6 $F7 $F8 $F8 $F8 $F9 $F9 $F9 $FA $FA $FA $FB $FB
+        BYTE $FB $FB $FC $FC $FC $FC $FD $FD $FD $FD $FE $FE $FF $00 $02 $04
+._99de  BYTE $EA $EA $EA $EA $EA $EA $EA $EA $EA $EA $EA $EA $EE $ED $EC $EC
+        BYTE $EC $ED $EE $EF $F0 $F2 $F3 $F4 $F5 $F7 $F8 $F9 $FA $FB $FD $FF
+._99fe  BYTE $00 $F8 $00 $F8 $00 $F9 $00 $FA $00 $FB $00 $FC $E0 $FC $80 $FD
+        BYTE $C0 $FD $00 $FE $40 $FE $80 $FE $C0 $FE $00 $FF $20 $FF $40 $FF
+        BYTE $60 $FF $80 $FF $A0 $FF $C0 $FF $E0 $FF $E8 $FF $EA $FF $EC $FF
+        BYTE $EE $FF $F0 $FF $F2 $FF $F4 $FF $F6 $FF $F8 $FF $FC $FF $FE $FF
+._9a3e  BYTE $00 $FC $00 $FC $00 $FC $00 $FB $00 $FA $00 $F9 $00 $F8 $00 $F7
+        BYTE $00 $F6 $80 $F5 $00 $F5 $C0 $F4 $80 $F4 $40 $F4 $00 $F4 $00 $F4
+        BYTE $00 $F4 $00 $F4 $40 $F4 $80 $F4 $C0 $F4 $00 $F5 $00 $F6 $00 $F7
+        BYTE $00 $F9 $00 $FA $00 $FC $80 $FC $00 $FD $C0 $FD $00 $FF $00 $FF
+
+        ;sprite layout
+._9a7e  BYTE $FE $FF $FF $FF $FF $FF
+        BYTE $38 $3A $3C $3E $FF $FF
+        BYTE $FF $FF $FF $FF $FF $FF
+._9a90  BYTE $48 $4A $4C $4E $FF $FF
+        BYTE $68 $6A $6C $6E $FF $FF
+        BYTE $FF $FF $FF $FF $FF $FF
+._9aa2  BYTE $FE $12 $14 $16 $FF $FF
+        BYTE $FE $32 $34 $36 $FF $FF
+        BYTE $FF
+
+        ;--------------------------------------------------------------------[$9AAF]---
+
+._9aaf  ld      a,[$.SONIC.Ydirection]
+        and     a
+        ret     m
+        
+        ld      a,[$.SONIC.X]
+        add     a,$0c
+        and     $1f
+        ld      l,a
+        ld      h,$00
+        add     hl,bc
+        ld      b,$00
+        ld      c,[hl]
+        bit     7,c
+        jr      z,._5
+        dec     b
+._5     ld      l,[ix+#mob.Y+0]
+        ld      h,[ix+#mob.Y+1]
+        add     hl,bc
+        ld      [$.SONIC.Y],hl
+        ld      a,[$.SONIC.Yspeed+1]
+        cp      $03
+        jr      nc,._6
+        scf     
+        ret
+        
+._6     ld      de,$0001
+        ld      hl,[$.SONIC.Yspeed]
+        ld      a,l
+        cpl     
+        ld      l,a
+        ld      a,h
+        cpl     
+        ld      h,a
+        ld      a,[$.SONIC.Ydirection]
+        cpl     
+        add     hl,de
+        adc     a,$00
+        sra     a
+        rr      h
+        rr      l
+        ld      [$.SONIC.Yspeed],hl
+        ld      [$.SONIC.Ydirection],a
+        and     a
+        ret
+}

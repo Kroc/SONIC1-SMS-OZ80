@@ -1,0 +1,59 @@
+;; Sonic 1 Master System Disassembly
+   -------------------------------------------------------------------------------------------------
+   created by Kroc Camen <kroc@camendesign.com> and given to the Public Domain; you may do anything
+   you like with this code as long as you respect the TradeMarks and (any) Copyrights within.
+   absolutely no warranty implied
+   =================================================================================================
+;;
+
+;wooden platform (Green Hill)
+
+PROC    :mob_platform                           SECTION ::mobs                  ;$69E9
+        ;==============================================================================
+PARAMS  IX`mob          ``Address of the current mob being processed
+{
+        set     5,[ix+#mob.flags]               ;mob does not collide with the floor
+        
+        ld      [ix+#mob.width], 26
+        ld      [ix+#mob.height],16
+        ld      [ix+#mob.spriteLayout+0],LO :object_platform_spriteLayouts._6911
+        ld      [ix+#mob.spriteLayout+1],HI :object_platform_spriteLayouts._6911
+        
+        ld      a,[$.SONIC.Ydirection]
+        and     a
+        jp      m,._2
+        
+        ld      hl,$0806
+        ld      [$.TEMP6],hl
+        call    :detectCollisionWithSonic
+        jr      c,._2
+        
+        ld      de,$0000
+        
+        ld      a,[ix+#mob.Y+0]
+        and     %00011111                       ;MOD 32
+        cp      $10
+        jr      nc,._1
+        
+        ld      e,$80
+._1     ld      [ix+#mob.Yspeed+0],e
+        ld      [ix+#mob.Yspeed+1],d
+        ld      [ix+#mob.Ydirection],$00
+        ld      bc,$0010
+        call    :_LABEL_7CC1_12
+        ret
+        
+._2     ld      c,$00
+        ld      l,c
+        ld      h,c
+        ld      a,[ix+#mob.Y+0]
+        and     %00011111
+        jr      z,._3
+        
+        ld      hl,$ffc0
+        dec     c
+._3     ld      [ix+#mob.Yspeed+0],l
+        ld      [ix+#mob.Yspeed+1],h
+        ld      [ix+#mob.Ydirection],c
+        ret
+}

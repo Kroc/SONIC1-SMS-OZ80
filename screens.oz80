@@ -1,0 +1,4194 @@
+;; Sonic 1 Master System Disassembly
+   -------------------------------------------------------------------------------------------------
+   created by Kroc Camen <kroc@camendesign.com> and given to the Public Domain; you may do anything
+   you like with this code as long as you respect the TradeMarks and (any) Copyrights within.
+   absolutely no warranty implied
+   =================================================================================================
+;;
+
+PROC    :_LABEL_C52_106                         SECTION ::screens               ;$0C52
+        ;==============================================================================
+        ;map screen?
+PARAMS  IY`vars         ``Address of the common variables (used throughout)
+{
+        ;reset horizontal / vertical scroll
+        xor     A`zero                          ;set A to 0
+        ld      [$.VDPSCROLL_HORZ] A`zero
+        ld      [$.VDPSCROLL_VERT] A`zero
+        
+        ld      A, $FF
+        ld      [$.D216], A
+        ld      C, $01
+        
+        ld      A, [$.CURRENT_LEVEL]
+        cp      18
+        ret     nc
+        
+        cp      9
+        jr      c, ._1
+        ld      C, $02
+._1     ld      A, [$.D216]
+        cp      C
+        jp      z, ._4
+        ld      A, C
+        ld      [$.D216], A
+        dec     A
+        jr      nz, ._2
+        
+        ;turn the screen off
+        ld      A, [$.VDPREGISTER_1]
+        and     %10111111                       ;remove bit 6 of VDP register 1
+        ld      [$.VDPREGISTER_1], A
+        
+        ;refresh the screen (wait for interrupt to complete)
+        res     0, [IY+#vars.flags0]
+        call    ::interrupts:waitForInterrupt
+        
+        ;map screen 1 tileset
+        ld      HL, $0000
+        ld      DE, $0000
+        ld      A`bank, 12                      ;$30000
+        call    ::main:decompressArt
+        
+        ;map screen 1 sprite set
+        ld      HL, $526B                       ;$2926B
+        ld      DE, $2000
+        ld      A`bank, 9
+        call    ::main:decompressArt
+        
+        ;HUD tileset
+        ld      HL,$b92e                        ;$2F92E
+        ld      DE,$3000
+        ld      A`bank, 9
+        call    ::main:decompressArt
+        
+        ;load page 1 ($4000-$7FFF) with bank 5 ($14000-$17FFF)
+        ld      A`bank          5
+        ld      [$_SMS.MAPPER.SLOT1]   A`bank
+        ld      [$.SLOT1]       A`bank
+        
+        ;map 1 background
+        ld      HL,$627e
+        ld      BC,$0178
+        ld      DE,$_SMS_VRAM.SCREENNAMETABLE
+        ld      A,$10
+        ld      [$.TEMP1],A
+        call    ::main:decompressScreen
+        
+        ;map 1 foreground
+        ld      HL,$63f6
+        ld      BC,$0145
+        ld      DE,$_SMS_VRAM.SCREENNAMETABLE
+        ld      A,$00
+        ld      [$.TEMP1],A
+        call    ::main:decompressScreen
+        
+        ld      HL,:S1_MapScreen1_Palette
+        call    ::main:_b50
+        jr      ._3
+        
+        ;------------------------------------------------------------------------------
+        
+._2     ;turn the screen off
+        ld      A, [$.VDPREGISTER_1]
+        and     %10111111                       ;remove bit 6 of VDP register 1
+        ld      [$.VDPREGISTER_1], A
+        
+        ;refresh the screen
+        res     0, [IY+#vars.flags0]
+        call    ::interrupts:waitForInterrupt
+        
+        ;map screen 2 tileset
+        ld      HL, $1801                       ;$31801
+        ld      DE, $0000
+        ld      A, 12
+        call    ::main:decompressArt
+        
+        ;map screen 2 sprites
+        ld      HL,$5942                        ;$29942
+        ld      DE,$2000
+        ld      A,9
+        call    ::main:decompressArt
+        
+        ;HUD tileset
+        ld      HL,$b92e                        ;$2F92E
+        ld      DE,$3000
+        ld      A,$09
+        call    ::main:decompressArt
+        
+        ;load page 1 ($4000-$7FFF) with bank 5 ($14000-$17FFF)
+        ld      A`bank          5
+        ld      [$_SMS.MAPPER.SLOT1]   A`bank
+        ld      [$.SLOT1]       A`bank
+        
+        ;map screen 2 background
+        ld      HL,$653b
+        ld      BC,$0170
+        ld      DE,$_SMS_VRAM.SCREENNAMETABLE
+        ld      A,$10
+        ld      [$.TEMP1],A
+        call    ::main:decompressScreen
+        
+        ;map screen 2 foreground
+        ld      HL,$66ab
+        ld      BC,$0153
+        ld      DE,$_SMS_VRAM.SCREENNAMETABLE
+        ld      A,$00
+        ld      [$.TEMP1],A
+        call    ::main:decompressScreen
+        
+        ld      HL,:S1_MapScreen2_Palette
+        call    ::main:_b50
+
+        ;play the map screen music
+._3     ld      A`music         7               ;#index_music_mapScreen
+        rst     :rst_playMusic
+        
+._4     call    :_LABEL_E86_110
+        ld      A, [$.CURRENT_LEVEL]
+        add     A, A
+        ld      C, A
+        ld      B, $00
+        ld      HL, :S1_ZoneTitles
+        add     HL, BC
+        ld      A, [HL]
+        inc     HL
+        ld      H, [HL]
+        ld      L, A
+        
+        ;display in-front of sprites (bit 12 of tile)
+        ld      A, %00010000
+        ld      [$.TEMP1], A
+        call    ::main:print
+        
+        ld      A, [$.CURRENT_LEVEL]
+        ld      C, A
+        add     A, A
+        add     A, C
+        ld      E, A
+        ld      D, $00
+        ld      HL, :_f4e
+        add     HL, DE
+        ld      E, [HL]
+        inc     HL
+        ld      D, [HL]
+        inc     HL
+        ld      [$.TEMP3], DE
+        ld      A, [HL]
+        and     A
+        jr      z, ._
+        
+        dec     A
+        add     A, A
+        ld      E, A
+        ld      D, $00
+        ld      HL, :_1201
+        add     HL, DE
+        ld      A, [HL]
+        inc     HL
+        ld      H, [HL]
+        ld      L, A
+        jp      [HL]
+
+._      ld      A, $01
+        ld      [$.TEMP1],A
+        ld      BC,$012c
+        
+._5     push    BC
+        call    :_LABEL_E86_110
+        ld      A,[$.TEMP1]
+        dec     A
+        ld      [$.TEMP1],A
+        jr      nz,._8
+        ld      HL,[$.TEMP3]
+._6     ld      E,[HL]
+        inc     HL
+        ld      D,[HL]
+        inc     HL
+        ld      C,[HL]
+        inc     HL
+        ld      B,[HL]
+        inc     HL
+        ld      [$.TEMP6],BC
+        ld      A,[HL]
+        inc     HL
+        and     A
+        jr      nz,._7
+        ex      DE,HL
+        jp      ._6
+        
+._7     ld      [$.TEMP1],A
+        ld      [$.TEMP3],HL
+        ld      [$.TEMP4],DE
+        
+._8     ld      HL,[$.TEMP6]
+        push    HL
+        ld      E,H
+        ld      H,$00
+        ld      D,H
+        ld      BC,[$.TEMP4]
+        call    ::mobs:processSpriteLayout
+        pop     HL
+        ld      [$.TEMP6],HL
+        pop     BC
+        dec     BC
+        ld      A,B
+        or      C
+        ret     z
+        
+        bit     5,[IY+#vars.joypad]
+        jp      nz,._5
+        ret     nz
+        
+        scf     
+        ret
+}
+
+PROC    :_0dd9                                  SECTION ::screens               ;$0DD9
+        ;==============================================================================
+        ;referenced by table at $1201
+PARAMS  IY`vars         ``Address of the common variables (used throughout)
+{    
+        ld      hl,$0000
+        ld      [$.TEMP1],hl
+        ld      hl,$00dc
+        ld      de,$003c
+        ld      b,$00
+        
+._1     call    :_LABEL_E86_110
+        ld      a,[iy+#vars.joypad]
+        cp      $ff
+        jp      nz,:_LABEL_C52_106._
+        push    bc
+        ld      bc,:_0e72
+        call    :_0edd
+        pop     bc
+        dec     hl
+        djnz    ._1
+        
+        ld      hl,$0000
+        ld      [$.TEMP1],hl
+        ld      hl,$ffd8
+        ld      de,$0058
+        ld      b,$80
+        
+._2     call    :_LABEL_E86_110
+        ld      a,[iy+#vars.joypad]
+        cp      $ff
+        jp      nz,:_LABEL_C52_106._
+        push    bc
+        ld      bc,:_0e7a
+        call    :_0edd
+        pop     bc
+        inc     hl
+        djnz    ._2
+        
+        jp      :_LABEL_C52_106._
+}
+
+PROC    :_0e24                                  SECTION ::screens               ;$0E24
+        ;==============================================================================
+        ;referenced by table at $1201
+PARAMS  IY`vars         ``Address of the common variables (used throughout)
+{        
+        ld      hl,$0000
+        ld      [$.TEMP1],hl
+        ld      hl,$0080
+        ld      de,$00c0
+        ld      b,$78
+        
+.loop   call    :_LABEL_E86_110
+        ld      a,[iy+#vars.joypad]
+        cp      $ff
+        jp      nz,:_LABEL_C52_106._
+        push    bc
+        ld      bc,:_0e82
+        call    :_0edd
+        pop     bc
+        dec     de
+        djnz    .loop
+        
+        jp      :_LABEL_C52_106._
+}
+
+PROC    :_0e4b                                  SECTION ::screens               ;$04EB
+        ;==============================================================================
+        ;referenced by table at $1201
+PARAMS  IY`vars         ``Address of the common variables (used throughout)
+{       
+        ld      hl,$0000
+        ld      [$.TEMP1],hl
+        ld      hl,$0078
+        ld      de,$0000
+        ld      b,$30
+        
+.loop   call    :_LABEL_E86_110
+        ld      a,[iy+#vars.joypad]
+        cp      $ff
+        jp      nz,:_LABEL_C52_106._
+        push    bc
+        ld      bc,:_0e82
+        call    :_0edd
+        pop     bc
+        inc     de
+        djnz    .loop
+        
+        jp      :_LABEL_C52_106._
+}
+
+TABLE   :_0e72                                  SECTION ::screens               ;$0E72
+{
+        WORD    :_1129  BYTE $04, $01
+        WORD    :_113b  BYTE $04, $00
+}
+TABLE   :_0e7a                                  SECTION ::screens               ;$0E7A
+{
+        WORD    :_114d  BYTE $04, $01
+        WORD    :_115f  BYTE $04, $00
+}
+TABLE   :_0e82                                  SECTION ::screens               ;$0E82
+{
+        WORD    :_1183  BYTE $04, $00
+}
+
+PROC    :_LABEL_E86_110                         SECTION ::screens               ;$0E86
+        ;==============================================================================
+PARAMS  IY`vars         ``Address of the common variables (used throughout)
+        $.TEMP1
+{       
+        push    HL, DE, BC
+        
+        ld      HL              [$.TEMP1]
+        push    HL
+        
+        res     0, [IY+#vars.flags0]
+        call    ::interrupts:waitForInterrupt
+        
+        ld      [IY+#vars.spriteUpdateCount], $00
+        ld      A`lives         [$.LIVES]
+        ld      l, a
+        ld      h, $00
+        ld      c, $0A
+        call    ::main:_LABEL_60F_111
+        
+        ld      a, l
+        add     a, a
+        add     a, $80
+        ld      [$.LAYOUT_BUFFER], a
+        ld      c, 10
+        call    ::main:multiply
+        
+        ex      de, hl
+        
+        ld      a, [$.LIVES]
+        ld      l, a
+        ld      h, $00
+        and     a
+        sbc     hl, de
+        ld      a, l
+        add     a, a
+        add     a, $80
+        ld      [$.LAYOUT_BUFFER+1], a
+        ld      a, $FF
+        ld      [$.LAYOUT_BUFFER+2], a
+        
+        ld      b`ypos, 167
+        ld      c`xpos, 40
+        ld      hl, $.SPRITETABLE
+        ld      de, $.LAYOUT_BUFFER
+        call    ::mobs:layoutSpritesHorizontal
+        
+        ld      [$.SPRITETABLE_ADDR], hl
+        pop     hl
+        ld      [$.TEMP1], hl
+        
+        pop     BC, DE, HL
+        ret
+}
+
+PROC    :_0edd                                  SECTION ::screens               ;$0EDD
+        ;==============================================================================
+        ;something to do with constructing the sprites on the map screen?
+        
+PARAMS  bc
+{       
+        push    hl, de
+        
+        ;copy BC to HL
+        ld      l,c
+        ld      h,b
+        
+        ld      a,[$.TEMP2]
+        add     a,a                             ;x2
+        add     a,a                             ;x4
+        ld      e,a
+        ld      d,$00
+        add     hl,de
+        
+        ;read the address of a sprite layout from the list
+        ld      c,[hl]
+        inc     hl
+        ld      b,[hl]
+        inc     hl
+        
+        ld      a,[$.TEMP1]
+        cp      [hl]
+        jr      c,._1
+        
+        inc     hl
+        ld      a,[hl]
+        ld      [$.TEMP2],a
+        xor     a`zero
+        ld      [$.TEMP1],a`zero
+        
+._1     pop     de                              ;Y-position
+        pop     hl                              ;X-position
+        push    hl
+        push    de
+        call    ::mobs:processSpriteLayout
+        
+        ld      a,[$.TEMP1]
+        inc     a
+        ld      [$.TEMP1],a
+        
+        pop     de, hl
+        ret
+}
+
+TABLE   :S1_MapScreen1_Palette                  SECTION ::screens               ;$0F0E
+{
+        BYTE    $35 $01 $06 $0B $04 $08 $0C $3D $1F $39 $2A $14 $25 $2B $00 $3F
+        BYTE    $2B $20 $35 $1B $16 $2A $00 $3F $03 $0F $01 $15 $00 $3C $00 $3F
+}
+TABLE   :S1_MapScreen2_Palette                  SECTION ::screens               ;$0F2E
+{
+        BYTE    $25 $01 $06 $0B $04 $18 $2C $35 $2B $10 $2A $14 $15 $1F $00 $3F
+        BYTE    $2B $20 $35 $1B $16 $2A $00 $3F $03 $0F $01 $15 $07 $2D $00 $3F
+}
+
+;--------------------------------------------------------------------------------------
+
+TABLE   :_f4e                                   SECTION ::screens               ;0F4E
+{
+        WORD    :_0f84  BYTE $00                ;Green Hill Act 1
+        WORD    :_0f93  BYTE $00                ;Green Hill Act 2
+        WORD    :_0fde  BYTE $01                ;Green Hill Act 3
+        WORD    :_0fa2  BYTE $00                ;Bridge Act 1
+        WORD    :_0fb1  BYTE $00                ;Bridge Act 2
+        WORD    :_107e  BYTE $02                ;Bridge Act 3
+        WORD    :_0fc0  BYTE $00                ;Jungle Act 1
+        WORD    :_0fcf  BYTE $00                ;Jungle Act 2
+        WORD    :_1088  BYTE $03                ;Jungle Act 3
+        WORD    :_100b  BYTE $00                ;Labyrinth Act 1
+        WORD    :_101a  BYTE $00                ;Labyrinth Act 2
+        WORD    :_1092  BYTE $00                ;Labyrinth Act 3
+        WORD    :_1029  BYTE $00                ;Scrap Brain Act 1
+        WORD    :_1038  BYTE $00                ;Scrap Brain Act 2
+        WORD    :_109c  BYTE $00                ;Scrap Brain Act 3
+        WORD    :_1047  BYTE $00                ;Sky Base Act 1
+        WORD    :_1056  BYTE $00                ;Sky Base Act 2
+        WORD    :_1056  BYTE $00                ;Sky Base Act 3
+}
+
+;--------------------------------------------------------------------------------------
+
+TABLE   :_0f84                                  SECTION ::screens               ;$0F84
+{       ;Green Hill Act 1
+        WORD    :_10bd  BYTE $50, $68, $1E
+        WORD    :_10ab  BYTE $50, $68, $1E
+        WORD    :_0f84  BYTE $00, $00, $00
+}
+TABLE   :_0f93                                  SECTION ::screens               ;$0F93
+{       ;Green Hill Act 2
+        WORD    :_10cf  BYTE $50, $60, $1E
+        WORD    :_10ab  BYTE $50, $60, $1E
+        WORD    :_0f93  BYTE $00, $00, $00
+}
+TABLE   :_0fa2                                  SECTION ::screens               ;$0FA2
+{       ;Bridge Act 1
+        WORD    :_10e1  BYTE $60, $60, $1E
+        WORD    :_10ab  BYTE $60, $60, $1E
+        WORD    :_0fa2  BYTE $00, $00, $00
+}
+TABLE   :_0fb1                                  SECTION ::screens               ;$0FB1
+{       ;Bridge Act 2
+        WORD    :_10f3  BYTE $80, $50, $1E
+        WORD    :_10ab  BYTE $80, $50, $1E
+        WORD    :_0fb1  BYTE $00, $00, $00
+}
+TABLE   :_0fc0                                  SECTION ::screens               ;$0FC0
+{       ;Jungle Act 1
+        WORD    :_1105  BYTE $70, $48, $1E
+        WORD    :_10ab  BYTE $70, $48, $1E
+        WORD    :_0fc0  BYTE $00, $00, $00
+}        
+TABLE   :_0fcf                                  SECTION ::screens               ;$0FCF
+{       ;Jungle Act 2
+        WORD    :_1117  BYTE $70, $38, $1E
+        WORD    :_10ab  BYTE $70, $38, $1E
+        WORD    :_0fcf  BYTE $00, $00, $00
+}
+TABLE   :_0fde                                  SECTION ::screens               ;$0FDE
+{       ;Green Hill Act 3
+        WORD    :_1183  BYTE $58, $58, $08
+        WORD    :_1183  BYTE $58, $58, $08
+        WORD    :_1183  BYTE $58, $56, $08
+        WORD    :_1183  BYTE $58, $56, $08
+        WORD    :_1183  BYTE $58, $55, $08
+        WORD    :_1183  BYTE $58, $55, $08
+        WORD    :_1183  BYTE $58, $56, $08
+        WORD    :_1183  BYTE $58, $56, $08
+        WORD    :_0fde  BYTE $00, $00, $00
+}
+TABLE   :_100b                                  SECTION ::screens               ;$100B
+{       ;Labyrinth Act 1
+        WORD    :_1195  BYTE $58, $68, $1E
+        WORD    :_10ab  BYTE $58, $68, $1E
+        WORD    :_100b  BYTE $00, $00, $00
+}
+TABLE   :_101a                                  SECTION ::screens               ;$101A
+{       ;Labyrinth Act 2
+        WORD    :_11a7  BYTE $68, $78, $1E
+        WORD    :_10ab  BYTE $68, $78, $1E
+        WORD    :_101a  BYTE $00, $00, $00
+}
+TABLE   :_1029                                  SECTION ::screens               ;$1029
+{       ;Scrap Brain Act 1
+        WORD    :_11b9  BYTE $70, $58, $1E
+        WORD    :_10ab  BYTE $70, $58, $1E
+        WORD    :_1029  BYTE $00, $00, $00
+}
+TABLE   :_1038                                  SECTION ::screens               ;$1038
+{       ;Scrap Brain Act 2
+        WORD    :_11cb  BYTE $78, $48, $1E
+        WORD    :_10ab  BYTE $78, $48, $1E
+        WORD    :_1038  BYTE $00, $00, $00
+}
+TABLE   :_1047                                  SECTION ::screens               ;$1047
+{       ;Sky Base Act 1
+        WORD    :_11dd  BYTE $68, $28, $1E
+        WORD    :_10ab  BYTE $68, $28, $1E
+        WORD    :_1047  BYTE $00, $00, $00
+}
+TABLE   :_1056                                  SECTION ::screens               ;$1056
+{       ;Sky Base Act 2 / 3
+        WORD    :_11ef  BYTE $80, $28, $1E
+        WORD    :_11ef  BYTE $80, $26, $08
+        WORD    :_11ef  BYTE $80, $26, $08
+        WORD    :_11ef  BYTE $80, $25, $08
+        WORD    :_11ef  BYTE $80, $25, $08
+        WORD    :_11ef  BYTE $80, $26, $08
+        WORD    :_11ef  BYTE $80, $26, $08
+        WORD    :_1056  BYTE $00, $00, $00
+}
+TABLE   :_107e                                  SECTION ::screens               ;$107E
+{       ;Bridge Act 3
+        WORD    :_1183  BYTE $80, $48, $08
+        WORD    :_107e  BYTE $00, $00, $00
+}
+TABLE   :_1088                                  SECTION ::screens               ;$1088
+{       ;Jungle Act 3
+        WORD    :_1183  BYTE $78, $30, $08
+        WORD    :_1088  BYTE $00, $00, $00
+}
+TABLE   :_1092                                  SECTION ::screens               ;$1092
+{       ;Labyrinth Act 3
+        WORD    :_1183  BYTE $70, $60, $08
+        WORD    :_1092  BYTE $00, $00, $00
+}
+TABLE   :_109c                                  SECTION ::screens               ;$109C
+{       ;Scrap Brain Act 3
+        WORD    :_1129  BYTE $68, $40, $08
+        WORD    :_113b  BYTE $68, $40, $08
+        WORD    :_109c  BYTE $00, $00, $00
+}
+
+;--------------------------------------------------------------------------------------
+
+;blank frame (to make it blink)
+TABLE   :_10ab                                  SECTION ::screens               ;$10AB
+{       ;why not self-terminating,
+         ;rather than the full block?
+        BYTE    $FF, $FF, $FF, $FF, $FF, $FF
+        BYTE    $FF, $FF, $FF, $FF, $FF, $FF
+        BYTE    $FF, $FF, $FF, $FF, $FF, $FF
+}
+TABLE   :_10bd                                  SECTION ::screens               ;$10BD
+{       ;Green Hill Act 1
+        BYTE    $00, $02, $FF, $FF, $FF, $FF
+        BYTE    $FE, $22, $24, $26, $28, $FF
+        BYTE    $FF, $FF, $FF, $FF, $FF, $FF
+}
+TABLE   :_10cf                                  SECTION ::screens               ;$10CF
+{       ;Green Hill Act 2
+        BYTE    $04, $06, $08, $FF, $FF, $FF
+        BYTE    $FF, $FF, $FF, $FF, $FF, $FF
+        BYTE    $FF, $FF, $FF, $FF, $FF, $FF
+}
+TABLE   :_10e1                                  SECTION ::screens               ;$10E1
+{;Bridge Act 1
+        BYTE    $40, $42, $44, $46, $48, $FF
+        BYTE    $FF, $FF, $FF, $FF, $FF, $FF
+        BYTE    $FF, $FF, $FF, $FF, $FF, $FF
+}
+TABLE   :_10f3                                  SECTION ::screens               ;$10F3
+{       ;Bridge Act 2
+        BYTE    $4A, $4C, $FF, $FF, $FF, $FF
+        BYTE    $6A, $6C, $FF, $FF, $FF, $FF
+        BYTE    $FF, $FF, $FF, $FF, $FF, $FF
+}
+TABLE   :_1105                                  SECTION ::screens               ;$1105
+{       ;Jungle Act 1
+        BYTE    $60, $62, $64, $66, $FF, $FF
+        BYTE    $FF, $FF, $FF, $FF, $FF, $FF
+        BYTE    $FF, $FF, $FF, $FF, $FF, $FF
+}
+TABLE   :_1117                                  SECTION ::screens               ;$1117
+{       ;Jungle Act 2
+        BYTE    $FE, $FE, $0E, $FF, $FF, $FF
+        BYTE    $2A, $2C, $2E, $FF, $FF, $FF
+        BYTE    $FF, $FF, $FF, $FF, $FF, $FF
+}
+TABLE   :_1129                                  SECTION ::screens               ;$1129
+{       ;Scrap Brain Act 3 - step 1
+        BYTE    $10, $12, $14, $16, $FF, $FF
+        BYTE    $30, $32, $34, $36, $FF, $FF
+        BYTE    $FF, $FF, $FF, $FF, $FF, $FF
+}
+TABLE   :_113b                                  SECTION ::screens               ;$113B
+{       ;Scrap Brain Act 3 - step 2
+        BYTE    $10, $12, $14, $18, $FF, $FF
+        BYTE    $30, $32, $34, $38, $FF, $FF
+        BYTE    $FF, $FF, $FF, $FF, $FF, $FF
+}
+TABLE   :_114d                                  SECTION ::screens               ;$114D
+{       ;Robotnik flying right frame 1
+        BYTE    $50, $54, $56, $58, $FF, $FF    ;referenced by table at `_0e7a`
+        BYTE    $70, $74, $76, $78, $FF, $FF
+        BYTE    $FF, $FF, $FF, $FF, $FF, $FF
+}
+TABLE   :_115f                                  SECTION ::screens               ;$115F
+{       ;Robotnik flying right frame 2
+        BYTE    $52, $54, $56, $58, $FF, $FF    ;referenced by table at `_0e7a`
+        BYTE    $72, $74, $76, $78, $FF, $FF
+        BYTE    $FF, $FF, $FF, $FF, $FF, $FF
+}
+TABLE   :_1171                                  SECTION ::screens               ;$1171
+{       ;unused -- same as _114d
+        BYTE    $50, $54, $56, $58, $FF, $FF
+        BYTE    $70, $74, $76, $78, $FF, $FF
+        BYTE    $FF, $FF, $FF, $FF, $FF, $FF
+}
+TABLE   :_1183                                  SECTION ::screens               ;$1183
+{       ;Green Hill, Bridge, Jungle & Labyrinth Act 3
+        BYTE    $5A, $5C, $5E, $FF, $FF, $FF
+        BYTE    $7A, $7C, $7E, $FF, $FF, $FF
+        BYTE    $FF, $FF, $FF, $FF, $FF, $FF
+}
+TABLE   :_1195                                  SECTION ::screens               ;$1195
+{       ;Labyrinth Act 1
+        BYTE    $00, $02, $FF, $FF, $FF, $FF
+        BYTE    $20, $22, $04, $FF, $FF, $FF
+        BYTE    $FF, $FF, $FF, $FF, $FF, $FF
+}
+TABLE   :_11a7                                  SECTION ::screens               ;$11A7
+{       ;Labyrinth Act 2
+        BYTE    $0A, $0C, $0E, $FF, $FF, $FF
+        BYTE    $2A, $2C, $2E, $FF, $FF, $FF
+        BYTE    $FF, $FF, $FF, $FF, $FF, $FF
+}
+TABLE   :_11b9                                  SECTION ::screens               ;$11B9
+{       ;Scrap Brain Act 1
+        BYTE    $68, $6A, $6C, $FF, $FF, $FF
+        BYTE    $FE, $FE, $6E, $FF, $FF, $FF
+        BYTE    $FF, $FF, $FF, $FF, $FF, $FF
+}
+TABLE   :_11cb                                  SECTION ::screens              ;$11CB
+{       ;Scrap Brain Act 2
+        BYTE    $06, $08, $4A, $4C, $FF, $FF
+        BYTE    $FE, $FE, $4E, $3E, $FF, $FF
+        BYTE    $FE, $40, $42, $44, $FF, $FF
+}
+TABLE   :_11dd                                  SECTION ::screens               ;$11DD
+{       ;Sky Base Act 1
+        BYTE    $60, $62, $64, $66, $FF, $FF
+        BYTE    $FF, $FF, $FF, $FF, $FF, $FF
+        BYTE    $FF, $FF, $FF, $FF, $FF, $FF
+}
+TABLE   :_11ef                                  SECTION ::screens               ;$11EF
+{       ;Sky Base Act 2 / 3
+        BYTE    $46, $48, $26, $28, $FF, $FF
+        BYTE    $1A, $1C, $3A, $3C, $FF, $FF
+        BYTE    $FF, $FF, $FF, $FF, $FF, $FF
+}
+
+;--------------------------------------------------------------------------------------
+;list of functions that handle extra animations on the map screen
+
+TABLE   :_1201                                  SECTION ::screens               ;$1201
+{
+        WORD    :_0dd9
+        WORD    :_0e24
+        WORD    :_0e4b
+        WORD    :_0dd9
+}
+
+TABLE   :S1_ZoneTitles                          SECTION ::screens               ;$1209
+        ;==============================================================================
+{        
+        WORD    .greenHill                      ;Green Hill Act 1
+        WORD    .greenHill                      ;Green Hill Act 2
+        WORD    .greenHill                      ;Green Hill Act 3
+        WORD    .bridge                         ;Bridge Act 1
+        WORD    .bridge                         ;Bridge Act 2
+        WORD    .bridge                         ;Bridge Act 3
+        WORD    .jungle                         ;Jungle Act 1
+        WORD    .jungle                         ;Jungle Act 2
+        WORD    .jungle                         ;Jungle Act 3
+        WORD    .labyrinth                      ;Labyrinth Act 1
+        WORD    .labyrinth                      ;Labyrinth Act 2
+        WORD    .labyrinth                      ;Labyrinth Act 3
+        WORD    .scrapBrain                     ;Scrap Brain Act 1
+        WORD    .scrapBrain                     ;Scrap Brain Act 2
+        WORD    .scrapBrain                     ;Scrap Brain Act 3
+        WORD    .skyBase                        ;Sky Base Act 1
+        WORD    .skyBase                        ;Sky Base Act 2
+        WORD    .skyBase                        ;Sky Base Act 3
+
+.greenHill                                      ;"GREEN HILL"                   ;$122D
+        BYTE    $10 $13 $46 $62 $44 $44 $51 $EB $47 $40 $43 $43 $EB $EB $FF
+.bridge                                         ;"BRIDGE"                       ;$123C
+        BYTE    $10 $13 $35 $62 $40 $37 $46 $44 $EB $EB $EB $EB $EB $EB $FF
+.jungle                                         ;"JUNGLE"                       ;$124B
+        BYTE    $10 $13 $41 $81 $51 $46 $43 $44 $EB $EB $EB $EB $EB $EB $FF
+.labyrinth                                      ;"LABYRINTH"                    ;$125A
+        BYTE    $10 $13 $6F $1E $1F $DE $9F $5E $7F $AF $4F $EB $EB $EB $FF
+.scrapBrain                                     ;"SCRAP BRAIN"                  ;$1269
+        BYTE    $10 $13 $AE $2E $9F $1E $8F $EB $1F $9F $1E $5E $7F $EB $FF
+.skyBase                                        ;"SKY BASE"                     ;$1278
+        BYTE    $10 $13 $AE $6E $DE $EB $1F $1E $AE $3E $EB $EB $EB $EB $FF
+}
+
+PROC    :titleScreen                            SECTION ::screens               ;$1287
+        ;==============================================================================
+PARAMS  IY`vars         ``Address of the common variables (used throughout)
+{        
+        ;turn off screen
+        ld      A, [$.VDPREGISTER_1]
+        and     %10111111                       ;remove bit 6 of $D219
+        ld      [$.VDPREGISTER_1], A
+        
+        ;refresh the screen
+        res     0, [IY+#vars.flags0]
+        call    ::interrupts:waitForInterrupt
+        
+        ;load the title screen tile set
+         ;BANK 9 ($24000) + $2000 = $26000
+        ld      HL              $2000
+        ld      DE              $0000
+        ld      A`bank          9
+        call    ::main:decompressArt
+        
+        ;load the title screen sprite set
+         ;BANK 9 ($24000) + $4B0A = $28B0A
+        ld      HL              $4B0A
+        ld      DE              $2000
+        ld      A`bank          9
+        call    ::main:decompressArt
+        
+        ;now switch page 1 ($4000-$7FFF) to bank 5 ($14000-$17FFF)
+        ld      A`bank          5
+        ld      [$_SMS.MAPPER.SLOT1]   A`bank
+        ld      [$.SLOT1]       A`bank
+        
+        ;load the title screen itself
+        ld      HL              $6000           ;ROM:$16000
+        ld      DE              $_SMS_VRAM.SCREENNAMETABLE
+        ld      BC              $012E
+        ld      A               $00
+        ld      [$.TEMP1]       A
+        call    ::main:decompressScreen
+        
+        ;reset horizontal / vertical scroll
+        xor     A`zero                          ;set A to zero
+        ld      [$.VDPSCROLL_HORZ]      A`zero
+        ld      [$.VDPSCROLL_VERT]      A`zero
+        
+        ;load the palette
+        ld      HL      .S1_TitleScreen_Palette
+        ld      A       %00000011               ;flags to load tile & sprite palettes
+        call    ::interrupts:loadPaletteOnInterrupt
+        
+        set     1, [IY+#vars.flags0]
+        
+        ;play title screen music
+        ld      a, ::sound:S1_MusicPointers.titleScreen.index
+        rst     :rst_playMusic
+        
+        ;initialise the animation parameters?
+        xor     a`zero
+        ld      [$.D216], a`zero                ;reset the screen counter
+        ld      a, $01
+        ld      [$.TEMP2], a
+        ld      hl, ._1372
+        ld      [$.TEMP3], hl
+        
+        ;------------------------------------------------------------------------------
+._1     ;switch screen on (set bit 6 of VDP register 1)
+        ld      A       [$.VDPREGISTER_1]
+        or      %01000000
+        ld      [$.VDPREGISTER_1]       A
+        ;refresh the screen
+        res     0, [IY+#vars.flags0]
+        call    ::interrupts:waitForInterrupt
+        
+        ;count to 100:
+        ld      a, [$.D216]                     ;get the screen counter
+        inc     a                               ;add one
+        cp      100                             ;if less than 100,
+        jr      c, ._2                          ;keep counting,
+        xor     a`zero                          ;otherwise go back to 0
+._2     ld      [$.D216], a`zero                ;update screen counter value
+        
+        ld      hl, ._1352
+        cp      $40
+        jr      c, ._3
+        ld      hl, ._1362
+._3     xor     a`zero                          ;set A to 0
+        ld      [$.TEMP1], a`zero
+        call    ::main:print
+        
+        ld      a, [$.TEMP2]
+        dec     a
+        ld      [$.TEMP2], a
+        jr      nz, ._4
+        
+        ld      hl, [$.TEMP3]
+        ld      e, [hl]
+        inc     hl
+        ld      d, [hl]
+        inc     hl
+        ld      a, [hl]
+        inc     hl
+        
+        ;when the animation reaches the end,
+         ;exit the title screen (begin demo mode)
+        and     a
+        jr      z, ._5
+        
+        ld      [$.TEMP2], a
+        ld      [$.TEMP3], hl
+        ld      [$.TEMP4], de
+        
+        ;set the game's main sprite table as the table to use
+._4     ld      hl, $.SPRITETABLE
+        ld      [$.SPRITETABLE_ADDR], hl
+        
+        ld      hl, $0080
+        ld      de, $0018
+        ld      bc, [$.TEMP4]
+        call    ::mobs:processSpriteLayout
+        
+        ;has the button been pressed? if not, repeat
+        bit     5, [iy+#vars.joypad]
+        jp      nz, ._1
+        
+        scf
+
+._5     rst     :rst_muteSound
+        ret
+
+        ;------------------------------------------------------------------------------
+        
+._1352  ;"PRESS  BUTTON" text                                                   ;$1352
+        BYTE    $09 $12
+        BYTE    $E3 $E4 $E5 $E6 $E6 $F1 $F1 $E9 $EB $E7 $E7 $EA $EC $FF
+._1362                                                                          ;$1362
+        BYTE    $09 $12
+        BYTE    $F1 $F1 $F1 $F1 $F1 $F1 $F1 $F1 $F1 $F1 $F1 $F1 $F1 $FF
+        
+._1372  ;wagging finger animation data:                                         ;$1372
+        WORD    ._13bd  BYTE $08
+        WORD    ._13cf  BYTE $08
+        WORD    ._13bd  BYTE $08
+        WORD    ._13cf  BYTE $08
+        WORD    ._13bd  BYTE $08
+        WORD    ._13cf  BYTE $08
+        WORD    ._13bd  BYTE $08
+        WORD    ._13cf  BYTE $08
+        WORD    ._13bd  BYTE $08
+        WORD    ._13cf  BYTE $08
+        WORD    ._13bd  BYTE $08
+        WORD    ._13cf  BYTE $08
+        WORD    ._13bd  BYTE $08
+        WORD    ._13cf  BYTE $08
+        WORD    ._13bd  BYTE $08
+        WORD    ._13cf  BYTE $08
+        WORD    ._13bd  BYTE $08
+        WORD    ._13cf  BYTE $08
+        WORD    ._13bd  BYTE $08
+        WORD    ._13cf  BYTE $08
+        WORD    ._13bd  BYTE $08
+        WORD    ._13cf  BYTE $08
+._13b4  WORD    ._13bd  BYTE $FF                                                ;$13B4
+        WORD    ._13bd  BYTE $FF
+        WORD    ._13b4  BYTE $00
+        
+._13bd  ;frame 1 sprite layout                                                  ;$13BD
+        BYTE    $00, $02, $04, $FF, $FF, $FF
+        BYTE    $20, $22, $24, $FF, $FF, $FF
+        BYTE    $40, $42, $44, $FF, $FF, $FF
+._13cf  ;frame 2 sprite layout                                                  ;$13CF
+        BYTE    $06, $08, $FF, $FF, $FF, $FF
+        BYTE    $26, $28, $FF, $FF, $FF, $FF
+        BYTE    $46, $48, $FF, $FF, $FF, $FF
+
+.S1_TitleScreen_Palette                                                         ;$13E1
+        BYTE    $00 $10 $34 $38 $06 $1B $2F $3F $3D $3E $01 $03 $0B $0F $00 $3F
+        BYTE    $00 $10 $34 $38 $06 $1B $2F $3F $3D $3E $01 $03 $0B $0F $00 $3F
+}
+
+PROC    :_1401                                  SECTION ::screens               ;$1401
+        ;==============================================================================
+        ;Act Complete screen?
+PARAMS  IY`vars         ``Address of the common variables (used throughout)
+{        
+        ;turn off the screen
+        ld      a,[$.VDPREGISTER_1]
+        and     %10111111                       ;remove bit 6 of VDP register 1
+        ld      [$.VDPREGISTER_1],a
+        ;refresh the screen
+        res     0,[iy+#vars.flags0]
+        call    ::interrupts:waitForInterrupt
+        di      
+        
+        ;act complete sprite set
+        ld      hl,$351f
+        ld      de,$0000
+        ld      A`bank, 9
+        call    ::main:decompressArt
+        
+        ;switch page 1 ($4000-$7FFF) to bank 5 ($14000-$17FFF)
+        ld      A`bank          5
+        ld      [$_SMS.MAPPER.SLOT1]   A`bank
+        ld      [$.SLOT1]       A`bank
+        
+        ;act complete background
+        ld      hl,$67fe
+        ld      bc,$0032
+        ld      de,$_SMS_VRAM.SCREENNAMETABLE
+        ld      a,$00
+        ld      [$.TEMP1],a
+        call    ::main:decompressScreen
+        
+        xor     A`zero
+        ld      [$.VDPSCROLL_HORZ], A`zero
+        ld      [$.VDPSCROLL_VERT], A`zero
+        ld      hl,._14fc
+        ld      a,%00000011
+        call    ::interrupts:loadPaletteOnInterrupt
+        ei      
+        ld      b,$78
+        
+._1     ;turn the screen on
+        ld      a,[$.VDPREGISTER_1]
+        or      %01000000                       ;enable bit 6 on VDP register 1
+        ld      [$.VDPREGISTER_1],a
+        ;refresh the screen
+        res     0,[iy+#vars.flags0]
+        call    ::interrupts:waitForInterrupt
+        
+        djnz    ._1
+        
+        ld      a,[$.D284]
+        and     a
+        jr      nz,._3
+        
+        ld      bc,$00b4
+._2     push    bc
+        
+        res     0,[iy+#vars.flags0]
+        call    ::interrupts:waitForInterrupt
+        
+        pop     bc
+        dec     bc
+        ld      a,b
+        or      c
+        ret     z
+        
+        bit     5,[iy+#vars.joypad]
+        jp      nz,._2
+        
+        and     a
+        ret
+
+        ;------------------------------------------------------------------------------
+._3     ld      hl,._14de
+        ld      c,$0b
+        call    :_16d9
+        ld      hl,._14e6
+        call    ::main:print
+        ld      hl,._14f1
+        call    ::main:print
+        ld      a,$09
+        ld      [$.D216],a
+        
+._4     ld      b,$3c
+._5     push    bc
+        res     0,[iy+#vars.flags0]
+        call    ::interrupts:waitForInterrupt
+        ld      [iy+#vars.spriteUpdateCount],$00
+        ld      hl,$.D216
+        ld      de,$.LAYOUT_BUFFER
+        ld      b,$01
+        call    :_1b13
+        
+        ex      de,hl
+        
+        ld      hl,$.SPRITETABLE
+        ld      c`xpos,140
+        ld      b`ypos,94
+        call    ::mobs:layoutSpritesHorizontal
+        ld      [$.SPRITETABLE_ADDR],hl
+        
+        pop     bc
+        bit     5,[iy+#vars.joypad]
+        jr      z,._6
+        djnz    ._5
+        
+        ld      a,$1a
+        rst     :rst_playSFX
+        
+        ld      hl,$.D216
+        ld      a,[hl]
+        and     a
+        ret     z
+        dec     [hl]
+        jr      ._4
+        
+        ;get the bit flag for the level
+._6     ld      hl,$.D311
+        call    ::main:getLevelBitFlag
+        ld      a,c
+        cpl                                     ;invert the level bits (create a mask)
+        ld      c,a
+        
+        ld      a,[hl]
+        and     c                               ;remove the level bit
+        ld      [hl],a
+        
+        ld      hl,$.D284
+        dec     [hl]
+        scf                                     ;set carry flag
+        
+        ret
+        
+        ;------------------------------------------------------------------------------
+        
+._14de  BYTE    $0f, $80, $81, $ff                                              ;$14DE
+        BYTE    $10, $90, $91, $ff
+._14e6  ;text                                                                   ;$14E6
+        BYTE    $08, $0c, $67, $68, $69, $6a, $6b, $6c, $6d, $6e, $ff
+._14f1  ;text                                                                   ;$14F1
+        BYTE    $08, $0d, $77, $78, $79, $7a, $7b, $7c, $7d, $7e, $ff
+
+._14fc  ;this first bit looks like a palette                                    ;$14FC
+        BYTE    $00 $01 $06 $0B $04 $08 $0C $3D $1F $39 $2A $14 $14 $27 $00 $3F
+        BYTE    $00 $20 $35 $1B $16 $2A $00 $3F $03 $0F $01 $15 $00 $3C $00 $3F
+
+        BYTE    $01 $00 $00 $00 $00 $00 $00 $00 $01 $00 $00 $00 $05 $00 $00 $00
+        BYTE    $10 $00 $00 $00 $30 $00 $00 $00 $50 $00 $00 $01 $00 $00 $00 $03
+        BYTE    $00 $00 $05 $00 $03 $00 $02 $30 $02 $00 $01 $30 $01 $00 $00 $30
+        BYTE    $00 $00 $1E $15 $22 $15 $26 $15 $2A $15 $2E $15 $32 $15 $36 $15
+        BYTE    $3A $15
+}
+
+PROC    :_155e                                  SECTION ::screens               ;$155E
+        ;==============================================================================
+        ;Act Complete screen?
+PARAMS  IY`vars         ``Address of the common variables (used throughout)
+{        
+        ld      a, [$.CURRENT_LEVEL]
+        cp      19
+        jp      z,:_172f
+        
+        ld      a,[$.VDPREGISTER_1]
+        and     %10111111
+        ld      [$.VDPREGISTER_1],a
+        
+        res     0,[iy+#vars.flags0]
+        call    ::interrupts:waitForInterrupt
+        
+        ;load HUD sprites
+        ld      hl,$b92e
+        ld      de,$3000
+        ld      a,9
+        call    ::main:decompressArt
+        
+        ;level complete screen tile set
+        ld      hl,$351f
+        ld      de,$0000
+        ld      a,9
+        call    ::main:decompressArt
+        
+        ;load page 1 ($4000-$7FFF) with bank 5 ($14000-$17FFF)
+        ld      a,5
+        ld      [$_SMS.MAPPER.SLOT1],a
+        ld      [$.SLOT1],a
+        
+        ;UNKNOWN
+        ld      hl,$612e
+        ld      bc,$00bb
+        ld      de,$_SMS_VRAM.SCREENNAMETABLE
+        ld      a,[$.CURRENT_LEVEL]
+        cp      28
+        jr      c,._1
+        
+        ;UNKNOWN
+        ld      hl,$61e9                        ;$161E9?
+        ld      bc,$0095
+        ld      de,$_SMS_VRAM.SCREENNAMETABLE
+
+._1     xor     a`zero
+        ld      [$.TEMP1],a`zero
+        call    ::main:decompressScreen
+        
+        ld      hl,:_1711
+        ld      c,$10
+        ld      a,[$.D27F]
+        and     a
+        call    nz,:_16d9
+        
+        ld      a,[$.CURRENT_LEVEL]
+        cp      $1c
+        jr      nc,._3
+        
+        ld      a,$15
+        ld      [$.LAYOUT_BUFFER],a
+        ld      a,$04
+        ld      [$.LAYOUT_BUFFER+1],a
+        ld      a,[$.CURRENT_LEVEL]
+        ld      e,a
+        ld      d,$00
+        ld      hl,:_1b69
+        add     hl,de
+        ld      e,[hl]
+        ld      hl,:_1b51
+        add     hl,de
+        ld      b,$04
+        
+._2     push    bc
+        push    hl
+        ld      de,$.LAYOUT_BUFFER+1
+        ld      a,[de]
+        inc     a
+        ld      [de],a
+        inc     de
+        ldi     
+        ldi     
+        ld      a,$ff
+        ld      [de],a
+        ld      hl,$.LAYOUT_BUFFER
+        call    ::main:print
+        pop     hl
+        pop     bc
+        inc     hl
+        inc     hl
+        djnz    ._2
+        
+._3     xor     a`zero
+        ld      [$.VDPSCROLL_HORZ],a`zero
+        ld      [$.VDPSCROLL_VERT],a`zero
+        ld      hl,$1b8d
+        ld      a,%00000011
+        call    ::interrupts:loadPaletteOnInterrupt
+        ld      a,[$.CURRENT_LEVEL]
+        cp      $1c
+        jr      c,._4
+        ld      hl,$D281
+        inc     [hl]
+        bit     2,[iy+#vars.flags9]
+        jr      nz,._4
+        ld      hl,$D282
+        inc     [hl]
+        ld      hl,$.D285
+        inc     [hl]
+
+._4     bit     2,[iy+#vars.flags9]
+        call    nz,:_1719
+        
+        bit     3,[iy+#vars.flags9]
+        call    nz,:_1726
+        
+        ld      hl,$153e
+        ld      de,$154e
+        ld      b,$08
+        
+._5     ld      a,[$.TIME_MINUTES]
+        cp      [hl]
+        jr      nz,._6
+        inc     hl
+        ld      a,[$.TIME_SECONDS]
+        cp      [hl]
+        jr      nc,._8
+        inc     hl
+        jr      ._7
+
+._6     jr      nc,._8
+        inc     hl
+        inc     hl
+._7     inc     de
+        inc     de
+        djnz    ._5
+        
+        ld      de,$151e
+        jr      ._9
+        
+._8     ex      de,hl
+        ld      e,[hl]
+        inc     hl
+        ld      d,[hl]
+._9     ld      hl,$.TEMP4
+        ex      de,hl
+        ld      a,[$.CURRENT_LEVEL]
+        cp      $1c
+        jr      c,._10
+        ld      hl,:_1a14
+._10    ldi     
+        ldi     
+        ldi     
+        ldi     
+        set     1,[iy+#vars.flags0]
+        ld      b,$78
+        
+._11    push    bc
+        ld      a,[$.VDPREGISTER_1]
+        or      $40
+        ld      [$.VDPREGISTER_1],a
+        
+        res     0,[iy+#vars.flags0]
+        call    ::interrupts:waitForInterrupt
+        
+        call    :_1a18
+        pop     bc
+        djnz    ._11
+        
+._12    res     0,[iy+#vars.flags0]
+        call    ::interrupts:waitForInterrupt
+        
+        call    :_1a18
+        call    :_19b4
+        ld      a,[$.CURRENT_LEVEL]
+        cp      28
+        call    c,:_19df
+        ld      a,[$.D216]
+        inc     a
+        ld      [$.D216],a
+        and     $03
+        jr      nz,._13
+        ld      a,$02
+        rst     :rst_playSFX
+
+._13    ld      hl,[$.TEMP4]
+        ld      de,[$.TEMP6]
+        ld      a,[$.RINGS]
+        or      h
+        or      l
+        or      d
+        or      e
+        jp      nz,._12
+        ld      b,$b4
+        
+._14    push    bc
+        res     0,[iy+#vars.flags0]
+        call    ::interrupts:waitForInterrupt
+        call    :_1a18
+        pop     bc
+        bit     5,[iy+#vars.joypad]
+        jr      z,.exit
+        djnz    ._14
+
+.exit   ret
+}
+
+PROC    :_16d9                                  SECTION ::screens               ;$16D9
+        ;==============================================================================
+{        
+        ld      b,a
+        push    bc
+        ld      de,$.LAYOUT_BUFFER
+        srl     a
+        ld      b,a
+        ld      a,c
+        sub     b
+        ld      [de],a
+        inc     de
+        ld      bc,$0004
+        ldir    
+        ld      [de],a
+        inc     de
+        ld      bc,$0004
+        ldir    
+        pop     bc
+        xor     a`zero
+        ld      [$.TEMP1],a`zero
+        
+.loop   push    bc
+        ld      hl,$.LAYOUT_BUFFER
+        call    ::main:print
+        ld      hl,$.D2C3
+        call    ::main:print
+        ld      hl,$.LAYOUT_BUFFER
+        inc     [hl]
+        inc     [hl]
+        ld      hl,$.D2C3
+        inc     [hl]
+        inc     [hl]
+        pop     bc
+        djnz    .loop
+        
+        ret
+
+}
+
+TABLE   :_1711                                  SECTION ::screens               ;$1711
+{
+        BYTE    $14, $ad, $ae, $ff
+        BYTE    $15, $bd, $be, $ff
+}
+
+PROC    :_1719                                  SECTION ::screens               ;$1719
+        ;==============================================================================
+PARAMS  IY`vars         ``Address of the common variables (used throughout)
+{        
+        xor     A`zero                          ;set A to 0
+        ld      [$.RINGS]       A`zero          ;set ring-count to 0
+        
+        res     3,[iy+#vars.flags9]
+        res     2,[iy+#vars.flags9]
+        
+        ret
+}
+
+PROC    :_1726                                  SECTION ::screens               ;$1726
+        ;==============================================================================
+        ;called by Act Complete screen?
+PARAMS  IY`vars         ``Address of the common variables (used throughout)
+{        
+        ld      hl,$.D284
+        inc     [hl]
+        res     3,[iy+#vars.flags9]
+        ret
+}
+
+PROC    :_172f                                  SECTION ::screens               ;$172F
+        ;==============================================================================
+        ;jumped to from $155E
+{
+        ;when adding the final bonuses, don't award an extra life for every 5 thousand
+        ld      A`score_1up     $FF
+        ld      [$.SCORE_1UP]   A`score_1up
+        
+        ld      c,$00
+        ld      a,[$.D27F]
+        cp      $06
+        jr      c,._1
+        ld      c,$05
+._1     ld      a,[$D280]
+        cp      $12
+        jr      c,._2
+        ld      a,c
+        add     a,$05
+        daa     
+        ld      c,a
+._2     ld      a,[$D281]
+        cp      $08
+        jr      c,._3
+        ld      a,c
+        add     a,$05
+        daa     
+        ld      c,a
+._3     ld      a,[$D282]
+        cp      $08
+        jr      c,._4
+        ld      a,c
+        add     a,$05
+        daa     
+        ld      c,a
+._4     ld      a,[$.D283]
+        and     a
+        jr      nz,._5
+        ld      a,c
+        add     a,$0a
+        daa     
+        ld      c,a
+._5     ld      a,c
+        cp      $30
+        jr      nz,._6
+        ld      a,c
+        add     a,$0a
+        daa     
+        add     a,$0a
+        daa     
+        ld      c,a
+._6     ld      hl,$.D2FF
+        ld      [hl],c
+        inc     hl
+        ld      [hl],$00
+        inc     hl
+        ld      [hl],$00
+        ld      hl,:_1907
+        call    ::main:print
+        ld      hl,:_191c
+        call    ::main:print
+        ld      hl,:_1931
+        call    ::main:print
+        ld      hl,:_1946
+        call    ::main:print
+        ld      hl,:_1953
+        call    ::main:print
+        ld      hl,:_1960
+        call    ::main:print
+        ld      hl,:_196d
+        call    ::main:print
+        ld      hl,:_197e
+        call    ::main:print
+        xor     a`zero
+        ld      [$.D216],a`zero
+        ld      bc,$00b4
+        call    :_1860
+        
+._7     ld      bc,$003c
+        call    :_1860
+        ld      a,[$.D27F]
+        and     a
+        jr      z,._8
+        dec     a
+        ld      [$.D27F],a
+        
+        ld      DE`hundreds     $0000
+        ld      C`thousands     $02
+        call    ::mobs:increaseScore
+        
+        ld      A`sfx           $02
+        rst     :rst_playSFX
+        
+        jp      ._7
+        
+._8     ld      bc,$00b4
+        call    :_1860
+        ld      a,$01
+        ld      [$.D216],a
+        ld      hl,:_198e
+        call    ::main:print
+        ld      bc,$00b4
+        call    :_1860
+        
+._9     ld      bc,$001e
+        call    :_1860
+        ld      a,[$.LIVES]
+        and     a
+        jr      z,._10
+        dec     a
+        ld      [$.LIVES],a
+        
+        ld      DE`hundreds     $5000
+        ld      C`thousands     $00
+        call    ::mobs:increaseScore
+        
+        ld      A`sfx           $02
+        rst     :rst_playSFX
+        
+        jp      ._9
+        
+._10    ld      bc,$00b4
+        call    :_1860
+        ld      a,$02
+        ld      [$.D216],a
+        ld      hl,:_199e
+        call    ::main:print
+        ld      hl,:_197a
+        call    ::main:print
+        ld      bc,$00b4
+        call    :_1860
+
+._11    ld      bc,$001e
+        call    :_1860
+        ld      a,[$.D2FF]
+        and     a
+        jr      z,._13
+        dec     a
+        ld      c,a
+        and     $0f
+        cp      $0a
+        jr      c,._12
+        ld      a,c
+        sub     $06
+        ld      c,a
+._12    ld      a,c
+        ld      [$.D2FF],a
+        
+        ld      DE`hundreds     $0000
+        ld      C`thousands     $01
+        call    ::mobs:increaseScore
+        
+        ld      A`sfx$02        $02
+        rst     :rst_playSFX
+        
+        jp      ._11
+        
+._13    ld      bc,$01e0
+        call    :_1860
+        ret
+}
+
+PROC    :_1860                                  SECTION ::screens               ;$1860
+        ;==============================================================================
+PARAMS  IY`vars         ``Address of the common variables (used throughout)
+{        
+        push    bc
+        
+        res     0,[iy+#vars.flags0]
+        call    ::interrupts:waitForInterrupt
+        
+        ld      [iy+#vars.spriteUpdateCount],$00
+        ld      hl,$.SPRITETABLE
+        ld      [$.SPRITETABLE_ADDR],hl
+        ld      hl,$.SCORE_MILLIONS
+        ld      de,$.LAYOUT_BUFFER
+        ld      b,$04
+        call    :_1b13
+        
+        ex      de,hl
+        ld      hl,[$.SPRITETABLE_ADDR]
+        ld      c`xpos,144
+        ld      b`ypos,128
+        call    ::mobs:layoutSpritesHorizontal
+        ld      [$.SPRITETABLE_ADDR],hl
+        
+        ld      a,[$.D216]
+        and     a
+        jr      nz,._1
+        ld      hl,$.D27F
+        ld      de,$.LAYOUT_BUFFER
+        ld      b,$01
+        call    :_1b13
+        
+        ex      de,hl
+        ld      hl,[$.SPRITETABLE_ADDR]
+        ld      c`xpos,144
+        ld      b`ypos,96
+        call    ::mobs:layoutSpritesHorizontal
+        ld      [$.SPRITETABLE_ADDR],hl
+        
+        ld      hl,:_19ae
+        ld      de,$.LAYOUT_BUFFER
+        ld      b,$03
+        call    :_1b13
+        
+        ex      de,hl
+        ld      hl,[$.SPRITETABLE_ADDR]
+        ld      c`xpos,160
+        ld      b`ypos,96
+        call    ::mobs:layoutSpritesHorizontal
+        ld      [$.SPRITETABLE_ADDR],hl
+        
+        jr      ._3
+        
+._1     dec     a
+        jr      nz,._2
+        call    :_1aca
+        ld      hl,:_19b1
+        ld      de,$.LAYOUT_BUFFER
+        ld      b,$03
+        call    :_1b13
+        
+        ex      de,hl
+        ld      hl,[$.SPRITETABLE_ADDR]
+        ld      c`xpos,160
+        ld      b`ypos,96
+        call    ::mobs:layoutSpritesHorizontal
+        ld      [$.SPRITETABLE_ADDR],hl
+        
+        jr      ._3
+        
+._2     ld      hl,$.D2FF
+        ld      de,$.LAYOUT_BUFFER
+        ld      b,$03
+        call    :_1b13
+        
+        ex      de,hl
+        ld      hl,[$.SPRITETABLE_ADDR]
+        ld      c`xpos,160
+        ld      b`ypos,96
+        call    ::mobs:layoutSpritesHorizontal
+        ld      [$.SPRITETABLE_ADDR],hl
+        
+._3     pop     bc
+        dec     bc
+        ld      a,b
+        or      c
+        jp      nz,:_1860
+        ret
+}
+
+;these look like text boxes
+TABLE   :_1907                                  SECTION ::screens               ;$1907
+{
+        BYTE    $07 $09 $DA $DB $DB $DB $DB $DB $DB $DB $DB $DB $DB $DB $DB $DB
+        BYTE    $DB $DB $DB $DC $FF
+}
+TABLE   :_191c                                  SECTION ::screens               ;$191C
+{
+        BYTE    $07 $0A $EA $EB $EB $EB $EB $EB $EB $EB $EB $EB $EB $EB $EB $EB
+        BYTE    $EB $EB $EB $EC $FF
+}
+TABLE   :_1931                                  SECTION ::screens               ;$1931
+{
+        BYTE    $07 $0B $FB $FC $FC $FC $FC $FC $FC $FC $FC $FC $FC $FC $FC $FC
+        BYTE    $FC $FC $FC $FD $FF
+}
+TABLE   :_1946                                  SECTION ::screens               ;$1946
+{
+        BYTE    $11 $0B $DA $DB $DB $DB $DB $DB $DB $DB $DB $DC $FF
+}
+TABLE   :_1953                                  SECTION ::screens               ;$1953
+{
+        BYTE    $11 $0C $EA $EB $EB $EB $EB $EB $EB $EB $EB $EC $FF
+}
+TABLE   :_1960                                  SECTION ::screens               ;$1960
+{
+        BYTE    $11 $0D $EA $EB $EB $FA $EB $EB $EB $EB $EB $EC $FF
+}
+TABLE   :_196d                                  SECTION ::screens               ;$196D
+{
+        BYTE    $11 $0E $FB $FC $FC $FC $FC $FC $FC $FC $FC $FD $FF
+}
+TABLE   :_197a                                  SECTION ::screens               ;$197A
+{
+        BYTE    $14 $0D $EB $FF
+}
+
+TABLE   :_197e                                  SECTION ::screens               ;$197E
+{       ;"CHAOS EMERALD"
+        BYTE    $08 $0A $36 $47 $34 $61 $70 $EB $44 $50 $44 $62 $34 $43 $37 $FF
+}
+TABLE   :_198e                                  SECTION ::screens               ;$198E
+{       ;"SONIC LEFT"
+        BYTE    $08 $0A $70 $52 $51 $40 $36 $EB $43 $44 $45 $80 $EB $EB $EB $FF
+}
+TABLE   :_199e                                  SECTION ::screens               ;$199E
+{       ;"SPECIAL BONUS"
+        BYTE    $08 $0A $70 $60 $44 $36 $40 $34 $43 $EB $35 $52 $51 $81 $70 $FF
+}
+
+;unknown:
+TABLE   :_19ae                                  SECTION ::screens               ;$19AE
+{
+        BYTE    $02 $00 $00
+}
+TABLE   :_19b1                                  SECTION ::screens               ;$19B1
+{
+        BYTE    $00 $50 $00
+}
+
+PROC    :_19b4                                  SECTION ::screens               ;$19B4
+        ;==============================================================================
+{        
+        ld      hl,$.RINGS
+        ld      a,[hl]
+        and     a
+        ret     z
+        
+        dec     a
+        ld      c,a
+        and     %00001111
+        cp      $0A
+        jr      c,._1
+        ld      a,c
+        sub     $06
+        ld      c,a
+._1     ld      [hl],c
+        ld      de,$0100
+        ld      c,$00
+        ld      a,[$.CURRENT_LEVEL]
+        cp      $1c
+        jr      c,._2
+        ld      a,[$.D285]
+        ld      d,a
+        ld      a,[$.D286]
+        ld      e,a
+._2     call    ::mobs:increaseScore
+        ret
+}
+
+PROC    :_19df                                  SECTION ::screens               ;$19DF
+        ;==============================================================================
+{        
+        ld      hl,[$.TEMP4]
+        ld      de,[$.TEMP6]
+        ld      a,h
+        or      l
+        or      d
+        or      e
+        ret     z
+        ld      b,$03
+        ld      hl,$.TEMP6
+        scf     
+        
+.loop   ld      a,[hl]
+        sbc     a,$00
+        ld      c,a
+        and     $0f
+        cp      $0a
+        jr      c,._1
+        ld      a,c
+        sub     $06
+        ld      c,a
+._1     ld      a,c
+        cp      $a0
+        jr      c,._2
+        sub     $60
+._2     ld      [hl],a
+        ccf     
+        dec     hl
+        djnz    .loop
+        
+        ld      DE`hundreds     $0100
+        ld      C`thousands     $00
+        call    ::mobs:increaseScore
+        
+        ret
+}
+
+TABLE   :_1a14                                  SECTION ::screens               ;$1A14
+{
+        BYTE    $00, $00, $00, $00
+}
+
+PROC    :_1a18                                  SECTION ::screens               ;$1A18
+        ;==============================================================================
+PARAMS  IY`vars         ``Address of the common variables (used throughout)
+{        
+        ld      [iy+#vars.spriteUpdateCount],$00
+        ld      hl,$.SPRITETABLE
+        ld      [$.SPRITETABLE_ADDR],hl
+        ld      hl,$.SCORE_MILLIONS
+        ld      de,$.LAYOUT_BUFFER
+        ld      b,$04
+        call    :_1b13
+        
+        ex      de,hl
+        ld      hl,[$.SPRITETABLE_ADDR]
+        ld      c`xpos,136
+        ld      b`ypos,80
+        call    ::mobs:layoutSpritesHorizontal
+        ld      [$.SPRITETABLE_ADDR],hl
+        
+        ld      hl,$.RINGS
+        ld      de,$.LAYOUT_BUFFER
+        ld      b,$01
+        call    :_1b13
+        
+        ex      de,hl
+        ld      hl,[$.SPRITETABLE_ADDR]
+        ld      c`xpos,152
+        ld      b`ypos,128
+        ld      a,[$.CURRENT_LEVEL]
+        cp      $1c
+        jr      c,._1
+        ld      b`ypos,104
+._1     call    ::mobs:layoutSpritesHorizontal
+        ld      [$.SPRITETABLE_ADDR],hl
+        
+        ld      a,[$.CURRENT_LEVEL]
+        cp      $1c
+        jr      c,._2
+        ld      hl,$.D285
+        ld      de,$.LAYOUT_BUFFER
+        ld      b,$02
+        call    :_1b13
+        ld      b,$68
+        jr      ._3
+        
+._2     ld      hl,$151c
+        ld      de,$.LAYOUT_BUFFER
+        ld      b,$02
+        call    :_1b13
+        ld      b`ypos,128
+._3     ld      c`xpos,192
+        ex      de,hl
+        ld      hl,[$.SPRITETABLE_ADDR]
+        call    ::mobs:layoutSpritesHorizontal
+        ld      [$.SPRITETABLE_ADDR],hl
+        call    :_1aca
+        ld      a,[$.CURRENT_LEVEL]
+        cp      $1c
+        jr      nc,._4
+        ld      hl,$.TEMP4
+        ld      de,$.LAYOUT_BUFFER
+        ld      b,$04
+        call    :_1b13
+        ex      de,hl
+        ld      hl,[$.SPRITETABLE_ADDR]
+        ld      c`xpos,136
+        ld      b`ypos,104
+        call    ::mobs:layoutSpritesHorizontal
+        ld      [$.SPRITETABLE_ADDR],hl
+        ret
+        
+._4     ld      hl,$.D284
+        ld      de,$.LAYOUT_BUFFER
+        ld      b,$01
+        call    :_1b13
+        ex      de,hl
+        ld      hl,[$.SPRITETABLE_ADDR]
+        ld      c`xpos,168
+        ld      b`ypos,128
+        call    ::mobs:layoutSpritesHorizontal
+        ld      [$.SPRITETABLE_ADDR],hl
+        ret
+}
+
+PROC    :_1aca                                  SECTION ::screens               ;$1ACA
+        ;==============================================================================
+{        
+        ;load number of lives into HL
+        ld      A,[$.LIVES]
+        ld      L,A
+        ld      H,$00
+        ld      C,$0a
+        call    ::main:_LABEL_60F_111
+        
+        ld      A,L
+        add     A,A
+        add     A,$80
+        ld      [$.LAYOUT_BUFFER],A
+        ld      C,10
+        call    ::main:multiply
+        
+        ex      DE,HL
+        ld      A,[$.LIVES]
+        ld      L,A
+        ld      H,$00
+        and     A
+        sbc     HL,DE
+        ld      A,L
+        add     A,A
+        add     A,$80
+        ld      [$.LAYOUT_BUFFER+1],A
+        ld      A,$ff
+        ld      [$.LAYOUT_BUFFER+2],A
+        ld      C,$38
+        ld      B,$9f
+        ld      A,[$.CURRENT_LEVEL]
+        cp      $13
+        jr      nz,._1
+        
+        ld      B`ypos          96
+        ld      C`xpos          144
+._1     ld      HL,[$.SPRITETABLE_ADDR]
+        ld      DE,$.LAYOUT_BUFFER
+        call    ::mobs:layoutSpritesHorizontal
+        ld      [$.SPRITETABLE_ADDR],HL
+        ret
+}
+
+PROC    :_1b13                                  SECTION ::screens               ;$1B13
+        ;==============================================================================
+{        
+        ld      a,[hl]
+        and     $f0
+        jr      nz,._
+        ld      a,$fe
+        ld      [de],a
+        inc     de
+        ld      a,[hl]
+        and     $0f
+        jr      nz,._1
+        ld      a,$fe
+        ld      [de],a
+        inc     hl
+        inc     de
+        djnz    :
+        ld      a,$ff
+        ld      [de],a
+        dec     de
+        ld      a,$80
+        ld      [de],a
+        ld      hl,$.LAYOUT_BUFFER
+        ret
+        
+._      ld      a,[hl]
+        rrca    
+        rrca    
+        rrca    
+        rrca    
+        and     $0f
+        add     a,a
+        add     a,$80
+        ld      [de],a
+        inc     de
+._1     ld      a,[hl]
+        and     $0f
+        add     a,a
+        add     a,$80
+        ld      [de],a
+        inc     hl
+        inc     de
+        djnz    ._
+        ld      a,$ff
+        ld      [de],a
+        ld      hl,$.LAYOUT_BUFFER
+        ret
+}
+
+;UNKNOWN
+
+TABLE   :_1b51                                  SECTION ::screens               ;$1B51
+{
+        BYTE    $83 $84 $93 $94 $A3 $A4 $B3 $B4 $85 $86 $95 $96 $A5 $A6 $B5 $B6
+        BYTE    $87 $88 $97 $98 $A7 $A8 $B7 $B8
+}
+TABLE   :_1b69                                  SECTION ::screens               ;$1B69
+{
+        BYTE    $00 $08 $10 $00 $08 $10 $00 $08 $10 $00 $08 $10 $00 $08 $10 $00
+        BYTE    $08 $10 $00 $00 $08 $08 $08 $08 $08 $08 $08 $08 $00 $00 $00 $00
+        BYTE    $00 $00 $00 $00
+}
+
+;"Sonic Has Passed" screen palette:
+
+TABLE   :S1_ActComplete_Palette                 SECTION ::screens               ;$1B8D
+{
+        BYTE    $35 $01 $06 $0B $04 $08 $0C $3D $1F $39 $2A $14 $25 $2B $00 $3F
+        BYTE    $35 $20 $35 $1B $16 $2A $00 $3F $01 $03 $3A $06 $0F $00 $00 $00
+}
+
+PROC    :_1bad                                  SECTION ::screens               ;$1BAD
+        ;==============================================================================
+        ;Demo playback??
+PARAMS  IY`vars         ``Address of the common variables (used throughout)
+{        
+        ld      hl,[$.D2B5]
+        ld      de,._1bc6
+        add     hl,de
+        ld      a,[hl]
+        ld      [iy+#vars.joypad],a
+        ld      a,[$.FRAMECOUNT]
+        and     $1F
+        ret     nz
+        ld      hl,[$.D2B5]
+        inc     hl
+        ld      [$.D2B5],hl
+        ret
+        
+._1bc6  ;joystick data? (lines are high by default)                             ;$1BC6
+        BYTE    $F7 $F7 $F7 $F7 $DF $F7 $FF $FF $D7 $F7 $F7 $F7 $FF $DF $F7 $F7
+        BYTE    $DF $F7 $F7 $F7 $F7 $FF $FF $DF $F7 $FF $FF $FF $FB $F7 $F7 $F5
+        BYTE    $FF $FF $FF $FF $FB $FB $F9 $FF $FF $FF $FF $F7 $F7 $F7 $F7 $D7
+        BYTE    $FF $FF $D7 $FF $FF $FF $FF $FF $FF $FF $D7 $FB $FF $FF $FF $FF
+        BYTE    $FF $FF $FF $FF $FF $FF $FF $FF $FF $FF $FF $D7 $F7 $F7 $FF $D7
+        BYTE    $FB $F7 $F7 $F7 $F7 $FB $FB $F7 $FF $D7 $FB $FF $F7 $F7 $D7 $FB
+        BYTE    $D7 $F7 $F7 $F7 $FF $FF $FF $FF $FF $FF $FF $F7 $F7 $F7 $D7 $FF
+        BYTE    $FF $FF $FF $FF $FF $FF $FF $FF $FF $FF $FF $FF $FF $FF $FF $FF
+        BYTE    $FF $FF $00
+}
+
+PROC    :_LABEL_1C49_62                         SECTION ::screens               ;$1C49
+        ;==============================================================================
+PARAMS  IY`vars         ``Address of the common variables (used throughout)
+{        
+        ;;set bit 0 of the parameter address (IY=$D200); `waitForInterrupt` will pause
+          until an interrupt event switches bit 0 of $D200 on ;;
+        set     0, [iy+#vars.flags0]
+        ei                                      ;enable interrupts
+        
+        ;default to 3 lives
+._1     ld      A`lives         3
+        ld      [$.LIVES]       A`lives
+        
+        ;set the number of thousands of pts per extra life
+        ld      A`score_1up     !SCORE_1UP
+        ld      [$.SCORE_1UP]   A`score_1up
+        
+        ld      a, $1C
+        ld      [$.D23F], a
+        
+        xor     A`zero                          ;set A to 0
+        ld      [$.CURRENT_LEVEL]       A`zero  ;set starting level!
+        ld      [$.FRAMECOUNT]          A`zero
+        ld      [iy+#vars.unknown_0D]   A`zero
+        
+        ld      hl, $.D27F
+        ld      b, $08
+        call    :fillMemoryWithValue
+        
+        ld      hl, $D200
+        ld      b, $0E
+        call    :fillMemoryWithValue
+        
+        ld      hl, $.SCORE_MILLIONS
+        ld      b, $04
+        call    :fillMemoryWithValue
+        
+        ld      hl, $.D305
+        ld      b, $18
+        call    :fillMemoryWithValue
+        
+        res     0, [iy+#vars.flags2]
+        res     1, [iy+#vars.flags2]
+        call    ::main:hideSprites
+        call    :titleScreen
+        
+        res     1, [iy+#vars.scrollRingFlags]
+        jr      c, ._LABEL_1C9F_104
+        
+        set     1, [iy+#vars.scrollRingFlags]
+        
+._LABEL_1C9F_104
+        ;are we on the end sequence?
+        ld      a, [$.CURRENT_LEVEL]
+        cp      19
+        jr      nc, ._1
+        
+        res     0, [iy+#vars.flags2]
+        res     1, [iy+#vars.flags2]
+        call    ::main:hideSprites
+        call    :_LABEL_C52_106
+        bit     1, [iy+#vars.scrollRingFlags]
+        jr      z, ._LABEL_1CBD_120
+        jp      c, ._1
+        
+._LABEL_1CBD_120
+        call    ::main:fadeOut
+        call    ::main:hideSprites
+        bit     0, [iy+#vars.scrollRingFlags]
+        jr      nz, ._2
+        bit     4, [iy+#vars.flags6]
+        jr      nz, ._3
+        
+        ;wait at title screen for button press?
+._2     ld      b, $3C
+.wait   res     0, [iy+#vars.flags0]
+        call    ::interrupts:waitForInterrupt
+        djnz    .wait
+        
+        rst     :rst_muteSound
+        
+._3     call    :_LABEL_1CED_131
+        and     a
+        jp      z,._1
+        dec     a
+        jr      z,._LABEL_1C9F_104
+        jp      ._LABEL_1CBD_120
+}
+        
+PROC    :fillMemoryWithValue                    SECTION ::screens               ;$1CE8
+        ;==============================================================================
+PARAMS  hl`addr         ;memory address
+        b`count         ;number of bytes to fill
+        a`value         ;which value to fill with
+{
+        ld      [hl`addr], a`value
+        inc     hl`addr
+        djnz    :
+        
+        ret
+}
+
+PROC    :_LABEL_1CED_131                        SECTION ::screens               ;$1CED
+        ;==============================================================================
+        ;start level? (could be main gameplay loop)
+PARAMS  IY`vars         ``Address of the common variables (used throughout)
+{        
+        ;load page 1 (Z80:$4000-$7FFF) with bank 5 (ROM:$14000-$17FFF)
+        ld      A`bank          5
+        ld      [$_SMS.MAPPER.SLOT1]   A`bank
+        ld      [$.SLOT1]       A`bank
+        
+        ld      a, [$.CURRENT_LEVEL]
+        bit     4, [iy+#vars.flags6]
+        jr      z, ._1
+        ld      a, [$.D2D3]
+._1     add     a, a                            ;double the level number
+        ld      l, a                            ;put this into a 16-bit number
+        ld      h, $00
+        ld      de, $5580                       ;the level pointers table begins at
+                                                 ;$15580 (page 1 $4000 + $1580)
+        add     hl, de                          ;offset into the pointers table
+        ld      a, [hl]                         ;read the low byte
+        inc     hl                              ;move forward
+        ld      h, [hl]                         ;read the hi-byte
+        ld      l, a                            ;add the lo-byte to make 16-bit address
+        
+        ;is this a null level? (offset $0000); the `OR H` will set Z if the result
+         ;is 0, this will only ever happen with $0000
+        or      h                               
+        jp      z, :_LABEL_258B_133
+        
+        ;add the pointer value to the level pointers table to find the start of the
+         ;level header (the level headers begin after the level pointers)
+        add     hl, de                  
+        call    :loadLevel
+        
+        set     0,[iy+#vars.flags2]
+        set     1,[iy+#vars.flags2]
+        set     1,[iy+#vars.flags0]
+        set     3,[iy+#vars.flags6]
+        res     3,[iy+#vars.timeLightningFlags] ;unknown
+        res     0,[iy+#vars.flags9]
+        res     6,[iy+#vars.flags6]
+        res     0,[iy+#vars.unknown0]
+        res     6,[iy+#vars.flags0]             ;camera moved left flag
+        
+        ;auto scroll right?
+        bit     3,[iy+#vars.scrollRingFlags]
+        call    nz,:lockCameraHorizontal
+        
+        ld      b,$10
+._2     push    bc
+        
+        res     0,[iy+#vars.flags0]
+        call    ::interrupts:waitForInterrupt
+        
+        ld      [iy+#vars.joypad],$ff           ;clear joypad input
+        
+        ld      hl,[$.FRAMECOUNT]
+        inc     hl
+        ld      [$.FRAMECOUNT],hl
+        
+        ;switch page 1 ($4000-$7FFF) to bank 11 ($2C000-$2FFFF)
+        ld      a,11
+        ld      [$_SMS.MAPPER.SLOT1],a
+        ld      [$.SLOT1],a
+        
+        ;are rings enabled?
+        bit     2,[iy+#vars.scrollRingFlags]
+        call    nz,::mobs:updateRingFrame
+        
+        ;something to do with camera control...
+        ld      HL          $0060
+        ld      [$.D25F]    HL
+        
+        ld      hl,$0088
+        ld      [$.D261],hl
+        
+        ld      hl,$0060
+        ld      [$.D263],hl
+        
+        ld      hl,$0070
+        ld      [$D265],hl
+        
+        call    :_239c
+        
+        ;switch pages 1 & 2 ($4000-$BFFF) to banks 1 & 2 ($4000-$BFFF)
+        ld      a,1
+        ld      [$_SMS.MAPPER.SLOT1],a
+        ld      [$.SLOT1],a
+        ld      a,2
+        ld      [$_SMS.MAPPER.SLOT2],a
+        ld      [$.SLOT2],a
+        
+        call    ::mobs:_2e5a
+        call    ::main:updateCamera
+        call    ::main:fillOverscrollCache
+        
+        set     5,[iy+#vars.flags0]             
+        
+        pop     bc
+        djnz    ._2
+        
+        ;demo mode?
+        bit     1,[iy+#vars.scrollRingFlags]
+        jr      z,._1dae
+        
+        ld      hl,$0000
+        ld      [$.D2B5],hl
+        ld      [iy+#vars.spriteUpdateCount],h
+._1dae
+        res     0,[iy+#vars.flags0]
+        call    ::interrupts:waitForInterrupt
+        
+        ;switch page 1 ($4000-$7FFF) to bank 11 ($2C000-$2FFFF)
+        ld      a,11
+        ld      [$_SMS.MAPPER.SLOT1],a
+        ld      [$.SLOT1],a
+        
+        ;are rings enabled?
+        bit     2,[iy+#vars.scrollRingFlags]
+        call    nz,::mobs:updateRingFrame
+        
+        bit     3,[iy+#vars.flags6]             
+        call    nz,::mobs:updateTime
+        
+        ld      a,[$.FRAMECOUNT]
+        and     %00000001
+        jr      nz,._3
+        
+        ld      a,[$.D289]
+        and     a
+        call    nz,:_1fa9
+        
+        jr      ._4
+        
+._3     ld      a,[$.D287]
+        and     a
+        jp      nz,:_2067
+._1de2                                          ;jump to here from _2067
+        ld      a,[$.D2B1]
+        and     a
+        call    nz,:_1f06
+        
+        ;is lightning effect enabled?
+        bit     1,[iy+#vars.timeLightningFlags]
+        call    nz,:_1f49                       ;if so, handle that
+        
+._4     bit     1,[iy+#vars.flags6]
+        call    nz,._7
+        
+        ;are we in demo mode?
+        bit     1,[iy+#vars.scrollRingFlags]
+        jr      z,._5                           ;no, skip ahead
+        
+        bit     5,[iy+#vars.joypad]             ;is button pressed?
+        jp      z,:_20b8                        ;if yes, end demo mode
+        
+        call    :_1bad                          ;process demo mode?
+        
+        ;increase the frame counter
+._5     ld      hl,[$.FRAMECOUNT]
+        inc     hl
+        ld      [$.FRAMECOUNT],hl
+        
+        ;auto scrolling to the right? (ala Bridge 2)
+        bit     3,[iy+#vars.scrollRingFlags]
+        call    nz,:autoscrollRight
+        
+        ;auto scrolling upwards?
+        bit     4,[iy+#vars.scrollRingFlags]
+        call    nz,:autoscrollUp
+        
+        ;no down scrolling (ala Jungle 2)
+        bit     7,[iy+#vars.scrollRingFlags]
+        call    nz,:dontScrollDown
+        
+        call    :_23c9
+        
+        ;are rings enabled?
+        bit     2,[iy+#vars.scrollRingFlags]
+        call    nz,:_239c
+        
+        xor     a`zero                          ;set A to 0
+        ld      [$.D302],a`zero
+        ld      [$.D2DE],a`zero
+        ld      [iy+#vars.spriteUpdateCount],$15
+        ld      hl,$D03F                        ;lives icon sprite table entry
+        ld      [$.SPRITETABLE_ADDR],hl
+        ld      hl,$.SPRITETABLE+1              ;sprite Y-value
+        ld      b,$07
+        ld      de,$0003
+        ld      a,$e0
+        
+._6     ld      [hl],a
+        add     hl,de
+        ld      [hl],a
+        add     hl,de
+        ld      [hl],a
+        add     hl,de
+        djnz    ._6
+        
+        ;switch pages 1 & 2 ($4000-$BFFF) to banks 1 & 2 ($4000-$BFFF)
+        ld      a,1
+        ld      [$_SMS.MAPPER.SLOT1],a
+        ld      [$.SLOT1],a
+        ld      a,2
+        ld      [$_SMS.MAPPER.SLOT2],a
+        ld      [$.SLOT2],a
+        
+        call    ::mobs:_2e5a
+        call    ::main:updateCamera
+        call    ::main:fillOverscrollCache
+        
+        ld      hl,$.VDPREGISTER_1
+        set     6,[hl]
+        
+        ;paused?
+        bit     3,[iy+#vars.timeLightningFlags]
+        call    nz,:_1e9e
+        
+        jp      ._1dae
+        
+        ;------------------------------------------------------------------------------
+._7     ld      [iy+#vars.joypad],$f7
+        ld      hl,[$.LEVEL_LEFT]
+        ld      de,$0112
+        add     hl,de
+        ex      de,hl
+        ld      hl,[$.SONIC.X]
+        
+        xor     a`zero                          ;set A to 0
+        sbc     hl,de
+        ret     c
+        
+        ld      [iy+#vars.joypad],$FF
+        
+        ld      l`zero,a`zero
+        ld      h`zero,a`zero
+        ld      [$.SONIC.Xspeed],hl`zero
+        ld      [$.SONIC.Xdirection],a`zero
+        ld      [$.SONIC.Yspeed],hl`zero
+        ld      [$.SONIC.Ydirection],a`zero
+        ret
+}
+
+PROC    :_1e9e                                  SECTION ::screens               ;$1E9E
+        ;==============================================================================
+        ;demo mode?
+PARAMS  IY`vars         ``Address of the common variables (used throughout)
+{        
+        bit     1,[iy+#vars.scrollRingFlags]
+        ret     nz
+        
+        rst     :rst_muteSound
+        
+._1     ld      a,[iy+#vars.spriteUpdateCount]
+        res     0,[iy+#vars.flags0]
+        call    ::interrupts:waitForInterrupt
+        ld      [iy+#vars.spriteUpdateCount],a
+        ld      a,11
+        ld      [$_SMS.MAPPER.SLOT1],a
+        ld      [$.SLOT1],a
+        
+        ;are rings enabled?
+        bit     2,[iy+#vars.scrollRingFlags]
+        call    nz,::mobs:updateRingFrame
+        call    :_23c9
+        call    :_239c
+        ;paused?
+        bit     3,[iy+#vars.timeLightningFlags]
+        jr      nz,._1
+        
+        ld      A`bank          ::sound.bank
+        ld      [$_SMS.MAPPER.SLOT1]   A`bank
+        ld      [$.SLOT1]       A`bank
+        call    ::sound:public.unpause
+        
+        ret
+}
+
+PROC    :lockCameraHorizontal                   SECTION ::screens               ;$1ED8
+        ;==============================================================================
+        ;;lock the screen -- prevents the screen scrolling left or right
+          (i.e. during boss battles);;
+{
+        ld      hl,[$.CAMERA_X]
+        ld      [$.LEVEL_LEFT],hl
+        ld      [$.LEVEL_RIGHT],hl
+        ret
+}
+
+PROC    :autoscrollRight                        SECTION ::screens               ;$1EE2
+        ;==============================================================================
+        ;move the left-hand side of the level across -- i.e. Bridge Act 2
+{        
+        ld      a,[$.FRAMECOUNT]
+        rrca    
+        ret     nc
+        
+        ;increase the left hand crop by a pixel
+        ld      hl,[$.LEVEL_LEFT]
+        inc     hl
+        ld      [$.LEVEL_LEFT],hl
+        ;prevent scrolling to the right by limiting the width of the level to the same
+        ;;NOTE: removing this would allow the player to continue running right,
+                but not return left beyond a moving point -- this would be useful
+                for some kind of chase scene (i.e. wall of lava);; 
+        ld      [$.LEVEL_RIGHT],hl
+        ret
+}
+
+PROC    :autoscrollUp                           SECTION ::screens               ;$1EF2
+        ;==============================================================================
+        ;autoscroll upwards -- unused by the game, but working
+{       
+        ;;ensure there's a pause before starting to scroll upwards,
+          otherwise the player won't have time to react;;
+        ld      a,[$.FRAMECOUNT]
+        rrca    
+        ret     nc
+        
+        ;shift the bottom of the level up one pixel
+        ld      hl,[$.LEVEL_BOTTOM]
+        dec     hl
+        ld      [$.LEVEL_BOTTOM],hl
+        ret
+}
+
+PROC    :dontScrollDown                         SECTION ::screens               ;$1EFF
+        ;==============================================================================
+        ;; fix the bottom of the level to the current screen position, 
+           i.e. Jungle Act 2 ;;
+{        
+        ld      hl,[$.CAMERA_Y]
+        ld      [$.LEVEL_BOTTOM],hl
+        ret
+}
+
+PROC    :_1f06                                  SECTION ::screens               ;$1F06
+        ;==============================================================================
+{        
+        dec     a
+        ld      [$.D2B1],a
+        ld      e,a
+        
+        di      
+        ld      a,1
+        ld      [$_SMS.MAPPER.SLOT1],a
+        ld      [$.SLOT1],a
+        ld      a,2
+        ld      [$_SMS.MAPPER.SLOT2],a
+        ld      [$.SLOT2],a
+        
+        ld      e,$00
+        ld      a,[$.D2B1+1]
+        ld      hl,[$.LOADPALETTE_TILE]
+        and     a
+        jp      p,._1
+        and     $7F
+        ld      hl,[$.LOADPALETTE_SPRITE]
+        ld      e,$10
+._1     ld      c,a
+        ld      b,$00
+        add     hl,bc
+        add     a,e
+        out     [$_SMS_PORTS.VDP.CONTROL],a
+        ld      a,%11000000
+        out     [$_SMS_PORTS.VDP.CONTROL],a
+        ld      a,[$.D2B1]
+        and     $01
+        ld      a,[hl]
+        jr      z,._2
+        ld      a,[$.D2B3]
+._2     out     [$_SMS_PORTS.VDP.DATA],a
+        
+        ei      
+        ret
+}
+
+PROC    :_1f49                                  SECTION ::screens               ;$1F49
+        ;==============================================================================
+        ;lightning is enabled...
+{       
+        ld      de,[$.D2E9]
+        ld      hl,$00aa
+        xor     a`zero
+        sbc     hl,de
+        jr      nc,._1
+        ld      bc,:_1f9d
+        ld      e,a`zero
+        ld      d,a`zero
+        jp      ._3
+        
+._1     ld      bc,:_1fa5
+        ld      hl,$0082
+        sbc     hl,de
+        jr      z,._2
+        ld      bc,$1fa1
+        ld      hl,$0064
+        sbc     hl,de
+        jr      z,._3
+        ld      bc,$1f9d
+        ld      a,e
+        or      d
+        jr      z,._3
+        jp      ._4
+        
+._2     push    bc
+
+        ld      a,$13
+        rst     :rst_playSFX
+        
+        pop     bc
+        
+._3     ld      hl,$.CYCLEPALETTE_COUNTER
+        ld      a,[bc]
+        ld      [hl],a
+        inc     hl
+        ld      [hl],a
+        inc     hl
+        inc     bc
+        ld      [hl],$00
+        inc     hl
+        ld      a,[bc]
+        ld      [hl],a
+        inc     bc
+        ld      a,[bc]
+        ld      l,a
+        inc     bc
+        ld      a,[bc]
+        ld      h,a
+        ld      [$.CYCLEPALETTE_POINTER],hl
+._4     inc     de
+        ld      [$.D2E9],de
+        ret
+}
+        
+;lightning palette control:
+TABLE   :_1f9d                                  SECTION ::screens               ;$1F9D
+{
+        BYTE    $02 $04 WORD ::mobs:S1_PaletteData.skyBase_cycles
+}       
+TABLE   :_1fa1                                  SECTION ::screens               ;$1FA1
+{
+        BYTE    $02 $04 WORD ::mobs:S1_PaletteData.skyBase_cycles_Lightning1
+}
+TABLE   :_1fa5                                  SECTION ::screens               ;$1FA5
+{
+        BYTE    $02 $04 WORD ::mobs:S1_PaletteData.skyBase_cycles_Lightning2
+}
+
+PROC    :_1fa9                                  SECTION ::screens               ;$1FA9
+        ;==============================================================================
+PARAMS  IY`vars         ``Address of the common variables (used throughout)
+{        
+        dec     a
+        ld      [$.D289],a
+        jr      z,._1
+        cp      $88
+        ret     nz
+        ld      a,[$.D288]
+        add     a,a
+        ld      e,a
+        ld      d,$00
+        ld      hl,$2023
+        add     hl,de
+        ld      a,[hl]
+        inc     hl
+        ld      h,[hl]
+        ld      l,a
+        or      h
+        ret     z
+        jp      [hl]
+        
+._1     call    ::main:fadeOut
+        pop     hl
+        res     5,[iy+#vars.flags0]
+        bit     2,[iy+#vars.unknown_0D]
+        jr      nz,._4
+        bit     4,[iy+#vars.flags6]
+        jr      nz,._5
+        rst     :rst_muteSound
+        bit     7,[iy+#vars.flags6]
+        call    nz,:disableWaterline
+        call    ::main:hideSprites
+        call    :_155e                          ;Act Complete screen?
+        
+        ld      a,[$.CURRENT_LEVEL]
+        cp      $1a
+        jr      nc,._3
+        bit     0,[iy+#vars.timeLightningFlags]
+        jr      z,._2
+        ld      hl,$2047
+        call    ::main:_b60
+        ld      a,[$.CURRENT_LEVEL]
+        push    af
+        ld      a,[$.D23F]
+        ld      [$.CURRENT_LEVEL],a
+        inc     a
+        ld      [$.D23F],a
+        call    :_LABEL_1CED_131
+        pop     af
+        ld      [$.CURRENT_LEVEL],a
+._2     ld      hl,$.CURRENT_LEVEL              ;note use of HL here
+        inc     [hl]
+        ld      a,$01
+        ret
+        
+._3     res     0,[iy+#vars.timeLightningFlags]
+        ld      a,$ff
+        ret
+        
+._4     ld      hl,$.CURRENT_LEVEL              ;note use of HL here
+        inc     [hl]
+._5     ld      a,$ff
+        ret
+}
+
+TABLE   :_2023                                  SECTION ::screens               ;$2023
+{                                               
+        WORD    $0000, :_202d, :addExtraLife, :add10Rings, :_203f
+}
+
+PROC    :_202d                                  SECTION ::screens               ;$202D
+        ;==============================================================================
+{        
+        ld      a, $0E
+        rst     :rst_playSFX
+        ret
+}
+
+PROC    :addExtraLife                           SECTION ::screens               ;$2031
+        ;==============================================================================
+        ;increases lives
+{        
+        ld      hl,$.LIVES
+        inc     [hl]
+        
+        ld      a`sfx,$09                       ;extra life sound?
+        rst     :rst_playSFX
+        
+        ret
+}
+
+PROC    :add10Rings                             SECTION ::screens               ;$2039
+        ;==============================================================================
+{
+        ;add 10 rings to the ring counter
+        ld      a,$10
+        call    ::mobs:increaseRings
+        ret
+}
+
+PROC    :_203f                                  SECTION ::screens               ;$203F
+        ;==============================================================================
+PARAMS  IY`vars         ``Address of the common variables (used throughout)
+{        
+        ld      a,$07
+        rst     :rst_playSFX
+        set     0,[iy+#vars.timeLightningFlags]
+        ret
+}
+
+TABLE   :_2047                                  SECTION ::screens               ;$2047
+{
+        BYTE    $7F $7F $7F $7F $7F $7F $7F $7F $7F $7F $7F $7F $7F $7F $7F $7F
+        BYTE    $7F $7F $7F $7F $7F $7F $7F $7F $7F $7F $7F $7F $7F $7F $7F $7F
+}
+
+PROC    :_2067                                  SECTION ::screens               ;$2067
+        ;==============================================================================
+PARAMS  IY`vars         ``Address of the common variables (used throughout)
+{        
+        dec     a
+        ld      [$.D287],a
+        jp      nz,:_LABEL_1CED_131._1de2
+        
+        ;demo mode?
+        bit     1,[iy+#vars.scrollRingFlags]
+        jr      nz,:_20b8
+        bit     4,[iy+#vars.origFlags6]
+        jr      z,._1
+        set     4,[iy+#vars.flags6]
+._1     bit     7,[iy+#vars.flags6]
+        call    nz,:disableWaterline
+        ld      a,[$.LIVES]
+        and     a
+        ld      a,$02
+        ret     nz
+        call    ::main:fadeOut
+        call    ::main:hideSprites
+        res     5,[iy+#vars.flags0]
+        call    :_1401
+        ld      a,$00
+        ret     nc
+        ld      a,$03
+        ld      [$.LIVES],a
+        ld      a,$01
+        ret
+}
+
+PROC    :disableWaterline                       SECTION ::screens               ;$20A4
+        ;==============================================================================
+PARAMS  IY`vars         ``Address of the common variables (used throughout)
+{        
+        ;; wait until the water raster effect has finished its work
+          (it requires three interrupts to produce) ;;
+        ld      a,[$.RASTERSPLIT_STEP]
+        and     a
+        jr      nz,:
+        
+        di      
+        res     7,[iy+#vars.flags6]             ;underwater?
+        xor     a`zero                          ;set A to 0
+        ld      [$.RASTERSPLIT_LINE],a`zero
+        ld      [$.WATERLINE],a`zero
+        ei      
+        
+        ret
+}
+
+PROC    :_20b8                                  SECTION ::screens               ;$20B8
+        ;==============================================================================
+{        
+        ld      A`bank          ::sound.bank
+        ld      [$_SMS.MAPPER.SLOT1]   A`bank
+        ld      [$.SLOT1]       A`bank
+        
+        ld      hl,$0028
+        call    ::sound:public.fadeOut
+        call    ::main:fadeOut
+        
+        xor     a`zero
+        ret
+}
+        
+PROC    :loadLevel                              SECTION ::screens               ;$20CB
+        ;==============================================================================
+PARAMS  IY`vars         ``Address of the common variables (used throughout)
+        HL`header       ``Address of the level header
+{
+        ;PAGE 1 ($4000-$7FFF) is at BANK 5 ($14000-$17FFF)
+        
+        ld      a, [$.VDPREGISTER_1]
+        and     %10111111                       ;remove bit 6
+        ld      [$.VDPREGISTER_1], a
+        
+        res     0, [iy+#vars.flags0]
+        call    ::interrupts:waitForInterrupt
+        
+        ;copy the level header from ROM to RAM starting at $D354
+         ;(this copies 40 bytes, even though level headers are 37 bytes long.
+         ; the developers probably removed header bytes later in development)
+        ld      de, $.LEVEL_HEADER
+        ld      bc, 40
+        ldir
+        
+        ld      hl`header, $.LEVEL_HEADER       ;position HL at the start of the header
+        push    hl`header                       ;remember the start point
+        
+        ;read the current Scrolling / Ring HUD value
+        ld      a, [iy+#vars.scrollRingFlags]   ;take a copy
+        ld      [iy+#vars.origScrollRingFlags], a     
+        ld      a, [iy+#vars.flags6]            ;read the current underwater flag value
+        ld      [iy+#vars.origFlags6], a        ;take a copy
+        
+        ld      a, $FF
+        ld      [$.D2AB], a
+        
+        ;clear some variables
+        xor     A`zero                          ;set A to 0
+        ld      L`zero, A`zero                  ;set HL to #$0000
+        ld      H`zero, A`zero
+        ld      [$.VDPSCROLL_HORZ]      A`zero
+        ld      [$.VDPSCROLL_VERT]      A`zero
+        ld      [$.CAMERA_X_GOTO]       HL`zero
+        ld      [$.CAMERA_Y_GOTO]       HL`zero
+        ld      [$.D2B7]                HL`zero
+        ld      [$.RASTERSPLIT_STEP]    A`zero
+        ld      [$.RASTERSPLIT_LINE]    A`zero
+        
+        ;clear $.D287-$D2A4 (29 bytes)
+        ld      hl, $.D287
+        ld      b, 29
+        call    :fillMemoryWithValue
+        
+        ;get the bit flag for the level:
+         ;C returns a byte with bit x set, where x is the level number mod 8
+         ;DE will be the level number divided by 8
+         ;HL will be $.D311 + the level number divided by 8
+        ld      hl, $.D311
+        call    ::main:getLevelBitFlag
+        
+        ;DE will now be $.D311 + the level number divided by 8
+        ex      de, hl
+        
+        ld      hl, $0800
+        ld      a, [$.CURRENT_LEVEL]
+        cp      9                               
+        jr      c, ._2                          ;less than level 9? (Labyrinth Act 1)
+        cp      11
+        jr      z, ._1                          ;if level 11 (Labyrinth Act 3)
+        jr      nc, ._2                         ;if >= level 11 (Labyrinth Act 3)
+        
+        ;this must be level 9 or 10 (Labyrinth Act 1/2)
+        ld      a, [de]                 
+        and     c                               ;is the bit for the level set?
+        jr      z, ._2                          ;if so, skip this next part
+
+._1     ld      a, $FF
+        ld      [$.WATERLINE], a
+        ld      hl, $0020
+
+._2     ld      [$.D2DC], hl                    ;either $0800 or $0020
+        ld      hl, $FFFE
+        ld      [$.TIME], hl
+        ld      hl, $23FF
+        
+        bit     4, [iy+#vars.flags6]
+        jr      z, ._3
+        
+        bit     0, [iy+#vars.scrollRingFlags]
+        jr      z, ._5
+        
+        ld      hl, :_2402
+        
+        ;set number of collected rings to 0
+._3     xor     A`zero                          ;set A to 0
+        ld      [$.RINGS]   A`zero
+        
+        ;is this a special stage? (level number 28+)
+        ld      a, [$.CURRENT_LEVEL]
+        sub     28
+        jr      c, ._4                          ;skip ahead if level < 28
+        
+        ;triple the level number for a lookup table of 3-bytes each entry
+        ld      c, a
+        add     a, a
+        add     a, c
+        ld      e, a
+        ld      d, $00
+        ld      hl, :_2405
+        add     hl, de
+        
+        ;copy 3 bytes from HL (`_2402` for regular levels, `_2405`+ for special stages)
+         ;to $.D2CE/F/D0
+        ;set the level time?
+._4     ld      de, $.TIME_MINUTES
+        ld      bc, $0003
+        ldir
+        
+._5     ;load HUD sprite set
+        ld      hl, $B92E                       ;$2F92E
+        ld      de, $3000
+        ld      a, 9
+        call    ::main:decompressArt
+        
+        ;------------------------------------------------------------------------------
+        ;begin reading the level header:
+        
+        pop     hl`header                       ;get back the level header address
+        ;SP: Solidity Pointer
+        ld      a,[hl`header]
+        ld      [$.LEVEL_SOLIDITY],a
+        inc     hl`header
+        ;FW: Floor Width
+        ld      e,[hl`header]
+        inc     hl
+        ld      d,[hl]
+        inc     hl
+        ld      [$.LEVEL_FLOORWIDTH],de
+        ;FH: Floor Height
+        ld      e,[hl]
+        inc     hl
+        ld      d,[hl]
+        inc     hl
+        ld      [$.LEVEL_FLOORHEIGHT],de
+        ;copy the next 8 bytes to $D273+
+         ;$D273/4 - LX: Level X Offset
+         ;$D275/6 - LW: Level Width
+         ;$D277/8 - LY: Level Y Offset
+         ;$D279/A - LH: Level Height
+        ld      de,$.LEVEL_LEFT
+        ld      bc,8
+        ldir    
+        
+        ;currently HL will be sitting on byte 14 ("SX") of the level header
+        push    hl
+        push    hl
+        
+        ;get the level bit flag:
+         ;C returns a byte with bit x set, where x is the level number mod 8
+         ;DE will be the level number divided by 8
+         ;HL will be $.D311 + the level number divided by 8
+        ld      hl,$.D311
+        call    ::main:getLevelBitFlag
+        
+        ld      a,[hl]
+        ex      de,hl                           ;DE will now be $.D311+
+        
+        ;return to the "SX" byte in the level header,
+         ;A will have been set from $.D311+
+        pop     hl
+        
+        and     c                       
+        jr      z,._6                   
+        
+        cpl                                     ;NOT A
+        ld      c,a
+        ld      a,[de]                          ;Set A to the value at $.D311+0-7
+        and     c                               ;unset the level bit
+        ld      [de],a                  
+        
+        ;copy 3 bytes from $2402 to $.D2CE, these will be $01, $30 & $00
+         ;(set level time?)
+        ld      hl,:_2402
+        ld      de,$.TIME_MINUTES
+        ld      bc,$0003
+        ldir    
+        
+        ld      a,[$.CURRENT_LEVEL]             ;get current level number
+        add     a,a                             ;double it (i.e. for 16-bit tables)
+        ld      e,a                             ;put it into DE
+        ld      d,$00
+        
+        ld      hl,$.D32E               
+        add     hl,de                           ;$.D32E + (level number * 2)
+        
+        ;NOTE: since other data in RAM begins at $D354 (a copy of the level header)
+         ;this places a limit -- 19 -- on the number of main levels.
+         ;special stages and levels visited by teleporter are not included -- AFAIK
+        
+        ;------------------------------------------------------------------------------
+        ;set starting X position:
+        
+._6     ld      [$.D216],hl             
+        ld      a,[hl]                          ;get the value at that RAM address      
+        
+        ;if the value is less than 3, just use 0
+         ;(this is so that if the player starting position is at the left of the level
+         ; it doesn't try and place the camera before the level's left edge)
+        sub     3
+        jr      nc,._7
+        xor     a`zero                          ;set A to 0
+._7     ld      [$.BLOCK_X],a`zero
+        
+        ;using the number as the hi-byte, divide by 8 into DE, e.g.
+         ;4     A: 00000100 E: 00000000 (1024) -> A: 00000000 E: 10000000 (128)
+         ;5     A: 00000101 E: 00000000 (1280) -> A: 00000000 E: 10100000 (160)
+         ;6     A: 00000110 E: 00000000 (1536) -> A: 00000000 E: 11000000 (192)
+         ;7     A: 00000111 E: 00000000 (1792) -> A: 00000000 E: 11100000 (224)
+         ;8     A: 00001000 E: 00000000 (2048) -> A: 00000001 E: 00000000 (256)
+        ;as you can see, the effective outcome is multiplying by 32!
+        ld      e,$00
+        rrca    
+        rr      e
+        rrca    
+        rr      e
+        rrca    
+        rr      e
+        and     %00011111                       ;mask off top 3 bits from the rotation
+        ld      d,a
+        ld      [$.CAMERA_X],de
+        ld      [$.CAMERA_X_LEFT],de
+        
+        ;------------------------------------------------------------------------------
+        ;set starting Y position:
+        
+        inc     hl
+        ld      a,[hl]
+        
+        sub     3
+        jr      nc,._8
+        xor     a`zero                          ;set A to 0
+        
+._8     ld      [$.BLOCK_Y],a
+        ld      e,$00
+        rrca    
+        rr      e
+        rrca    
+        rr      e
+        rrca    
+        rr      e
+        and     %00011111                       ;mask off top 3 bits from the rotation
+        ld      d,a
+        ld      [$.CAMERA_Y],de
+        ld      [$.CAMERA_Y_UP],de
+        
+        ;return to the "SX" byte in the level header
+        pop     hl
+        inc     hl                              ;skip over "SX"
+        inc     hl                              ;and "SY"
+        
+        ;since we skip Sonic's X/Y position, where do these get used?
+         ;assumedly from the level header copied to RAM at $D354+?
+        
+        ;FL: Floor Layout
+        ld      e,[hl]
+        inc     hl
+        ld      d,[hl]
+        inc     hl
+        ;FS: Floor Size
+        ld      c,[hl]
+        inc     hl
+        ld      b,[hl]
+        inc     hl
+        
+        ;remember our place in the level header, we're currently sitting at the
+         ;"BM" Block Mapping bytes
+        push    hl
+        
+        ex      de,hl                           ;HL will be the Floor Layout address
+        ld      a,h                             ;look at the hi-byte of the FloorLayout
+        di                                      ;disable interrupts
+        cp      $40                             ;is it $40xx or above?
+        jr      c,._9
+        sub     $40
+        ld      h,a
+        ld      a,6
+        ld      [$_SMS.MAPPER.SLOT1],a
+        ld      [$.SLOT1],a
+        ld      a,7
+        ld      [$_SMS.MAPPER.SLOT2],a
+        ld      [$.SLOT2],a
+        jr      ._10
+        
+._9     ld      a,5
+        ld      [$_SMS.MAPPER.SLOT1],a
+        ld      [$.SLOT1],a
+        ld      a,6
+        ld      [$_SMS.MAPPER.SLOT2],a
+        ld      [$.SLOT2],a
+        
+._10    ei                                      ;enable interrupts
+        
+        ;load the Floor Layout into RAM
+        ld      de,$4000                        ;re-base the FloorLayout address to Page 1
+        add     hl,de
+        call    ::main:loadFloorLayout
+        
+        ;return to our place in the level header
+        pop     hl
+        
+        ;BM: Block Mapping address
+        ld      e,[hl]
+        inc     hl
+        ld      d,[hl]
+        inc     hl
+        
+        ;swap DE & HL
+         ;DE will be current position in the level header
+         ;HL will be Block Mapping address
+        ex      de,hl
+        
+        ;rebase the Block Mapping address to Page 1
+        ld      bc,$4000
+        add     hl,bc
+        ld      [$.BLOCKMAPPINGS],hl
+        
+        ;swap back DE & HL
+         ;HL will be current position in the level header
+        ex      de,hl
+        
+        ;LA : Level Art address
+        ld      e,[hl]
+        inc     hl
+        ld      d,[hl]
+        inc     hl
+        
+        ;store the current position in the level header
+        push    hl
+        
+        ;swap DE & HL
+         ;DE will be current position in the level header
+         ;HL will be Level Art address
+        ex      de,hl
+        
+        ;load the level art from bank 12+ ($30000)
+        ld      de,$0000
+        ld      a,12
+        call    ::main:decompressArt
+        
+        ;return to our position in the level header
+        pop     hl
+        
+        ;SB: get the bank number for the sprite art
+        ld      a,[hl]
+        inc     hl
+        
+        ;SA: Sprite Art address
+        ld      e,[hl]
+        inc     hl
+        ld      d,[hl]
+        inc     hl
+        ;handle as with Level Art
+        push    hl
+        ex      de,hl
+        ld      de,$2000
+        call    ::main:decompressArt
+        pop     hl
+        
+        ;IP: Initial Palette
+        ld      a,[hl]
+        
+        ;store our current position in the level header
+        push    hl
+        
+        ;convert the value to 16-bit for a lookup in the palette pointers table
+        add     a,a
+        ld      e,a
+        ld      d,$00
+        ld      hl,$627c
+        add     hl,de
+        
+        ;switch pages 1 & 2 ($4000-$BFFF) to banks 1 & 2 ($4000-$BFFF)
+        di      
+        ld      a,1
+        ld      [$_SMS.MAPPER.SLOT1],a
+        ld      [$.SLOT1],a
+        ld      a,2
+        ld      [$_SMS.MAPPER.SLOT2],a
+        ld      [$.SLOT2],a
+        ei      
+        
+        ;read the palette pointer into HL
+        ld      a,[hl]
+        inc     hl
+        ld      h,[hl]
+        ld      l,a
+        
+        ;queue the palette to be loaded via the interrupt
+        ld      a,%00000011
+        call    ::interrupts:loadPaletteOnInterrupt
+        
+        res     0,[iy+#vars.flags0]
+        call    ::interrupts:waitForInterrupt
+        
+        call    ::main:fillScreenWithFloorLayout
+        
+        pop     hl
+        inc     hl
+        
+        ;CS: Cycle Speed
+        ld      de,$.CYCLEPALETTE_COUNTER
+        ld      a,[hl]
+        ld      [de],a
+        inc     de
+        ;store a second copy at the next byte in RAM
+        ld      [de],a
+        inc     de
+        inc     hl
+        ;store 0 at the next byte in RAM
+         ;(RAM_CYCLEPALETTE_INDEX)
+        xor     a`zero                          ;set A to 0
+        ld      [de],a`zero
+        inc     de
+        
+        ;CC: Colour Cycles
+        ld      a,[hl]
+        ld      [de],a
+        
+        ;CP: Cycle Palette
+        inc     hl
+        ld      a,[hl]
+        
+        ;swap DE & HL,
+         ;DE will be current position in the level header
+        ex      de,hl
+        
+        add     a,a                             ;double the cycle palette index
+        ld      c,a                             ;put it into a 16-bit number
+        ld      b,$00
+        ;offset into the cycle palette pointers table
+        ld      hl,::mobs:S1_PaletteCycle_Pointers
+        add     hl,bc                   
+        
+        ;switch pages 1 & 2 ($4000-$BFFF) to banks 1 & 2 ($4000-$BFFF)
+        di      
+        ld      a,1
+        ld      [$_SMS.MAPPER.SLOT1],a
+        ld      [$.SLOT1],a
+        ld      a,2
+        ld      [$_SMS.MAPPER.SLOT2],a
+        ld      [$.SLOT2],a
+        ei      
+        
+        ;read the cycle palette pointer
+        ld      a,[hl]
+        inc     hl
+        ld      h,[hl]
+        ld      l,a
+        ld      [$.CYCLEPALETTE_POINTER],hl
+        
+        ;swap back DE & HL
+         ;HL will be the current position in the level header
+        ex      de,hl
+        
+        ;OL: Object Layout
+        inc     hl
+        ld      e,[hl]
+        inc     hl
+        ld      d,[hl]
+        inc     hl
+        
+        ;store the current position in the level header
+        push    hl
+        
+        ;the object layouts are relative from $15580, which is just odd really
+        ld      hl,$5580
+        add     hl,de
+        
+        ;switch page 1 ($4000-$BFFF) to page 5 ($14000-$17FFF)
+        ld      a,5
+        ld      [$_SMS.MAPPER.SLOT1],a
+        ld      [$.SLOT1],a
+        call    :loadObjectLayout
+        
+        pop     hl
+        
+        ;SR: Scrolling / Ring HUD flags
+        ld      c,[hl]
+        ld      a,[iy+#vars.scrollRingFlags]            
+        and     %00000010
+        or      c
+        ld      [iy+#vars.scrollRingFlags],a
+        
+        ;UW: Underwater flag
+        inc     hl
+        ld      a,[hl]
+        ld      [iy+#vars.flags6],a
+        
+        ;TL: Time HUD / Lightning effect flags
+        inc     hl
+        ld      a,[hl]
+        ld      [iy+#vars.timeLightningFlags],a
+        
+        ;00: Unknown byte
+        inc     hl
+        ld      a,[hl]
+        ld      [iy+#vars.unknown0],a
+        
+        ;MU: Music
+        inc     hl
+        ld      a,[$.PREVIOUS_MUSIC]            ;check previously played music
+        cp      [hl]
+        jr      z,._11                          ;if current music is the same, skip ahead
+        
+        ld      a,[hl]                          ;get the music number from the level header
+        and     a                               ;this won't change the value of A, but it will
+                                                 ;update the flags, so that ...
+        jp      m,._11                          ;we can check if the sign is negative,
+                                                 ;that is, A>127
+        
+        ;remember the current level music to restore it after invincibility &c.
+        ld      [$.LEVEL_MUSIC],a
+        rst     :rst_playMusic
+
+        ;fill 64 bytes (32 16-bit numbers) from $D37C-$D3BC
+._11    ld      b,32
+        ld      hl,$.ACTIVEMOBS
+        xor     a`zero                  ;set A to 0
+
+._12    ld      [hl],a
+        inc     hl
+        ld      [hl],a
+        inc     hl
+        djnz    ._12
+        
+        bit     5,[iy+#vars.origFlags6]
+        ret     z
+        set     5,[iy+#vars.flags6]
+        
+        ret
+}
+        
+PROC    :loadObjectLayout                       SECTION ::screens               ;$232B
+        ;------------------------------------------------------------------------------
+PARAMS  hl      ;address of an object layout
+{       
+        ;NOTE: $.D2F2 is used only here -- perhaps a regular temp variable could be used
+        
+        push    hl
+        
+        ;add the Sonic object to the beginning of the list
+        ld      ix,$.SONIC
+        ld      de,$001A                        ;length of the object?
+        ld      c,$00
+        
+        ld      hl,[$.D216]                     ;= D32E + (level number * 2)
+        ld      a,$00
+        call    :loadObject
+        
+        pop     hl
+        
+        ;------------------------------------------------------------------------------
+        ld      a,[hl]                          ;number of objects
+        inc     hl
+        
+        ld      [$.D2F2],a                      ;put aside the number of objects in the layout
+        dec     a                               ;reduce by 1,
+        ld      b,a                             ;and set as the loop counter
+        
+        ;loop over the number of objects:
+._1     ld      a,[hl]                          ;load the Object ID
+        inc     hl                              ;move on to the X & Y position
+        call    :loadObject
+        djnz    ._1
+        
+        ;------------------------------------------------------------------------------
+        ld      a,[$.D2F2]                      ;retrieve number of objects in layout
+        ld      b,a
+        ld      a,$20
+        sub     b
+        ret     z                               ;exit if exactly 32 objects!
+        
+        ;does this mean that there is a limit of 32 objects (including Sonic)
+         ;per-level?
+        
+        ;remove the remaining objects (out of 32)
+        ld      b,a
+._2     ld      [ix+#mob.type],$FF              ;remove object?
+        add     ix,de
+        djnz    ._2
+        
+        ret
+}
+
+PROC    :loadObject                             SECTION ::screens               ;$235E
+        ;------------------------------------------------------------------------------
+PARAMS  IX`mob          ``Address of the current mob being processed
+        a               ;object type
+        de              ;?
+        hl              ;address with the X & Y positions of the object
+{        
+        ld      [ix+#mob.type],a                ;set the object type
+        
+        ;--- X position ---------------------------------------------------------------
+        ld      a,[hl]                          ;get X position from the object layout
+        exx
+        ld      l,a                             ;convert X-pos to 16-bit number in HL
+        ld      h,$00
+        ld      [ix+#mob.Xsubpixel],h   ;?
+        ;multiply by 32
+        add     hl,hl                           ;x2 ...
+        add     hl,hl                           ;x4 ...
+        add     hl,hl                           ;x8 ...
+        add     hl,hl                           ;x16 ...
+        add     hl,hl                           ;x32
+        ld      [ix+#mob.X+0],l
+        ld      [ix+#mob.X+1],h
+        exx     
+        
+        ;--- Y position ---------------------------------------------------------------
+        inc     hl
+        ld      a,[hl]                          ;get the Y position from the mob layout
+        
+        exx     
+        ld      l,a
+        ld      h,$00
+        ld      [ix+#mob.Ysubpixel],h        ;?
+        add     hl,hl                           ;x2 ...
+        add     hl,hl                           ;x4 ...
+        add     hl,hl                           ;x8 ...
+        add     hl,hl                           ;x16 ...
+        add     hl,hl                           ;x32
+        ld      [ix+#mob.Y+0],l
+        ld      [ix+#mob.Y+1],h
+        
+        ;transfer IX (object address) to HL
+        push    ix
+        pop     hl
+        
+        ;------------------------------------------------------------------------------
+        ;set the rest of the object parameters to 0:
+        
+        ;skip to the 7th byte of the object
+        ld      de,7
+        add     hl,de
+        
+        ;erase the next 19 bytes
+        ld      b,19
+        xor     a`zero                          ;set A to 0
+.loop   ld      [hl],a
+        inc     hl
+        djnz    .loop
+        
+        exx
+        inc     hl                              ;
+        add     ix,de                           ;add the DE parameter to IX (object address)
+        ret
+}
+
+PROC    :_239c                                  SECTION ::screens               ;$239C
+        ;==============================================================================
+        ;animate ring
+{
+        ;ld      ($.D25F) = $0060       
+        ;ld      ($.D261) = $0088       
+        ;ld      ($.D263) = $0060
+        ;ld      ($D265) = $0070
+        
+        ld      a,[$.D297]
+        ld      e,a
+        ld      d,$00
+        ld      hl,:_23f9
+        add     hl,de
+        ld      a,[hl]
+        ld      l,d
+        srl     a
+        rr      l
+        ld      h,a
+        ld      de,$7cf0
+        add     hl,de
+        ld      [$.RING_CURRENT_FRAME],hl
+        ld      hl,$.D298
+        ld      a,[hl]
+        inc     a
+        ld      [hl],a
+        cp      $0a
+        ret     c
+        ld      [hl],$00
+        dec     hl
+        ld      a,[hl]
+        inc     a
+        cp      $06
+        jr      c,._1
+        xor     a`zero
+._1     ld      [hl],a
+        ret
+}
+
+PROC    :_23c9                                  SECTION ::screens               ;$23C9
+        ;==============================================================================
+{        
+        ld      a,[$.CYCLEPALETTE_COUNTER]
+        dec     a
+        ld      [$.CYCLEPALETTE_COUNTER],a
+        ret     nz
+        
+        ld      a,[$.CYCLEPALETTE_INDEX]
+        ld      l,a
+        ld      h,$00
+        add     hl,hl
+        add     hl,hl
+        add     hl,hl
+        add     hl,hl
+        ld      de,[$.CYCLEPALETTE_POINTER]
+        add     hl,de
+        ld      a,%00000001
+        call    ::interrupts:loadPaletteOnInterrupt
+        ld      hl,[$.CYCLEPALETTE_INDEX]
+        ld      a,l
+        inc     a
+        cp      h
+        jr      c,._1
+        xor     a`zero
+._1     ld      l,a
+        ld      [$.CYCLEPALETTE_INDEX],hl
+        ld      a,[$.CYCLEPALETTE_SPEED]
+        ld      [$.CYCLEPALETTE_COUNTER],a
+        ret
+}
+
+TABLE   :_23f9                                  SECTION ::screens               ;$23F9
+{
+        BYTE    $05, $04, $03, $02, $01, $00
+}
+TABLE   :_23ff                                  SECTION ::screens               ;$23FF
+{
+        BYTE    $00, $00, $00
+}
+TABLE   :_2402                                  SECTION ::screens               ;$2402
+{
+        BYTE    $01, $30, $00
+}
+TABLE   :_2405                                  SECTION ::screens               ;$2405
+{
+        BYTE    $01 $00 $00                     ;Special Stage 1?
+        BYTE    $01 $00 $00                     ;Special Stage 2?
+        BYTE    $00 $45 $00                     ;Special Stage 3?
+        BYTE    $00 $50 $00                     ;Special Stage 4?
+        BYTE    $00 $45 $00                     ;Special Stage 5?
+        BYTE    $00 $50 $00                     ;Special Stage 6?
+        BYTE    $00 $50 $00                     ;Special Stage 7?
+        BYTE    $00 $30 $00                     ;Special Stage 8?
+        BYTE    $01 $00 $00
+        BYTE    $01 $00 $01
+        BYTE    $02 $00 $01
+        BYTE    $02 $FF $02
+        BYTE    $03 $01 $01
+        BYTE    $03 $FE $02
+        BYTE    $04 $01 $01
+        BYTE    $04 $FD $03
+        BYTE    $05 $02 $01
+        BYTE    $06 $FB $03
+        BYTE    $06 $03 $00
+        BYTE    $07 $FA $03
+        BYTE    $06 $05 $FF
+        BYTE    $08 $F9 $03
+        BYTE    $07 $06 $FE
+        BYTE    $09 $F7 $03
+        BYTE    $07 $08 $FD
+        BYTE    $0A $F6 $02
+        BYTE    $07 $09 $FB
+        BYTE    $0B $F4 $01
+        BYTE    $06 $0B $FA
+        BYTE    $0B $F3 $00 $06 $0D $F8 $0B $F2 $FF
+        BYTE    $05 $0E $F6 $0B $F1 $FD $03 $10 $F4 $0B $F0 $FB $02 $12 $F2 $0A
+        BYTE    $F0 $F9 $00 $13 $F0 $09 $F0 $F7 $FE $14 $EE $08 $F0 $F4 $FC $15
+        BYTE    $EC $07 $F0 $F2 $F9 $15 $EA $05 $F1 $EF $F6 $16 $E9 $02 $F2 $ED
+        BYTE    $F4 $15 $E7 $00 $F4 $EB $F1 $15 $E6 $FD $F5 $E8 $EE $14 $E5 $FA
+        BYTE    $F8 $E6 $EB $13 $E5 $F7 $FA $E4 $E8 $11 $E5 $F4 $FD $E3 $E5 $0F
+        BYTE    $E5 $F1 $00 $E1 $E3 $0D $E6 $ED $03 $E0 $E0 $0A $E7 $EA $07 $E0
+        BYTE    $DE $07 $E9 $E6 $0B $DF $DD $04 $EB $E3 $0E $DF $DB $00 $EE $E0
+        BYTE    $12 $E0 $DA $FC $F1 $DD $16 $E1 $DA $F8 $F4 $DB $1A $E3 $DA $F4
+        BYTE    $F8 $D8 $1E $E5 $DA $EF $FC $D7 $22 $E8 $DB $EB $00 $D5 $25 $EB
+        BYTE    $DC $E6 $05 $D4 $28 $EE $DE $E2 $09 $D4 $2B $F2 $E1 $DE $0E $D4
+        BYTE    $2D $F6 $E4 $D9 $13 $D5 $2F $FB $E8 $D6 $18 $D6 $31 $00 $EC $D2
+        BYTE    $1D $D8 $32 $05 $F0 $CF $22 $DA $32 $0B $F5 $CD $27 $DD $32 $10
+        BYTE    $FA $CB $2B $E0 $31 $16 $00 $C9 $2F $E5 $2F $1B $06 $C8 $33 $E9
+        BYTE    $2D $21 $0C $C8 $36 $EE $2B $26 $12 $C8 $39 $F4 $27 $2B $18 $CA
+        BYTE    $3B $FA $23 $30 $1E $CB $3D $00 $1E $35 $24 $CE $3E $06 $19 $39
+        BYTE    $2A $D1 $3E $0D $14 $3C $30 $D5 $3D $14 $0D $3F $35 $D9 $3C $1B
+        BYTE    $07 $41 $3A $DF $3A $21 $00 $43 $3E $E4 $37 $28 $F9 $44 $42 $EB
+        BYTE    $33 $2E $F2 $44 $45 $F1 $2F $34 $EA $43 $47 $F9 $2A $3A $E3 $41
+        BYTE    $49 $00 $24 $3F $DC $3F
+}
+
+;end sequence screens?
+PROC    :_LABEL_258B_133                        SECTION ::screens               ;$258B
+        ;==============================================================================
+PARAMS  IY`vars         ``Address of the common variables (used throughout)
+{
+        ld      a, [$.VDPREGISTER_1]
+        and     %10111111
+        ld      [$.VDPREGISTER_1], a
+        
+        res     0, [iy+#vars.flags0]
+        call    ::interrupts:waitForInterrupt
+        
+        ;reset the screen scroll (for static screens)
+        xor     A`zero
+        ld      [$.VDPSCROLL_HORZ]      A`zero
+        ld      [$.VDPSCROLL_VERT]      A`zero
+        
+        ld      hl, :_2828
+        ld      a, %00000011
+        call    ::interrupts:loadPaletteOnInterrupt
+        
+        ;load the map screen 1
+        ld      hl, $0000
+        ld      de, $0000
+        ld      a, $0C                          ;bank 12 ($30000+)
+        call    ::main:decompressArt
+        
+        ;load page 1 ($4000-$7FFF) with bank 5 ($14000-$17FFF)
+        ld      a,5
+        ld      [$_SMS.MAPPER.SLOT1],a
+        ld      [$.SLOT1],a
+        
+        ;map 3 screen (end of game)
+        ld      hl,$6830
+        ld      bc,$0179
+        ld      de,$_SMS_VRAM.SCREENNAMETABLE
+        xor     A`zero
+        ld      [$.TEMP1]       A`zero
+        call    ::main:decompressScreen
+        
+        ld      a,[$.VDPREGISTER_1]
+        or      %01000000
+        ld      [$.VDPREGISTER_1],a
+        
+        res     0,[iy+#vars.flags0]
+        call    ::interrupts:waitForInterrupt
+        
+        ld      a,1
+        ld      [$_SMS.MAPPER.SLOT1],a
+        ld      [$.SLOT1],a
+        ld      a,[$.D27F]
+        cp      $06
+        jp      c,._4
+        ld      b,$3c
+        
+._1     push    bc
+        
+        res     0,[iy+#vars.flags0]
+        call    ::interrupts:waitForInterrupt
+        
+        ld      hl,$.SPRITETABLE
+        ld      c`xpos,112
+        ld      b`ypos,96
+        ld      de,:_2825
+        call    ::mobs:layoutSpritesHorizontal
+        ld      [$.SPRITETABLE_ADDR],hl
+        pop     bc
+        djnz    ._1
+        
+        ld      a,::sound:S1_MusicPointers.allEmeralds.index
+        rst     :rst_playMusic
+        
+        ld      hl,$241d
+        ld      b,$3d
+        
+._2     push    bc
+        ld      c,[iy+#vars.spriteUpdateCount]
+        res     0,[iy+#vars.flags0]
+        call    ::interrupts:waitForInterrupt
+        ld      [iy+#vars.spriteUpdateCount],c
+        res     0,[iy+#vars.flags0]
+        call    ::interrupts:waitForInterrupt
+        ld      de,$.SPRITETABLE
+        ld      [$.SPRITETABLE_ADDR],de
+        ld      b,$03
+        
+._3     push    bc
+        push    hl
+        ld      a,$70
+        add     a,[hl]
+        ld      c,a
+        inc     hl
+        ld      a,$60
+        add     a,[hl]
+        ld      b,a
+        inc     hl
+        push    bc
+        ld      de,:_2825
+        ld      hl,[$.SPRITETABLE_ADDR]
+        call    ::mobs:layoutSpritesHorizontal
+        ld      [$.SPRITETABLE_ADDR],hl
+        pop     bc
+        pop     hl
+        ld      a,[hl]
+        neg     
+        add     a,$70
+        ld      c,a
+        inc     hl
+        ld      a,[hl]
+        neg     
+        add     a,$60
+        ld      b,a
+        inc     hl
+        push    hl
+        ld      de,:_2825
+        ld      hl,[$.SPRITETABLE_ADDR]
+        call    ::mobs:layoutSpritesHorizontal
+        ld      [$.SPRITETABLE_ADDR],hl
+        pop     hl
+        pop     bc
+        djnz    ._3
+        
+        pop     bc
+        djnz    ._2
+        
+        ld      hl,:_2047
+        call    ::main:_b60
+        ld      [iy+#vars.spriteUpdateCount],$00
+        
+        ld      a,5
+        ld      [$_SMS.MAPPER.SLOT1],a
+        ld      [$.SLOT1],a
+        
+        ;UNKNOWN
+        ld      hl,$69a9
+        ld      bc,$0145
+        ld      de,$_SMS_VRAM.SCREENNAMETABLE
+        xor     a`zero
+        ld      [$.TEMP1],a`zero
+        call    ::main:decompressScreen
+        
+        ld      hl,:_2828
+        call    ::main:_aae                     ;called only by this routine,
+                                                 ;appears to fade the screen out
+        
+        ;------------------------------------------------------------------------------
+        
+._4     ld      bc,240
+        call    :waitFrames
+        call    :_155e                          ;Act Complete screen?
+        
+        ld      bc,240
+        call    :waitFrames
+        call    ::main:fadeOut
+        
+        ld      bc,120
+        call    :waitFrames
+        
+        ;map screen 2 / credits screen tile set
+        ld      hl,$1801
+        ld      de,$0000
+        ld      a,12
+        call    ::main:decompressArt
+        
+        ;title screen animated finger sprite set
+        ld      hl,$4b0a
+        ld      de,$2000
+        ld      a,9
+        call    ::main:decompressArt
+        
+        ld      a,5
+        ld      [$_SMS.MAPPER.SLOT1],a
+        ld      [$.SLOT1],a
+        
+        ;credits screen
+        ld      hl,$6c61
+        ld      bc,$0189
+        ld      de,$_SMS_VRAM.SCREENNAMETABLE
+        xor     a`zero
+        ld      [$.TEMP1],a`zero
+        call    ::main:decompressScreen
+        
+        xor     A`zero                          ;set A to 0
+        ;NOTE: These are addresses! See `:_275a`
+        ld      HL              $.D322
+        ld      [HL]            LO :_2848                        
+        inc     HL
+        ld      [HL]            HI :_2848
+        inc     HL
+        ld      [HL]            A`zero          ;$2848 = 0
+        inc     HL
+        ld      [HL]            LO :_2857                        
+        inc     HL
+        ld      [HL]            HI :_2857
+        inc     HL
+        ld      [HL]            A`zero          ;$2857 = 0
+        inc     HL
+        ld      [HL]            LO :_2869
+        inc     HL
+        ld      [HL]            HI :_2869
+        inc     HL
+        ld      [HL]            A`zero          ;$2869 = 0
+        inc     HL
+        ld      [HL]            LO :_2872
+        inc     HL
+        ld      [HL]            HI :_2872
+        inc     HL
+        ld      [HL]            A`zero          ;$2872 = 0
+        
+        ld      BC              1
+        call    :_2718
+        
+        ld      hl,:S1_Credits_Palette
+        call    ::main:_b50
+        
+        ld      a,::sound:S1_MusicPointers.ending.index
+        rst     :rst_playMusic
+        
+        xor     A`zero                          ;(set A to 0)
+        ld      [$.TEMP1]       A`zero
+        ld      HL              :S1_Credits_Text
+        call    :_2795
+        
+.infiniteLoop
+        ;this could be the game-freeze after the final credits
+        jp      .infiniteLoop
+}
+
+PROC    :_2718                                  SECTION ::screens               ;$2718
+        ;==============================================================================
+PARAMS  IY`vars         ``Address of the common variables (used throughout)
+{        
+        push    AF, HL, DE, BC
+._1     push    BC
+        
+        res     0,[iy+#vars.flags0]
+        call    ::interrupts:waitForInterrupt
+        
+        ld      [iy+#vars.spriteUpdateCount],$00
+        ld      hl,$.SPRITETABLE
+        ld      [$.SPRITETABLE_ADDR],hl
+        
+        ld      hl,$.D322
+        ld      b,$04
+        
+._2     push    bc
+        call    :_275a
+        pop     bc
+        djnz    ._2
+        
+        pop     bc
+        dec     bc
+        ld      a,b
+        or      c
+        jr      nz,._1
+        
+        pop     BC, DE, HL, AF
+        ret
+}
+
+PROC    :waitFrames                             SECTION ::screens               ;$2745
+        ;==============================================================================
+HELP  ``Wait a given number of frames
+PARAMS  IY`vars         ``Address of the common variables (used throughout)
+        BC`count        ``Number of frames to wait
+{        
+        push    BC`count
+        
+        ;refresh the screen
+        ld      a,[IY+#vars.spriteUpdateCount]
+        
+        res     0,[IY+#vars.flags0]
+        call    ::interrupts:waitForInterrupt
+        
+        ld      [IY+#vars.spriteUpdateCount],a
+        
+        pop     BC`count
+        dec     BC`count
+        
+        ld      A`count_hi      B`count_hi
+        or      C`count_lo
+        jr      nz,:
+        
+        ret
+}
+
+PROC    :_275a                                  SECTION ::screens               ;$275A
+        ;==============================================================================
+        ;called only by :_2718
+        
+PARAMS  HL`addr
+{       
+        ld      E       [HL]                    ;E = $.D322 ($48)
+        inc     HL
+        ld      D       [HL]                    ;D = $.D323 ($28)
+        inc     HL
+        inc     [HL]                            ;$.D324
+        
+        ld      A       [DE]                    ;[$2848]
+        cp      [HL]
+        jr      nc      ._1                     ;
+        
+        ld      [HL]    $00                     ;reset the counter
+        inc     DE                              ;move to the next frame of animation
+        inc     DE                               ;(three bytes each frame index)
+        inc     DE
+        ;update the pointer in RAM to the new animation frame
+        dec     HL
+        ld      [HL],D
+        dec     HL
+        ld      [HL],E
+        ;check for the end of the animation list ("$FF" wait time)
+        inc     HL
+        inc     HL
+        ld      A,[DE]
+        cp      $FF
+        jr      nz,._1
+        
+        inc     DE
+        ld      A,[DE]
+        ld      B,A
+        inc     DE
+        ld      A,[DE]
+        dec     HL
+        ld      [HL],A
+        dec     HL
+        ld      [HL],B
+        jr      :
+        
+        ;-------------------------------------------------------------------------------
+._1     inc     HL
+        inc     DE
+        push    HL
+        ex      de,hl
+        ld      e,[hl]
+        inc     hl
+        ld      d,[hl]
+        ex      de,hl
+        ld      a,[hl]
+        inc     hl
+        ld      e,[hl]
+        inc     hl
+        ld      c,l
+        ld      b,h
+        ld      l,a
+        ld      h,$00
+        ld      d,h
+        call    ::mobs:processSpriteLayout
+        
+        pop     HL
+        ret
+}
+
+PROC    :_2795                                  SECTION ::screens               ;$2795
+        ;==============================================================================
+{        
+        ld      de,$.LAYOUT_BUFFER
+        ldi     
+        ldi     
+        inc     de
+        ld      a,$ff
+        ld      [de],a
+._      ld      a,[hl]
+        inc     hl
+        cp      $ff
+        ret     z
+        cp      $fe
+        jr      z,:
+        cp      $fc
+        jr      z,._2
+        cp      $fd
+        jr      nz,._1
+        ld      c,[hl]
+        inc     hl
+        ld      b,[hl]
+        inc     hl
+        call    :_2718
+        jr      ._
+        
+._1     push    hl
+        ld      [$.LAYOUT_BUFFER+2],a
+        ld      bc,$0008
+        call    :_2718
+        ld      hl,$.LAYOUT_BUFFER
+        call    ::main:print
+        ld      hl,$.LAYOUT_BUFFER
+        inc     [hl]
+        pop     hl
+        jr      ._
+        
+._2     ld      b,[hl]
+        inc     hl
+        push    hl
+        
+._3     push    bc
+        ld      bc,$000c
+        call    :_2718
+        ld      de,$3aa4
+        ld      hl,$3ae4
+        ld      b,$09
+        
+._4     push    bc
+        push    hl
+        push    de
+        ld      b,$14
+        
+._5     di      
+        ld      a,l
+        out     [$_SMS_PORTS.VDP.CONTROL],a
+        ld      a,h
+        out     [$_SMS_PORTS.VDP.CONTROL],a
+        push    ix
+        pop     ix
+        in      a,[$_SMS_PORTS.VDP.DATA]
+        ld      c,a
+        push    ix
+        pop     ix
+        ld      a,e
+        out     [$_SMS_PORTS.VDP.CONTROL],a
+        ld      a,d
+        or      $40
+        out     [$_SMS_PORTS.VDP.CONTROL],a
+        push    ix
+        pop     ix
+        ld      a,c
+        out     [$_SMS_PORTS.VDP.DATA],a
+        push    ix
+        pop     ix
+        ei      
+        inc     hl
+        inc     de
+        djnz    ._5
+        
+        pop     de
+        pop     hl
+        ld      bc,$0040
+        add     hl,bc
+        ex      de,hl
+        add     hl,bc
+        ex      de,hl
+        pop     bc
+        djnz    ._4
+        
+        pop     bc
+        djnz    ._3
+        pop     hl
+        jp      ._
+}
+
+TABLE   :_2825                                  SECTION ::screens               ;$2825
+{
+        BYTE    $5c, $5e, $ff
+}
+
+;Used by ":_275a"
+TABLE   :_2828                                  SECTION ::screens               ;$2828
+{       ;credits screen palette
+        BYTE    $35 $01 $06 $0B $04 $08 $0C $3D $1F $39 $2A $14 $25 $2B $00 $3F
+        BYTE    $35 $20 $35 $1B $16 $2A $00 $3F $03 $0F $01 $15 $00 $3C $00 $3F
+}
+
+TABLE   :_2848                                  SECTION ::screens               ;$2848
+{       BYTE    $96     WORD :_2902
+        BYTE    $86     WORD :_289F
+        BYTE    $E9     WORD :_2902
+        BYTE    $6F     WORD :_289F
+        BYTE    $FF     WORD :
+}
+TABLE   :_2857                                  SECTION ::screens               ;$2857
+{       BYTE    $36     WORD :_28B1
+        BYTE    $48     WORD :_28BA
+        BYTE    $54     WORD :_28A8
+        BYTE    $1E     WORD :_28B1
+        BYTE    $44     WORD :_28BA
+        BYTE    $FF     WORD :
+}
+TABLE   :_2869                                  SECTION ::screens               ;$2869
+{       BYTE    $23     WORD :_28C3
+        BYTE    $23     WORD :_28CC
+        BYTE    $FF     WORD :
+}
+TABLE   :_2872                                  SECTION ::screens               ;$2872
+{       BYTE    $E4     WORD :_28F3
+        BYTE    $19     WORD :_28E4
+        BYTE    $19     WORD :_28D5
+        BYTE    $19     WORD :_28E4
+        BYTE    $19     WORD :_28D5
+        BYTE    $FA     WORD :_28F3
+        BYTE    $85     WORD :_28E4
+        BYTE    $E8     WORD :_28F3
+        BYTE    $19     WORD :_28E4
+        BYTE    $19     WORD :_28D5
+        BYTE    $19     WORD :_28E4
+        BYTE    $19     WORD :_28D5
+        BYTE    $19     WORD :_28E4
+        BYTE    $19     WORD :_28D5
+        BYTE    $FF     WORD :
+}
+
+;looks like the sprite layouts for the singing Sonic on the credits screen
+TABLE   :_289F                                  SECTION ::screens               ;$289F
+{       BYTE    $40 $48 $50 $FF $FF $FF
+        BYTE    $FF $FF $FF
+}
+TABLE   :_28A8                                  SECTION ::screens               ;$28A8
+{       BYTE    $40 $58 $4A $FF $FF $FF
+        BYTE    $FF $FF $FF
+}
+TABLE   :_28B1                                  SECTION ::screens               ;$28B1
+{       BYTE    $40 $58 $4C $FF $FF $FF
+        BYTE    $FF $FF $FF
+}
+TABLE   :_28BA                                  SECTION ::screens               ;$28BA
+{       BYTE    $40 $58 $4E $FF $FF $FF
+        BYTE    $FF $FF $FF
+}      
+TABLE   :_28C3                                  SECTION ::screens               ;$28C3
+{       BYTE    $40 $78 $6A $6C $6E $FF
+        BYTE    $FF $FF $FF
+}
+TABLE   :_28CC                                  SECTION ::screens               ;$28CC
+{       BYTE    $40 $78 $70 $72 $74 $FF
+        BYTE    $FF $FF $FF
+}
+TABLE   :_28D5                                  SECTION ::screens               ;$28D5
+{       BYTE    $48 $50 $0A $0C $FF $FF
+        BYTE    $FF $FF
+}
+TABLE   :_28DD                                  SECTION ::screens               ;$28DD
+{       BYTE    $2A $2C $FF $FF $FF $FF
+        BYTE    $FF
+}
+TABLE   :_28E4                                  SECTION ::screens               ;$28E4
+{       BYTE    $48 $50 $0E $10 $FF $FF
+        BYTE    $FF $FF
+}
+TABLE   :_28EC                                  SECTION ::screens               ;$28EC
+{       BYTE    $2E $30 $FF $FF $FF $FF
+        BYTE    $FF
+}
+TABLE   :_28F3                                  SECTION ::screens               ;$28F3
+{       BYTE    $48 $60 $12 $14 $FF $FF
+        BYTE    $FF $FF
+}
+TABLE   :_28FB                                  SECTION ::screens               ;$28FB
+{       ;unused?
+        BYTE    $32 $34 $FF $FF $FF $FF
+        BYTE    $FF
+}
+TABLE   :_2902                                  SECTION ::screens               ;$2902
+{       BYTE    $40 $48 $FF
+}
+
+TABLE   :S1_Credits_Text                        SECTION ::screens               ;$2905
+{
+
+;;ASCIITABLE
+        MAP     " " = $EB
+        MAP     "A" = $1E
+        MAP     "B" = $1F
+        MAP     "C" = $2E
+        MAP     "D" = $2F
+        MAP     "E" = $3E
+        MAP     "F" = $3F
+        MAP     "G" = $4E
+        MAP     "H" = $4F
+        MAP     "I" = $5E
+        MAP     "J" = $5F
+        MAP     "K" = $6E
+        MAP     "L" = $6F
+        MAP     "M" = $7E
+        MAP     "N" = $7F
+        MAP     "O" = $8E
+        MAP     "P" = $8F
+        MAP     "Q" = $9E
+        MAP     "R" = $9F
+        MAP     "S" = $AE
+        MAP     "T" = $AF
+        MAP     "U" = $BE
+        MAP     "V" = $BF
+        MAP     "W" = $CE
+        MAP     "X" = $CF
+        MAP     "Y" = $DE
+        MAP     "Z" = $DF
+        MAP     "@" = $AB
+ENDA;;
+
+        BYTE        $14 $03 $AE $9E $7F $5E $2E                 ;SONIC
+        BYTE    $FE $15 $04 $AF $4F $3E                         ;THE
+        BYTE    $FE $13 $05 $4F $3E $2F $4E $3E $4F $9E $4E     ;HEDGEHOG
+        BYTE    $FD $3C $00
+        BYTE    $FE $12 $0C $7E $1E $AE $AF $3E $9F             ;MASTER
+        BYTE    $FE $13 $0D $AE $DE $AE $AF $3E $7E             ;SYSTEM
+        BYTE    $FE $14 $0E $BF $3E $9F $AE $5E $9E $7F         ;VERSION
+        BYTE    $FD $3C $00
+        BYTE    $FC $09
+        BYTE    $FE $14 $0B $AE $9E $7F $5E $2E                 ;SONIC
+        BYTE    $FE $15 $0C $AF $4F $3E                         ;THE
+        BYTE    $FE $13 $0D $4F $3E $2F $4E $3E $4F $9E $4E     ;HEDGEHOG
+        BYTE    $FD $3C $00
+        BYTE    $FE $12 $0F $8E $9F $5E $4E $5E $7F $1E $6F     ;ORIGINAL
+        BYTE    $FE $13 $10 $2E $4F $1E $9F $1E $2E $AF $3E $9F ;CHARACTER
+        BYTE    $FE $14 $11 $2F $3E $AE $5E $4E $7F             ;DESIGN
+        BYTE    $FD $3C $00
+        BYTE    $FC $04
+        BYTE    $FE $14 $10 $AB $AE $3E $4E $1E                 ;©SEGA
+        BYTE    $FD $B4 $00
+        BYTE    $FC $09
+        BYTE    $FE $14 $0E $AE $AF $1E $3F $3F                 ;STAFF
+        BYTE    $FD $B4 $00
+        BYTE    $FC $09
+        BYTE    $FE $12 $0B $4E $1E $7E $3E                     ;GAME
+        BYTE    $FE $13 $0C $8F $9F $9E $4E $9F $1E $7E         ;PROGRAM
+        BYTE    $FD $3C $00
+        BYTE    $FE $13 $0E $AE $4F $5E $7F $9E $1F $BE         ;SHINOBU
+        BYTE    $FE $14 $0F $4F $1E $DE $1E $AE $4F $5E         ;HAYASHI
+        BYTE    $FD $F0 $00
+        BYTE    $FC $09
+        BYTE    $FE $12 $0B $4E $9F $1E $8F $4F $5E $2E         ;GRAPHIC
+        BYTE    $FE $14 $0C $2F $3E $AE $5E $4E $7F             ;DESIGN
+        BYTE    $FD $3C $00
+        BYTE    $FE $13 $0E $1E $DE $1E $7F $9E                 ;AYANO
+        BYTE    $FE $14 $0F $6E $9E $AE $4F $5E $9F $9E         ;KOSHIRO
+        BYTE    $FD $3C $00
+        BYTE    $FE $13 $11 $AF $1E $CF $3E $3F $BE $7F $5E     ;TAKAFUNI
+        BYTE    $FE $14 $12 $DE $BE $7F $9E $BE $3E             ;YUNOUE
+        BYTE    $FD $F0 $00
+        BYTE    $FC $09
+        BYTE    $FE $12 $0B $AE $9E $BE $7F $2F                 ;SOUND
+        BYTE    $FE $13 $0C $8F $9F $9E $2F $BE $2E $3E         ;PRODUCE
+        BYTE    $FD $3C $00
+        BYTE    $FE $13 $0E $7E $1E $AE $1E $AF $9E             ;MASATO
+        BYTE    $FE $14 $0F $7F $1E $CF $1E $7E $BE $9F $1E     ;NAKAMURA
+        BYTE    $FD $F0 $00
+        BYTE    $FC $09
+        BYTE    $FE $12 $0B $9F $3E $1E $9F $9F $1E $7F $4E $3E ;REARRANGE
+        BYTE    $FE $15 $0C $1E $7F $2F                         ;AND
+        BYTE    $FE $12 $0D $9E $9F $5E $4E $5E $7F $1E $6F     ;ORIGINAL
+        BYTE    $FE $16 $0E $7E $BE $AE $5E $2E                 ;MUSIC
+        BYTE    $FD $3C $00
+        BYTE    $FE $13 $10 $DE $BE $DF $9E                     ;YUZO
+        BYTE    $FE $14 $11 $6E $9E $AE $4F $5E $9F $9E         ;KOSHIRO
+        BYTE    $FD $F0 $00
+        BYTE    $FC $09
+        BYTE    $FE $13 $0D $AE $8F $3E $2E $5E $1E $6F         ;SPECIAL
+        BYTE    $FE $15 $0E $AF $4F $1E $7F $6E $AE             ;THANKS
+        BYTE    $FD $B4 $00
+        BYTE    $FC $02
+        BYTE    $FE $13 $0E $DE $8E $AE $4F $5E $8E $EB $DE     ;YOSHIRO Y
+        BYTE    $FD $3C $00
+        BYTE    $FE $13 $11 $6F $BE $7F $1E $9F $5E $1E $7F     ;LUNARIAN
+        BYTE    $FE $1A $12 $AE $4E                             ;SG
+        BYTE    $FD $B4 $00
+        BYTE    $FC $09
+        BYTE    $FE $12 $0C $8F $9F $3E $AE $3E $7F $AF $3E $2F ;PRESENTED
+        BYTE    $FE $16 $0E $1F $DE                             ;BY
+        BYTE    $FE $15 $10 $AE $3E $4E $1E                     ;SEGA
+        BYTE    $FD $B4 $00
+        BYTE    $FE $19 $13 $3E $7F $2F                         ;END
+        BYTE    $FF
+}
+
+TABLE   :S1_Credits_Palette                     SECTION ::screens               ;$2AD6
+{
+        BYTE    $35 $3D $1F $39 $06 $1B $01 $34 $2B $10 $03 $14 $2A $1F $00 $3F
+        BYTE    $35 $3D $1F $39 $06 $1B $01 $34 $2B $10 $03 $14 $2A $1F $00 $3F
+}

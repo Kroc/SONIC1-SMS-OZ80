@@ -1,0 +1,137 @@
+;; Sonic 1 Master System Disassembly
+   -------------------------------------------------------------------------------------------------
+   created by Kroc Camen <kroc@camendesign.com> and given to the Public Domain; you may do anything
+   you like with this code as long as you respect the TradeMarks and (any) Copyrights within.
+   absolutely no warranty implied
+   =================================================================================================
+;;
+
+;fireball head (Labyrinth)
+
+PROC    :mob_trap_fireball                      SECTION ::mobs                  ;$8C16
+        ;==============================================================================
+PARAMS  IX`mob          ``Address of the current mob being processed
+{
+        res     5,[ix+#mob.flags]               ;mob adheres to the floor
+                                                 ;(it doesn't move, so this is odd)
+        ld      [ix+#mob.width], 4
+        ld      [ix+#mob.height],10
+        bit     0,[ix+#mob.flags]
+        jr      nz,._1
+        ld      l,[ix+#mob.X+0]
+        ld      h,[ix+#mob.X+1]
+        ld      de,$000a
+        add     hl,de
+        ld      [ix+#mob.X+0],l
+        ld      [ix+#mob.X+1],h
+        ld      [ix+$12],l
+        ld      [ix+#mob.unknown13],h
+        ld      l,[ix+#mob.Y+0]
+        ld      h,[ix+#mob.Y+1]
+        ld      de,$0008
+        add     hl,de
+        ld      [ix+#mob.Y+0],l
+        ld      [ix+#mob.Y+1],h
+        ld      [ix+#mob.unknown14],l
+        ld      [ix+#mob.unknown15],h
+        ld      [ix+#mob.unknown11],$96
+        set     0,[ix+#mob.flags]
+        ld      bc,$0000
+        ld      de,$0000
+        call    :getFloorLayoutRAMAddressForMob
+        ld      a,[hl]
+        cp      $52
+        jr      z,._1
+        set     1,[ix+#mob.flags]
+._1     ld      a,[ix+#mob.unknown11]
+        and     a
+        jr      z,._4
+        dec     [ix+#mob.unknown11]
+        jr      z,._3
+        
+._2     xor     a`zero
+        ld      [ix+#mob.spriteLayout+0],a`zero
+        ld      [ix+#mob.spriteLayout+1],a`zero
+        ld      [ix+#mob.Xspeed+0],a`zero
+        ld      [ix+#mob.Xspeed+1],a`zero
+        ld      [ix+#mob.Xdirection],a`zero
+        ret
+        
+        ;------------------------------------------------------------------------------
+        
+._3     ld      a,$18
+        rst     :rst_playSFX
+._4     xor     a`zero
+        bit     1,[ix+#mob.flags]
+        jr      nz,._5
+        ld      [ix+#mob.Xspeed+0],$00
+        ld      [ix+#mob.Xspeed+1],$ff
+        ld      [ix+#mob.Xdirection],$ff
+        ld      [ix+#mob.spriteLayout+0],LO ._8d39
+        ld      [ix+#mob.spriteLayout+1],HI ._8d39
+        jr      ._6
+        
+._5     ld      [ix+#mob.Xspeed+0],a
+        ld      [ix+#mob.Xspeed+1],$01
+        ld      [ix+#mob.Xdirection],a
+        ld      [ix+#mob.spriteLayout+0],LO ._8d41
+        ld      [ix+#mob.spriteLayout+1],HI ._8d41
+._6     ld      [ix+#mob.Yspeed+0],a
+        ld      [ix+#mob.Yspeed+1],a
+        ld      [ix+#mob.Ydirection],a
+        bit     6,[ix+#mob.flags]
+        jr      nz,._7
+        bit     7,[ix+#mob.flags]
+        jr      nz,._7
+        ld      hl,$0402
+        ld      [$.TEMP6],hl
+        call    :detectCollisionWithSonic
+        call    nc,:hitPlayer._35fd
+        ld      e,[ix+#mob.X+0]
+        ld      d,[ix+#mob.X+1]
+        ld      hl,[$.CAMERA_X]
+        ld      bc,$fff0
+        add     hl,bc
+        and     a
+        sbc     hl,de
+        jr      nc,._7
+        ld      hl,[$.CAMERA_X]
+        ld      bc,$0110
+        add     hl,bc
+        and     a
+        sbc     hl,de
+        jr      c,._7
+        ld      e,[ix+#mob.Y+0]
+        ld      d,[ix+#mob.Y+1]
+        ld      hl,[$.CAMERA_Y]
+        ld      bc,$fff0
+        add     hl,bc
+        and     a
+        sbc     hl,de
+        jr      nc,._7
+        ld      hl,[$.CAMERA_Y]
+        ld      bc,$00d0
+        add     hl,bc
+        and     a
+        sbc     hl,de
+        jr      c,._7
+        ret
+        
+._7     ld      l,[ix+$12]
+        ld      h,[ix+#mob.unknown13]
+        ld      [ix+#mob.X+0],l
+        ld      [ix+#mob.X+1],h
+        ld      l,[ix+#mob.unknown14]
+        ld      h,[ix+#mob.unknown15]
+        ld      [ix+#mob.Y+0],l
+        ld      [ix+#mob.Y+1],h
+        ld      [ix+#mob.unknown11],$96
+        jp      ._2
+        
+        ;------------------------------------------------------------------------------
+        ;sprite layout
+._8d39  BYTE $2E, $FF, $FF, $FF, $FF, $FF
+        BYTE $FF, $FF
+._8d41  BYTE $30, $FF, $FF, $FF, $FF, $FF
+        BYTE $FF
+}

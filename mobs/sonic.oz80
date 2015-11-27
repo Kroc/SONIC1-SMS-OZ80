@@ -1,0 +1,2555 @@
+;; Sonic 1 Master System Disassembly
+   -------------------------------------------------------------------------------------------------
+   created by Kroc Camen <kroc@camendesign.com> and given to the Public Domain; you may do anything
+   you like with this code as long as you respect the TradeMarks and (any) Copyrights within.
+   absolutely no warranty implied
+   =================================================================================================
+;;
+
+;; the mob's ID is an index number in a table of pointers to each mob's code
+   (defined in "/mob.oz80"). we add this mob to the list, which assigns its ID
+   via the `!MOBS` enum
+;;
+ROW     .sonic                                              TABLE :mobPointers              ;=$00
+        ;-------------------------------------------------------------------------------------------
+{       ;for the original ROM, `!MOBS.sonic` = $00
+        WORD    :mob_sonic                      
+}
+
+;define the off-screen boundaries for this mob:
+;(this table must be in the same order as the ":mobPointers" table mentioned above)
+
+ROW     .                                                   TABLE :mobBounds
+        ;-------------------------------------------------------------------------------------------
+{
+        ;; 1. the X-distance the mob can be left of the camera without despawning 
+           2. the X-distance the mob can be right of the camera without despawning
+              NOTE: this has to include the screen width of $0100 (256)
+           3. the Y-distance the mob can be above the camera without despawning
+           4. the Y-distance the mob can be below of the camera without despawning
+              NOTE: this has to include the screen height of $00C0 (192)
+        ;;
+        WORD    $0100 $0200 $0100 $0200
+}
+
+PROC    :mob_sonic                                          SECTION ::mobs                  ;$49C8
+        ;===========================================================================================
+PARAMS  IX`mob          ``Address of the current mob being processed
+        IY`vars         ``Address of the common variables (used throughout)
+{       
+        res     1   [IY`vars+#vars.unknown0]
+        
+        bit     7   [IX`mob+#mob.flags]
+        call    nz  ._4e88
+        
+        ;flag to update the Sonic sprite frame
+        set     7   [IY`vars+#vars.timeLightningFlags]
+        
+        ;is Sonic dead?
+        bit     0   [IY`vars+#vars.scrollRingFlags]
+        jp      nz  ._543c
+        
+        ;;reduce this number until it hits 0. appears to only be set when changing
+          direction from left to right; something to do with acceleration/skidding?;;
+        ld      A                   [$.SONIC.unknown16]
+        and     A
+        call    nz  ._4ff0
+        
+        ;;configure the flags on Sonic so that he adheres to the ground.
+          I'm not sure why this is done every frame;;
+        res     5   [IX`mob+#mob.flags]
+        
+        ;is Sonic in damage state?
+        bit     6   [IY`vars+#vars.flags6]
+        call    nz  ._510a
+        
+        ld      A                   [$.D28C]
+        and     A
+        call    nz  ._568f
+        
+        ;special stage? (time is centred)
+        bit     0   [IY`vars+#vars.timeLightningFlags]
+        call    nz  ._5100
+        
+        bit     0   [IY`vars+#vars.unknown0]
+        call    nz  ._4ff5
+        
+        ;is Sonic underwater? -- count down oxygen...
+        bit     4   [IX`mob+#mob.flags]                     ;check mob underwater flag
+        call    nz  .drownTimer
+        
+        ld      A                   [$.D28B]
+        and     A
+        call    nz  ._5285
+        
+        ld      A                   [$.D28A]
+        and     A
+        jp      nz  ._5117
+        
+        bit     6   [IY`vars+#vars.unknown0]
+        jp      nz  ._5193
+        
+        bit     7   [IY`vars+#vars.unknown0]
+        call    nz  ._529c
+        
+        ;...........................................................................................
+        
+        bit     4   [IX`mob+#mob.flags]                     ;mob underwater?
+        jp      z   ._1
+        
+        ld      HL                  ._4ddd
+        ld      DE                  $.TEMP1
+        ld      BC                  $0009
+        ldir    
+        
+        ld      HL                  $0100
+        ld      [$.D240]            HL
+        ld      HL                  $FD80
+        ld      [$.D242]            HL
+        ld      HL                  $0010
+        ld      [$.D244]            HL
+        jp      ._5
+        
+        ;...........................................................................................
+        
+._1     ld      A                   [IX`mob+#mob.unknown15]
+        and     A
+        jr      nz  ._4
+        
+        ;special stage?
+        bit     0   [IY`vars+#vars.timeLightningFlags]
+        jr      nz  ._3
+        
+._2     ld      HL                  ._4dcb
+        ld      DE                  $.TEMP1
+        ld      BC                  $0009
+        ldir        
+            
+        ld      HL                  $0300
+        ld      [$.D240]            HL
+        ld      HL                  $FC80
+        ld      [$.D242]            HL
+        ld      HL                  $0038
+        ld      [$.D244]            HL
+        ld      HL                  [$DC0C]
+        ld      [$DC0A]             HL
+        jp      ._5
+        
+._3     bit     7   [IX`mob+#mob.flags]
+        jr      nz  ._2
+        
+        ld      HL                  ._4dd4
+        ld      DE                  $.TEMP1
+        ld      BC                  $0009
+        ldir        
+            
+        ld      HL                  $0C00
+        ld      [$.D240]            HL
+        ld      HL                  $FC80
+        ld      [$.D242]            HL
+        ld      HL                  $0038
+        ld      [$.D244]            HL
+        ld      HL                  [$DC0C]
+        ld      [$DC0A]             HL
+        jp      ._5
+        
+._4     ld      HL                  ._4de6
+        ld      DE                  $.TEMP1
+        ld      BC                  $0009
+        ldir    
+            
+        ld      HL                  $0600
+        ld      [$.D240]            HL
+        ld      HL                  $FC80
+        ld      [$.D242]            HL
+        ld      HL                  $0038
+        ld      [$.D244]            HL
+        ld      HL                  [$DC0C]
+        inc     HL  
+        ld      [$DC0A]             HL
+            
+        ld      A                   [$.FRAMECOUNT]
+        and     %00000011
+        call    z   ._4fec
+        
+        ;-------------------------------------------------------------------------------------------
+        
+        ;is up pressed on the joypad?
+._5     bit     1   [IY`vars+#vars.joypad]                  ;joypad up?
+        call    z   ._50c1
+        
+        bit     1   [IY`vars+#vars.joypad]                  ;joypad not up?
+        call    nz  ._50e3
+        
+        ;handle collision with tile underneath Sonic:
+        ;-------------------------------------------------------------------------------------------
+        
+        ld      A`bank                  15
+        ld      [$_SMS.MAPPER.SLOT2]    A`bank
+        ld      [$.SLOT2]               A`bank
+        
+        ;$3F9ED = 
+        ;0010, 00C4, 0154, 01F4, 02B4, 0374, 044C, 04CC
+        ;  (180) (144) (160) (192) (192) (216) (128)
+        
+        ;locate which block is underneath Sonic?
+        ld      BC`xOff             12
+        ld      DE`yOff             16
+        call    :getFloorLayoutRAMAddressForMob
+        
+        ;get the block index from the Floor Layout address returned
+        ld      E`block             [HL`addr]
+        ld      D`zero              0
+        
+        ;get the solidity index for the current level
+        ld      A`solidity          [$.LEVEL_SOLIDITY]
+        ;double it to look it up in a list of pointers (2 bytes each)
+        add     A`solidity          A`solidity
+        ;transfer it into HL so as to add it to the pointer table address
+        ld      L`solidity          A`solidity
+        ld      H`solidity          D`zero
+        ;access the table of data offsets at $3F9ED (bank 15)
+        ld      BC`table            $B9ED                   ;=$3F9ED
+        ;lookup the solidity index in the table of offsets
+        add     HL`solidity         BC`table
+        ;read the 2-byte offset value into HL
+        ld      A`offset            [HL`table]
+        inc     HL`table
+        ld      H`offset            [HL`table]
+        ld      L`offset            A`offset
+        ;make an absolute address: $3F9ED + offset for solidity + block index
+        add     HL`offset           DE`block
+        add     HL`offset           BC`table
+        ;read the byte of data for the particular block index
+        ld      A`data              [HL`data]
+        ;if it's higher than the number of solidity types, skip ahead
+        cp      $1C                                         ;=number of entries in ._58e5
+        jr      nc  .callback
+        
+        ;double the data byte read
+         ;and transfer to HL for 16-bit use
+        add     A`data              A`data
+        ld      L                   A`data
+        ld      H                   D`zero
+        ld      DE                  ._58e5
+        add     HL                  DE
+        ;load HL with the address in the lookup table
+        ld      A                   [HL]
+        inc     HL
+        ld      H                   [HL]
+        ld      L                   A
+        
+        ;load DE with the callback address
+        ld      DE`callback         .callback
+        
+        ;switch back to the regular bank layout (where the mob code is)
+        ld      A`bank                  2
+        ld      [$_SMS.MAPPER.SLOT2]    A`bank
+        ld      [$.SLOT2]               A`bank
+        
+        ;; keep a copy of the callback address
+           and jump to the specific solidity routine for the tile under Sonic ;;
+        push    DE`callback
+        jp      [HL]
+        
+.callback
+        ;has Sonic fallen out of the level?
+        ;-------------------------------------------------------------------------------------------
+        ld      HL`sonicY           [$.SONIC.Y]
+        ld      DE`sonicH           $0024                   ;height of Sonic?
+        add     HL`sonicY           DE`sonicH
+        ex      DE, HL
+        ld      HL`levelBottom      [$.LEVEL_BOTTOM]
+        ld      BC`screenH          $00C0                   ;height of the screen
+        add     HL`levelBottom      BC`screenH
+        xor     A`flags                                     ;set A to zero, clearing the carry flag
+        sbc     HL`levelBottom      DE`sonicY
+        call    c   :hitPlayer.kill                         ;if over, die!
+        
+        ;idle timer:
+        ;-------------------------------------------------------------------------------------------
+        ld      HL`timer            $0000                   ;reset the idle timer?
+        
+        ld      A                   [IY`vars+#vars.joypad]  ;check joypad state
+        cp      $FF                                         ;is any button being pressed?
+        jr      nz  ._7                                     ;skip the idle timer update
+        
+        ;is player moving left or right?
+        ld      DE                  [$.SONIC.Xspeed]        ;get the horizontal speed
+        ld      A                   E                       ;shift E into A for next instruction
+        or      D                                           ;combine E & D
+        jr      nz  ._7                                     ;if it's not zero, skip
+        
+        ld      A                   [$.SONIC.flags]
+        rlca    
+        jr      nc  ._7
+        
+        ld      HL`timer            [$.IDLE_TIME]
+        inc     HL`timer
+        
+        ;update the idle timer
+._7     ld      [$.IDLE_TIME]       HL`timer
+        
+        ;-------------------------------------------------------------------------------------------
+        
+        bit     7   [IY`vars+#vars.flags6]
+        call    nz  ._50e8
+        
+        ld      [IX`mob+#mob.unknown14] $05
+        ld      HL`idleTime         [$.IDLE_TIME]
+        ld      DE`idleWait         !IDLE_TIME              ;idle time until waiting animation
+        and     A`zero                                      ;clear the carry flag for below
+        sbc     HL`idleTime         DE`idleWait
+        call    nc  ._5105
+        
+        ;is up pressed?
+        ld      A                   [IY`vars+#vars.joypad]
+        cp      %11111110
+        call    z   ._4edd
+        
+        ;up not pressed?
+        bit     0   [IY`vars+#vars.joypad]
+        call    nz  ._4fd3
+        
+        bit     0   [IX`mob+#mob.flags]
+        jp      nz  ._532e
+        
+        ;ducking or spinning?
+        ld      A                   [IX`mob+#mob.height]
+        cp      $20
+        jr      z   ._8
+        
+        ;falling?
+        ld      HL                  [$.SONIC.Y]
+        ld      DE                  $FFF8
+        add     HL                  DE
+        ld      [$.SONIC.Y]         HL
+        
+._8     ld      [IX`mob+#mob.width]     $18
+        ld      [IX`mob+#mob.height]    $20
+        ld      HL                  [$.SONIC.Xspeed]
+        ld      B                   [IX`mob+#mob.Xdirection]
+        ld      C                   $00
+        ld      E                   C
+        ld      D                   C
+        
+        ;is right pressed?
+        bit     3   [IY`vars+#vars.joypad]
+        jp      z   ._4f01
+        
+        ;is left pressed?
+        bit     2   [IY`vars+#vars.joypad]
+        jp      z   ._4f5c
+        
+        ld      A                   H
+        or      L
+        or      B
+        jr      z   ._4b1b
+        
+        ld      [IX`mob+#mob.unknown14] $01
+        bit     7   B
+        jr      nz  ._9
+        
+        ld      DE                  [$.TEMP4]
+        ld      A                   E
+        cpl     
+        ld      E                   A
+        ld      A                   D
+        cpl     
+        ld      D                   A
+        inc     DE
+        ld      C                   $FF
+        
+        push    HL
+        push    DE
+        ld      DE                  [$.D240]
+        xor     A`zero
+        sbc     HL                  DE
+        pop     DE
+        pop     HL
+        jr      c   ._4b1b
+        
+        ld      DE                  [$.TEMP1]
+        ld      A                   E
+        cpl     
+        ld      E                   A
+        ld      A                   D
+        cpl     
+        ld      D                   A
+        inc     DE
+        ld      C                   $FF
+        ld      A                   [$.D216]
+        ld      [IX`mob+#mob.unknown14] A
+        jp      ._4b1b
+        
+._9     ld      DE                  [$.TEMP4]
+        ld      C                   $00
+        
+        push    HL
+        push    DE
+        ld      A                   L
+        cpl     
+        ld      L                   A
+        ld      A                   H
+        cpl     
+        ld      H                   A
+        inc     HL
+        ld      DE                  [$.D240]
+        xor     A`zero
+        sbc     HL                  DE
+        pop     DE
+        pop     HL
+        
+        jr      c   ._4b1b
+        ld      DE                  [$.TEMP1]
+        ld      A                   [$.D216]
+        ld      [IX`mob+#mob.unknown14] A
+._4b1b
+        ld      A                   B
+        and     A
+        jp      m   ._10
+        add     HL                  DE
+        adc     A                   C
+        ld      C                   A
+        jp      p   ._11
+        ld      A                   [$.SONIC.Xspeed]
+        or      [IX`mob+#mob.Xspeed+1]
+        or      [IX`mob+#mob.Xdirection]
+        jr      z   ._11
+        ld      C                   $00
+        ld      L                   C
+        ld      H                   C
+        jp      ._11
+        
+._10    add     HL                  DE
+        adc     A                   C
+        ld      C                   A
+        jp      m   ._11
+        ld      C                   $00
+        ld      L                   C
+        ld      H                   C
+._11    ld      A                   C
+        ld      [$.SONIC.Xspeed]    HL
+        ld      [$.SONIC.Xdirection]    A
+._4b49
+        ld      HL                  [$.SONIC.Yspeed]
+        ld      B                   [IX`mob+#mob.Ydirection]
+        ld      C                   $00
+        ld      E                   C
+        ld      D                   C
+        bit     7   [IX`mob+#mob.flags]
+        call    nz  ._50af
+        bit     0   [IX`mob+#mob.flags]
+        jp      nz  ._5407
+        ld      A                   [$.D28E]
+        and     A
+        jr      nz  ._12
+        bit     7   [IX`mob+#mob.flags]
+        jr      z   ._13
+        bit     3   [IX`mob+#mob.flags]
+        jr      nz  ._12
+        ;button 2 pressed?
+        bit     5   [IY`vars+#vars.joypad]
+        jr      z   ._13
+        ;button 2 not pressed?
+._12    bit     5   [IY`vars+#vars.joypad]
+        jr      nz  ._14
+._4b7f
+        ld      A                   [$.D28E]
+        and     A
+        call    z   ._509d
+        ld      HL                  [$.D242]
+        ld      B                   $FF
+        ld      C                   $00
+        ld      E                   C
+        ld      D                   C
+        ld      A                   [$.D28E]
+        dec     A
+        ld      [$.D28E]            A
+        set     2   [IX`mob+#mob.flags]
+        jp      ._17
+        
+._13    res     3   [IX`mob+#mob.flags]
+        jp      ._15
+        
+._14    set     3   [IX`mob+#mob.flags]
+._15    xor     A`zero
+        ld      [$.D28E]            A`zero
+._4bac
+        bit     7                   H
+        jr      nz  ._16
+        ld      A                   [$.TEMP7]
+        cp      H
+        jr      z   ._17
+        jr      c   ._17
+._16    ld      DE                  [$.D244]
+        ld      C                   $00
+        
+._17    bit     0   [IY`vars+#vars.flags6]
+        jr      z   ._18
+        
+        push    HL
+        ld      A                   E
+        cpl     
+        ld      E                   A
+        ld      A                   D
+        cpl     
+        ld      D                   A
+        ld      A                   C
+        cpl     
+        ld      HL                  $0001
+        add     HL                  DE
+        ex      DE                  HL
+        adc     A                   $00
+        ld      C                   A
+        pop     HL
+._18    add     HL                  DE
+        ld      A                   B
+        adc     A                   C
+        ld      [$.SONIC.Yspeed]    HL
+        ld      [$.SONIC.Ydirection]    A
+        push    HL
+        ld      A                   E
+        cpl     
+        ld      L                   A
+        ld      A                   D
+        cpl     
+        ld      H                   A
+        ld      A                   C
+        cpl     
+        ld      DE                  $0001
+        add     HL                  DE
+        adc     A                   $00
+        ld      [$.D2E6]            HL
+        ld      [$.D2E8]            A
+        pop     HL
+        bit     2   [IX+#mob.flags]
+        call    nz  ._5280
+        ld      A                   H
+        and     A
+        jp      p   ._19
+        ld      A                   H
+        cpl     
+        ld      H                   A
+        ld      A                   L
+        cpl     
+        ld      L                   A
+        inc     HL
+._19    ld      DE                  $0100
+        ex      DE                  HL
+        and     A
+        sbc     HL                  DE
+        jr      nc  ._21
+        ld      A                   [$.SONIC.flags]
+        and     $85
+        jr      nz  ._21
+        bit     7   [IX`mob+#mob.Ydirection]
+        jr      z   ._20
+        ld      [IX`mob+#mob.unknown14] $13
+        jr      ._21
+._20    ld      [IX`mob+#mob.unknown14] $01
+._21    ld      BC                  $000c
+        ld      DE                  $0008
+        call    :getFloorLayoutRAMAddressForMob
+        ld      A                   [HL]
+        and     $7F
+        cp      $79
+        call    nc  ._4def
+._4c39
+        ld      A                   [$.D28C]
+        and     A
+        call    nz  ._51b3
+        bit     6   [IY`vars+#vars.flags6]
+        call    nz  ._51bc
+        bit     2   [IY`vars+#vars.unknown0]
+        call    nz  ._51dd
+        ld      A                   [$.SONIC.unknown14]
+        cp      $0A
+        call    z   ._51f3
+        ld      L                   [IX`mob+#mob.unknown14]
+        ld      C                   L
+        ld      H                   $00
+        add     HL                  HL
+        ld      DE                  ._5965
+        add     HL                  DE
+        ld      E                   [HL]
+        inc     HL
+        ld      D                   [HL]
+        ld      [$.SONIC.unknown11] DE
+        ld      A                   [$.D2DF]
+        sub     C
+        call    nz  ._521f
+        ld      A                   [$.SONIC.unknown13]
+        
+._22    ld      H                   $00
+        ld      L                   A
+        add     HL                  DE
+        ld      A                   [HL]
+        and     A
+        jp      p   ._23
+        inc     HL
+        ld      A                   [HL]
+        ld      [$.SONIC.unknown13] A
+        jp      ._22
+        
+._23    ld      D                   A
+        ld      BC                  ::sound:public.update
+        bit     1   [IX`mob+#mob.flags]
+        jr      z   ._24
+        ld      BC                  :_7000                  ;immediate $7000 or label?
+._24    bit     5   [IY`mob+#vars.flags6]
+        call    nz  ._5206
+        ld      A                   [$.D302]
+        and     A
+        call    nz                  ._4e48
+        ld      A                   D
+        rrca    
+        rrca    
+        rrca    
+        ld      E                   A
+        and     $E0
+        ld      L                   A
+        ld      A                   E
+        and     $1F
+        add     A                   D
+        ld      H                   A
+        add     HL                  BC
+        ld      [$.SONIC_CURRENT_FRAME] HL
+        ld      HL                  ._591d
+        
+        bit     0   [IY`vars+#vars.flags6]
+        call    nz  ._520f
+        
+        ld      A                   [$.SONIC.unknown14]
+        cp      $13
+        call    z   ._5213
+        ld      A                   [$.D302]
+        and     A
+        call    nz  ._4e4d
+        ld      [$.SONIC.spriteLayout]  HL
+        ld      C                   $10
+        ld      A                   [$.SONIC.Xspeed+1]
+        and     A
+        jp      p   ._25
+        neg     
+        ld      C                   $F0
+._25    cp      $10
+        jr      c   ._26
+        ld      A                   C
+        ld      [$.SONIC.Xspeed+1]  A
+._26    ld      C                   $10
+        ld      A                   [$.SONIC.Yspeed+1]
+        and     A
+        jp      p   ._27
+        neg     
+        ld      C                   $F0
+._27    cp      $10
+        jr      c   ._28
+        ld      A                   C
+        ld      [$.SONIC.Yspeed+1]  A
+._28    ld      DE                  [$.SONIC.Y]
+        ld      HL                  $0010
+        and     A
+        sbc     HL                  DE
+        jr      c   ._29
+        add     HL                  DE
+        ld      [$.SONIC.Y]         HL
+._29    bit     7   [IY`vars+#vars.flags6]
+        call    nz  ._5224
+        bit     0   [IY`vars+#vars.unknown0]
+        call    nz  ._4e8d
+        ld      A                   [$.D2E1]
+        and     A
+        call    nz  ._5231
+        ld      A                   [$.D321]
+        and     A
+        call    nz  ._4e51
+        bit     1   [IY`vars+#vars.flags6]
+        jr      nz  ._31
+        ld      HL                  [$.LEVEL_LEFT]
+        ld      BC                  $0008
+        add     HL                  BC
+        ex      DE                  HL
+        ld      HL                  [$.SONIC.X]
+        and     A
+        sbc     HL                  DE
+        jr      nc  ._30
+        ld      [$.SONIC.X]         DE
+        ld      A                   [$.SONIC.Xdirection]
+        and     A
+        jp      p   ._31
+        
+        xor     A`zero                                      ;(set A to zero)
+        ld      [$.SONIC.Xspeed+0]      A`zero
+        ld      [$.SONIC.Xspeed+1]      A`zero
+        ld      [$.SONIC.Xdirection]    A`zero
+        jp      ._31
+        
+._30    ld      HL                  [$.LEVEL_RIGHT]
+        ld      DE                  $00F8                   ;248 -- screen width less 8?
+        add     HL                  DE
+        
+        ex      DE                  HL
+        ld      HL                  [$.SONIC.X]
+        ld      C                   $18
+        add     HL                  BC
+        and     A
+        sbc     HL                  DE
+        jr      c   ._31
+        ex      DE                  HL
+        scf     
+        sbc     HL                  BC
+        ld      [$.SONIC.X]         HL
+        ld      A                   [$.SONIC.Xdirection]
+        and     A
+        jp      m   ._31
+        ld      HL                  [$.SONIC.Xspeed+1]
+        or      H
+        or      L
+        jr      z   ._31
+        
+        xor     A`zero                                      ;(set A to 0)
+        ld      [$.SONIC.Xspeed+0]      A`zero
+        ld      [$.SONIC.Xspeed+1]      A`zero
+        ld      [$.SONIC.Xdirection]    A`zero
+        
+._31    ld      A                   [$.SONIC.flags]
+        ld      [$.D2B9]            A
+        ld      A                   [$.SONIC.unknown14]
+        ld      [$.D2DF]            A
+        ld      D                   $01
+        ld      C                   $30
+        cp      $01
+        jr      z   ._32
+        ld      D                   $06
+        ld      C                   $50
+        cp      $09
+        jr      z   ._32
+        inc     [IX`mob+#mob.unknown13]
+        ret
+        
+._32    ld      A                   [$.D2E0]
+        ld      B                   A
+        ld      HL                  [$.SONIC.Xspeed]
+        bit     7   H
+        jr      z   ._33
+        ld      A                   L
+        cpl     
+        ld      L                   A
+        ld      A                   H
+        cpl     
+        ld      H                   A
+        inc     HL
+._33    srl     H
+        rr      L
+        ld      A                   L
+        add     A                   B
+        ld      [$.D2E0]            A
+        ld      A                   H
+        adc     A                   D
+        adc     A                   [IX`mob+#mob.unknown13]
+        ld      [$.SONIC.unknown13] A
+        cp      C
+        ret     c
+        sub     C
+        ld      [$.SONIC.unknown13] A
+        ret     
+        
+        ;-------------------------------------------------------------------------------------------
+
+._4dcb  BYTE    $10 $00 $30 $00 $08 $00 $00 $08 $02                                         ;$4DCB
+._4dd4  BYTE    $10 $00 $30 $00 $02 $00 $00 $08 $02                                         ;$4DD4
+._4ddd  BYTE    $04 $00 $0C $00 $02 $00 $00 $02 $01                                         ;$4DDD
+._4de6  BYTE    $10 $00 $30 $00 $08 $00 $00 $08 $02                                         ;$4DE6
+
+        ;-------------------------------------------------------------------------------------------
+
+._4def  ex      DE                  HL                                                      ;$4DEF
+        
+        ld      HL                  [$.SONIC.Y]
+        ld      BC                  [$.CAMERA_Y]
+        and     A
+        sbc     HL                  BC
+        ret     c
+        
+        ld      BC                  $0010
+        and     A
+        sbc     HL                  BC
+        ret     c
+        
+        ld      HL                  [$.SONIC.X]
+        ld      BC                  $000C
+        add     HL                  BC
+        ld      A                   [DE]
+        ld      C                   A
+        ld      A                   L
+        rrca    
+        rrca    
+        rrca    
+        rrca    
+        and     $01
+        inc     A
+        ld      B                   A
+        ld      A                   C
+        and     B
+        ret     z
+        ld      A                   L
+        and     $F0
+        ld      L                   A
+        ld      [$.D2AB]            HL
+        ld      [$.D31D]            HL
+        ld      A                   C
+        xor     B
+        ld      [DE]                A
+        ld      HL                  [$.SONIC.Y]
+        ld      BC                  $0008
+        add     HL                  BC
+        ld      A                   L
+        and     $E0
+        add     A                   $08
+        ld      L                   A
+        ld      [$.D2AD]            HL
+        ld      [$.D31F]            HL
+        ld      A                   $06
+        ld      [$.D321]            A
+        ld      HL                  ._595d
+        ld      [$.D2AF]            HL
+        
+        ;add one ring to the ring count
+        ld      A                   $01
+        call    :increaseRings
+        
+        ret
+
+        ;-------------------------------------------------------------------------------------------
+
+._4e48  ld      D                   A                                                       ;$4E48
+        ld      BC                  :_7000                  ;immediate $7000 or label?
+        ret
+
+        ;-------------------------------------------------------------------------------------------
+
+._4e4d  ld      HL                  $0000                                                   ;$4E4D
+        ret
+
+        ;-------------------------------------------------------------------------------------------
+
+._4e51  dec     A                                                                           ;$4E51
+        ld      [$.D321]            A
+        ld      HL                  [$.D31D]
+        ld      [$.TEMP1]           HL
+        ld      HL                  [$.D31F]
+        ld      [$.TEMP3]           HL
+        ld      HL                  $0000
+        ld      [$.TEMP4]           HL
+        ld      HL                  $FFFE
+        ld      [$.TEMP6]           HL
+        cp      $03
+        jr      c   ._34
+        ld      A                   $B2
+        call    :_3581
+        ld      HL                  $0008
+        ld      [$.TEMP4]           HL
+        ld      HL                  $0002
+        ld      [$.TEMP6]           HL
+._34    ld      A                   $5A
+        call    :_3581
+        ret
+
+        ;-------------------------------------------------------------------------------------------
+
+._4e88  set     1   [IY`vars+#vars.unknown0]                                                ;$4E88
+        ret
+
+        ;-------------------------------------------------------------------------------------------
+
+._4e8d  ld      HL                  [$.SONIC.X]                                             ;$4E8D
+        ld      [$.TEMP1]           HL
+        ld      HL                  [$.SONIC.Y]
+        ld      [$.TEMP3]           HL
+        ld      HL                  $.D2F3
+        ld      A                   [$.FRAMECOUNT]
+        rrca    
+        rrca    
+        jr      nc  ._35
+        ld      HL                  $.D2F7
+._35    ld      DE                  $.TEMP4
+        ldi     
+        ldi     
+        ldi     
+        ldi     
+        rrca    
+        ld      A                   $94
+        jr      nc  ._36
+        ld      A                   $96
+._36    call    :_3581
+        ld      A                   [$.FRAMECOUNT]
+        ld      C                   A
+        and     $07
+        ret     nz
+        ld      B                   $02
+        ld      HL                  $.D2F3
+        bit     3   C
+        jr      z   ._37
+        ld      HL                  $.D2F7
+._37    push    HL
+        call    ::main:_LABEL_625_57
+        pop     HL
+        and     $0F
+        ld      [HL]                A
+        inc     HL
+        ld      [HL]                $00
+        inc     HL
+        djnz    ._37
+        ret
+
+        ;-------------------------------------------------------------------------------------------
+        
+        ;is Sonic moving?
+._4edd  ld      HL`speed            [$.SONIC.Xspeed]                                        ;$4EDD
+        ld      A`speed             H`speed
+        or      L`speed
+        ret     nz
+        
+        ld      A                   [$.SONIC.flags]
+        rlca    
+        ret     nc
+        
+        ld      [IX+#mob.unknown14] $0C
+        ld      DE                  [$.D2B7]
+        bit     7   D
+        jr      nz  ._38
+        
+        ld      HL                  $002C
+        and     A
+        sbc     HL                  DE
+        ret     c
+._38    inc     DE
+        ld      [$.D2B7]            DE
+        
+        ret
+
+        ;-------------------------------------------------------------------------------------------
+        
+._4f01  res     1   [IX`mob+#mob.flags]                                                     ;$4F01
+        bit     7   B
+        jr      nz  ._39
+        ld      DE                  [$.TEMP1]
+        ld      C                   $00
+        ld      [IX`mob+#mob.unknown14] $01
+        push    HL
+        exx     
+        pop     HL
+        ld      DE                  [$.D240]
+        xor     A`zero
+        sbc     HL                  DE
+        exx     
+        jp      c   ._4b1b
+        ld      B   A
+        ld      E   A
+        ld      D   A
+        ld      C   A
+        ld      HL  [$.D240]
+        ld      A   [$.D216]
+        ld      [IX`mob+#mob.unknown14] A
+        jp      ._4b1b
+        
+        ;-------------------------------------------------------------------------------------------
+        
+._39    set     1,[ix+#mob.flags]
+        ld      [ix+#mob.unknown14],$0a
+        push    hl
+        ld      a,l
+        cpl     
+        ld      l,a
+        ld      a,h
+        cpl     
+        ld      h,a
+        inc     hl
+        ld      de,$0100
+        and     a
+        sbc     hl,de
+        pop     hl
+        ld      de,[$.TEMP3]
+        ld      c,$00
+        jp      nc,._4b1b
+        res     1,[ix+#mob.flags]
+        ld      [ix+#mob.unknown14],$01
+        jp      ._4b1b
+._4f5c                                                                          ;$4F5C
+        set     1,[ix+#mob.flags]
+        ld      a,l
+        or      h
+        jr      z,._40
+        bit     7,b
+        jr      z,._4fa6
+._40    ld      de,[$.TEMP1]
+        ld      a,e
+        cpl     
+        ld      e,a
+        ld      a,d
+        cpl     
+        ld      d,a
+        inc     de
+        ld      c,$ff
+        ld      [ix+#mob.unknown14],$01
+        push    hl
+        exx     
+        pop     hl
+        ld      a,l
+        cpl     
+        ld      l,a
+        ld      a,h
+        cpl     
+        ld      h,a
+        inc     hl
+        ld      de,[$.D240]
+        xor     a`zero
+        sbc     hl,de
+        exx     
+        jp      c,._4b1b
+        ld      e,a
+        ld      d,a
+        ld      c,a
+        ld      hl,[$.D240]
+        ld      a,l
+        cpl     
+        ld      l,a
+        ld      a,h
+        cpl     
+        ld      h,a
+        inc     hl
+        ld      b,$ff
+        ld      a,[$.D216]
+        ld      [ix+#mob.unknown14],a
+        jp      ._4b1b
+._4fa6
+        res     1,[ix+#mob.flags]
+        ld      [ix+#mob.unknown14],$0a
+        ld      de,[$.TEMP3]
+        ld      a,e
+        cpl     
+        ld      e,a
+        ld      a,d
+        cpl     
+        ld      d,a
+        inc     de
+        ld      c,$ff
+        push    hl
+        exx     
+        pop     hl
+        ld      bc,$0100
+        and     a
+        sbc     hl,bc
+        exx     
+        jp      nc,._4b1b
+        set     1,[ix+#mob.flags]
+        ld      [ix+#mob.unknown14],$01
+        jp      ._4b1b
+
+        ;-------------------------------------------------------------------------------
+        
+._4fd3  bit     0,[ix+#mob.flags]                                               ;$4FD3
+        ret     nz
+        ld      hl,[$.D2B7]
+        ld      a,h
+        or      l
+        ret     z
+        bit     7,h
+        jr      z,._41
+        inc     hl
+        ld      [$.D2B7],hl
+        ret
+        
+._41    dec     hl
+        ld      [$.D2B7],hl
+        ret
+
+        ;-------------------------------------------------------------------------------
+        
+._4fec  dec     [IX`mob+#mob.unknown15]                                         ;$4FEC
+        ret
+
+        ;-------------------------------------------------------------------------------
+
+._4ff0  dec     a                                                               ;$4FF0
+        ld      [$.SONIC.unknown16],a
+        ret
+
+        ;-------------------------------------------------------------------------------
+        
+._4ff5  ld      a,[$.FRAMECOUNT]                                                ;$4FF5
+        and     $03
+        ret     nz
+        ld      hl,$.D28D
+        dec     [hl]
+        ret     nz
+        res     0,[iy+#vars.unknown0]
+        
+        ld      a,[$.LEVEL_MUSIC]
+        rst     :rst_playMusic
+        
+        ret
+
+.drownTimer                                                                     ;$5009
+        ;-------------------------------------------------------------------------------
+        ;check for specific solidity data for this level
+        ld      A,[$.LEVEL_SOLIDITY]
+        cp      $03                             ;labyrinth?
+        ret     nz
+        
+        ;is this labyrinth act 3?
+        ld      a,[$.CURRENT_LEVEL]
+        cp      $0B
+        ret     z                               ;yes? not applicable
+        
+        ;increase drown timer...
+        ld      hl,[$.D29B]
+        inc     hl
+        ld      [$.D29B],hl
+        ld      de,$0300
+        and     a
+        sbc     hl,de
+        ret     c
+        
+        ;count down 1 every 256 frames
+        ld      a,$05
+        sub     h
+        jr      nc,._42
+        
+        res     5,[iy+#vars.flags6]             ;remove shield
+        res     6,[iy+#vars.flags6]             ;clear damage state
+        res     0,[iy+#vars.unknown0]
+        set     3,[iy+#vars.unknown0]
+        set     0,[iy+#vars.scrollRingFlags]    ;mark player as dead
+        ld      a,$c0
+        ld      [$.D287],a
+        
+        ;drowned!
+        ld      A`sfx,::sound:S1_MusicPointers.death.index ;=$0A
+        rst     :rst_playMusic
+        
+        call    :_91eb
+        call    :_91eb
+        call    :_91eb
+        call    :_91eb
+        xor     a`zero
+        
+        ;layout the oxygen countdown number
+._42    ld      e,a
+        add     a,a
+        add     a,$80
+        ld      [$.LAYOUT_BUFFER],a
+        ld      a,$ff
+        ld      [$.LAYOUT_BUFFER+1],a
+        ld      d,$00
+        ld      hl,._5097
+        add     hl,de
+        ld      a,[$.FRAMECOUNT]
+        and     [hl]
+        jr      nz,._43
+        
+        ld      a,$1a
+        rst     :rst_playSFX
+        
+._43    ld      a,[$.FRAMECOUNT]
+        rrca    
+        ret     nc
+        
+        ld      hl,[$.SONIC.X]
+        ld      de,[$.CAMERA_X]
+        and     a
+        sbc     hl,de
+        ld      a,l
+        add     a,$08
+        ld      c,a
+        ld      hl,[$.SONIC.Y]
+        ld      de,[$.CAMERA_Y]
+        and     a
+        sbc     hl,de
+        ld      a,l
+        add     a,$ec
+        ld      b,a
+        ld      hl,$D03C
+        ld      de,$.LAYOUT_BUFFER
+        call    :layoutSpritesHorizontal
+        
+        ret
+
+._5097  BYTE    $01, $07, $0f, $1f, $3f, $7f                                    ;$5097
+
+        ;-------------------------------------------------------------------------------
+        
+._509d  ld      A,$10                                                           ;$509D
+        ld      [$.D28E],A
+        
+        ld      A,$00
+        rst     :rst_playSFX
+        
+        ret
+
+        ;--- UNUSED! (8 bytes) ---------------------------------------------------------
+        
+        xor     A`zero                                                          ;$50A6
+        ld      [$.SONIC.Xsubpixel] A`zero
+        ld      [$.SONIC.X]         DE
+        ret
+
+        ;-------------------------------------------------------------------------------
+
+._50af  exx                                                                     ;$50AF
+        ld      hl,[$.SONIC.Y]
+        ld      [$.D2D9],hl
+        exx     
+        bit     2,[ix+#mob.flags]
+        ret     z
+        res     2,[ix+#mob.flags]
+        ret
+
+        ;-------------------------------------------------------------------------------
+        ;joypad up is pressed...
+        
+._50c1  bit     2,[IX`mob+#mob.flags]                                           ;$50C1
+        ret     nz
+        
+        bit     0,[IX`mob+#mob.flags]
+        ret     nz
+        
+        bit     7,[IX`mob+#mob.flags]
+        ret     z
+        
+        ;is Sonic moving?
+        set     0,[IX`mob+#mob.flags]
+        ld      hl,[$.SONIC.Xspeed]
+        ld      a,l
+        or      h
+        jr      z,._44
+        
+        ld      a,$06
+        rst     :rst_playSFX
+        
+._44    set     2,[iy+#vars.timeLightningFlags]
+        ret
+
+        ;-------------------------------------------------------------------------------
+        
+._50e3  res     2,[iy+#vars.timeLightningFlags]                                 ;$50E3
+        ret
+
+        ;-------------------------------------------------------------------------------
+        
+._50e8  ld      hl,[$.D2DC]                                                     ;$50E8
+        ld      de,[$.SONIC.Y]
+        and     a
+        sbc     hl,de
+        jp      c,._55a8
+        ld      hl,$0000
+        ld      [$.D29B],hl
+        res     4,[ix+#mob.flags]               ;mob not underwater
+        ret
+
+        ;-------------------------------------------------------------------------------
+        
+._5100  set     2,[ix+#mob.flags]                                               ;$5100
+        ret
+
+        ;-------------------------------------------------------------------------------
+        
+._5105  ld      [ix+#mob.unknown14],$0D                                         ;$5105
+        ret
+
+        ;-------------------------------------------------------------------------------
+        
+._510a  ;clear joypad input                                                     ;$510A
+        ld      [IY`vars+#vars.joypad],$FF
+        
+        ld      A`flags     [$.SONIC.flags]
+        and     %11111010
+        ld      [$.SONIC.flags]     A`flags
+        
+        ret
+
+        ;-------------------------------------------------------------------------------
+        
+._5117  dec     a                                                               ;$5117
+        ld      [$.D28A],a
+        jr      z,._46
+        cp      $14
+        jr      c,._45
+        
+        xor     A`zero
+        ld      L`zero              A`zero
+        ld      H`zero              A`zero
+        ld      [$.SONIC.Xspeed+0]  A`zero
+        ld      [$.SONIC.Xspeed+1]  HL`zero
+        ld      [$.SONIC.Yspeed+0]  A`zero
+        ld      [$.SONIC.Yspeed+1]  HL`zero
+        
+        ld      [ix+#mob.unknown14],$0f
+        jp      ._4c39
+        
+._45    res     1,[ix+#mob.flags]
+        ld      [ix+#mob.unknown14],$0e
+        jp      ._4c39
+        
+._46    ld      hl,[$.D2D5]
+        ld      b,[hl]
+        inc     hl
+        ld      c,[hl]
+        inc     hl
+        ld      a,[hl]
+        and     a
+        jr      z,._49
+        jp      m,._47
+        ld      [$.D2D3],a
+        set     4,[iy+#vars.flags6]
+        jr      ._48    
+._47    set     2,[iy+#vars.unknown_0D]
+._48    ld      a,$01
+        ld      [$.D289],a
+        ret
+        
+._49    ld      a,b
+        ld      h,$00
+        ld      b,$05
+        
+._50    add     a,a
+        rl      h
+        djnz    ._50
+        
+        ld      l,a
+        ld      de,$0008
+        add     hl,de
+        ld      [$.SONIC.X],hl
+        ld      a,c
+        ld      h,$00
+        add     a,a
+        rl      h
+        add     a,a
+        rl      h
+        add     a,a
+        rl      h
+        add     a,a
+        rl      h
+        add     a,a
+        rl      h
+        ld      l,a
+        ld      [$.SONIC.Y],hl
+        
+        xor     a`zero
+        ld      [$.SONIC.Xsubpixel],a`zero
+        ld      [$.SONIC.Ysubpixel],a`zero
+        ret
+
+        ;-------------------------------------------------------------------------------
+        
+._5193  xor     A`zero                          ;set A to 0                     ;$5319
+        ld      L`zero  A`zero
+        ld      H`zero  A`zero
+        ld      [$.SONIC.Yspeed]        HL`zero
+        ld      [$.SONIC.Ydirection]    A`zero  ;set "not jumping"
+        
+        ld      [ix+#mob.unknown14],$16
+        ld      a,[$.SONIC.unknown13]
+        cp      $12
+        jp      c,._4c39
+        res     6,[iy+#vars.unknown0]
+        set     2,[ix+#mob.flags]
+        jp      ._4c39
+
+        ;-------------------------------------------------------------------------------
+
+._51b3  dec     a                                                               ;$51B3
+        ld      [$.D28C],a
+        ld      [ix+#mob.unknown14],$11
+        ret
+
+        ;-------------------------------------------------------------------------------
+        
+._51bc  ld      [ix+#mob.width]     28                                          ;$51BC
+        ld      [ix+#mob.unknown14] $10
+        
+        bit     7,[ix+#mob.Ydirection]
+        ret     nz
+        
+        bit     7,[ix+#mob.flags]
+        ret     z
+        
+        res     6,[iy+#vars.flags6]
+        
+        xor     A`zero
+        ld      [$.SONIC.Xspeed+0]      A`zero
+        ld      [$.SONIC.Xspeed+1]      A`zero
+        ld      [$.SONIC.Xdirection]    A`zero
+        
+        ret
+
+        ;-------------------------------------------------------------------------------
+
+._51dd  ld      a,[$.SONIC.flags]                                               ;$51DD
+        and     $fa
+        ld      [$.SONIC.flags],a
+        ld      [ix+#mob.unknown14],$14
+        ld      hl,$.D2FB
+        dec     [hl]
+        ret     nz
+        res     2,[iy+#vars.unknown0]
+        ret
+
+        ;-------------------------------------------------------------------------------
+
+._51f3  ld      a,[$.SONIC.unknown16]                                           ;$51F3
+        and     a
+        ret     nz
+        bit     7,[ix+#mob.flags]
+        ret     z
+        ld      a,$03
+        rst     :rst_playSFX
+        ld      a,$3c
+        ld      [$.SONIC.unknown16],a
+        ret
+
+        ;-------------------------------------------------------------------------------
+        
+        ;every other frame...                                                   ;$5206
+._5206  ld      a,[$.FRAMECOUNT]
+        and     $01
+        ret     nz
+        
+        ld      d,$18
+        ret
+
+        ;-------------------------------------------------------------------------------
+        
+._520f  ld      hl,._592b                                                       ;$592B
+        ret
+
+        ;-------------------------------------------------------------------------------
+        
+._5213  ld      hl,._5939                                                       ;$5213
+        bit     1,[ix+#mob.flags]
+        ret     z
+        ld      hl,._594b
+        ret
+
+        ;-------------------------------------------------------------------------------
+        
+._521f  ld      [ix+#mob.unknown13],$00                                         ;$521F
+        ret
+
+        ;-------------------------------------------------------------------------------
+        
+._5224  bit     4,[ix+#mob.flags]               ;mob underwater?                ;$5224
+        ret     z
+        
+        ld      a,[$.FRAMECOUNT]
+        and     a
+        call    z,:_91eb                        ;do this every 256 frames...?
+        
+        ret
+
+        ;-------------------------------------------------------------------------------
+        
+._5231  dec     a                                                               ;$5231
+        ld      [$.D2E1],a
+        cp      $06
+        jr      c,._51
+        cp      $0a
+        ret     c
+        
+._51    ld      a`updates,[iy+#vars.spriteUpdateCount]
+        ld      hl`addr,[$.SPRITETABLE_ADDR]    ;get current sprite-table address
+        push    af`updates                      ;remember no. of sprite updates pending
+        push    hl`addr                         ;remember current sprite-table address
+        ld      hl`addr,$.SPRITETABLE           ;load the game's main sprite table
+        ld      [$.SPRITETABLE_ADDR],hl`addr    ;and set the pointer to that
+        
+        ld      de,[$.CAMERA_Y]
+        ld      hl,[$.D2E4]
+        and     a
+        sbc     hl,de
+        ex      de,hl
+        ld      bc,[$.CAMERA_X]
+        ld      hl,[$.D2E2]
+        and     a
+        sbc     hl,bc
+        ld      bc,._526e                       ;address of sprite layout
+        call    :processSpriteLayout
+        
+        pop     hl
+        pop     af
+        
+        ld      [$.SPRITETABLE_ADDR],hl
+        ld      [iy+#vars.spriteUpdateCount],a
+        ret
+        
+._526e  BYTE    $00, $02, $04, $06, $FF, $FF
+        BYTE    $20, $22, $24, $26, $FF, $FF
+        BYTE    $FF, $FF, $FF, $FF, $FF, $FF
+
+        ;-------------------------------------------------------------------------------
+        
+._5280  ld      [ix+#mob.unknown14],$09                                         ;$5280
+        ret
+
+        ;--------------------------------------------------------------------[$5285]---
+        
+._5285  dec     a
+        ld      [$.D28B],a
+        ret     nz
+        
+        ld      a,[$.LEVEL_MUSIC]
+        rst     :rst_playMusic
+        
+        ld      c,[iy+#vars.spriteUpdateCount]
+        res     0,[iy+#vars.flags0]
+        call    ::interrupts:waitForInterrupt
+        ld      [iy+#vars.spriteUpdateCount],c
+        ret
+
+        ;--------------------------------------------------------------------[$529C]---
+        
+._529c  ld      [iy+#vars.joypad],$fb
+        ld      hl,[$.SONIC.X]
+        ld      de,$1b60
+        and     a
+        sbc     hl,de
+        ret     nc
+        ld      [iy+#vars.joypad],$ff
+        ld      hl,[$.SONIC.Xspeed]
+        ld      a,l
+        or      h
+        ret     nz
+        res     1,[ix+#mob.flags]
+        pop     hl
+        set     1,[ix+#mob.flags]
+        ld      [ix+#mob.unknown14],$18
+        ld      hl,$.D2FE
+        bit     0,[iy+#vars.unknown_0D]
+        jr      nz,._52
+        ld      [hl],$50
+        call    :findEmptyMob
+        jp      c,._4c39
+        push    ix
+        push    hl
+        pop     ix
+        xor     a`zero                          ;set A to 0
+        ld      [ix+#mob.type],$54              ;all emeralds animation
+        ld      [ix+#mob.unknown11],a`zero
+        ld      [ix+#mob.flags],a`zero
+        ld      [ix+#mob.Xsubpixel],a`zero
+        ld      hl,[$.SONIC.X]
+        ld      de,$0002
+        add     hl,de
+        ld      [ix+#mob.X+0],l
+        ld      [ix+#mob.X+1],h
+        ld      [ix+#mob.Ysubpixel],a`zero
+        ld      hl,[$.SONIC.Y]
+        ld      de,$000e
+        add     hl,de
+        ld      [ix+#mob.Y+0],l
+        ld      [ix+#mob.Y+1],h
+        pop     ix
+        set     0,[iy+#vars.unknown_0D]
+        jp      ._4c39
+        
+._52    bit     1,[iy+#vars.unknown_0D]
+        jr      nz,._53
+        dec     [hl]
+        jp      nz,._4c39
+        set     1,[iy+#vars.unknown_0D]
+        ld      [hl],$8c
+._53    ld      [ix+#mob.unknown14],$17
+        ld      a,[hl]
+        and     a
+        jr      z,._54
+        dec     [hl]
+        jp      ._4c39
+        
+._54    ld      [ix+#mob.unknown14],$19
+        jp      ._4c39
+
+        ;--------------------------------------------------------------------[$532E]---
+        
+._532e  ld      a,[ix+#mob.height]
+        cp      $18
+        jr      z,._55
+        ld      hl,[$.SONIC.Y]
+        ld      de,$0008
+        add     hl,de
+        ld      [$.SONIC.Y],hl
+._55    ld      [ix+#mob.width],$18
+        ld      [ix+#mob.height],$18
+        ld      hl,[$.SONIC.Xspeed]
+        ld      b,[ix+#mob.Xdirection]
+        ld      c,$00
+        ld      e,c
+        ld      d,c
+        ld      a,h
+        or      l
+        or      b
+        jp      z,._60
+        ld      [ix+#mob.unknown14],$09
+        bit     2,[iy+#vars.joypad]
+        jr      nz,._57
+        bit     1,[iy+#vars.joypad]
+        jr      z,._57
+        bit     7,[ix+#mob.flags]
+        jp      z,._56
+        bit     7,b
+        jr      nz,._59
+        res     0,[ix+#mob.flags]
+        jp      ._4fa6
+        
+._56    ld      de,$fff0
+        ld      c,$ff
+        jp      ._4b1b
+        
+._57    bit     3,[iy+#vars.joypad]
+        jr      nz,._59
+        bit     1,[iy+#vars.joypad]
+        jr      z,._59
+        bit     7,[ix+#mob.flags]
+        jp      z,._58
+        bit     7,b
+        jr      z,._59
+        res     0,[ix+#mob.flags]
+        jp      ._4fa6
+        
+._58    ld      de,$0010
+        ld      c,$00
+        jp      ._4b1b
+        
+._59    ld      de,$0004
+        ld      c,$00
+        ld      a,b
+        and     a
+        jp      m,._4b1b
+        ld      de,$fffc
+        ld      c,$ff
+        jp      ._4b1b
+        
+._60    bit     7,[ix+#mob.flags]
+        jr      z,._62
+        ld      [ix+#mob.unknown14],$07
+        res     0,[ix+#mob.flags]
+        ld      de,[$.D2B7]
+        bit     7,d
+        jr      z,._61
+        ld      hl,$ffb0
+        and     a
+        sbc     hl,de
+        jp      nc,._4b49
+._61    dec     de
+        ld      [$.D2B7],de
+        jp      ._4b49
+        
+._62    ld      [ix+#mob.unknown14],$09
+        push    de
+        push    hl
+        bit     7,b
+        jr      z,._63
+        ld      a,l
+        cpl     
+        ld      l,a
+        ld      a,h
+        cpl     
+        ld      h,a
+        inc     hl
+._63    ld      de,[$.D240]
+        xor     a`zero
+        sbc     hl,de
+        pop     hl
+        pop     de
+        jp      c,._4b1b
+        ld      c,a
+        ld      e,c
+        ld      d,c
+        ld      [ix+#mob.unknown14],$09
+        jp      ._4b1b
+
+        ;--------------------------------------------------------------------[$5407]---
+        
+._5407  bit     7,[ix+#mob.flags]
+        jr      z,._65
+        bit     3,[ix+#mob.flags]
+        jr      nz,._64
+        bit     5,[iy+#vars.joypad]
+        jr      z,._65
+._64    bit     5,[iy+#vars.joypad]
+        jr      nz,._66
+        res     0,[ix+#mob.flags]
+        ld      a,[$.SONIC.Xspeed]
+        and     $f8
+        ld      [$.SONIC.Xspeed],a
+        jp      ._4b7f
+        
+._65    res     3,[ix+#mob.flags]
+        jp      ._4bac
+._66    set     3,[ix+#mob.flags]
+        jp      ._4bac
+
+        ;--------------------------------------------------------------------[$543C]---
+        ;Sonic is dead...
+        
+._543c  set     5,[ix+#mob.flags]               ;make Sonic pass over the floor
+        
+        ld      a,[$.D287]
+        cp      $60
+        jr      z,._54aa
+        
+        ;has Sonic finished falling off the screen?
+        ld      hl,[$.CAMERA_Y]
+        ld      de,$00C0                        ;height of screen?
+        add     hl,de
+        ld      de,[$.SONIC.Y]
+        sbc     hl,de
+        jr      nc,._67
+        
+        bit     2,[iy+#vars.flags6]
+        jr      nz,._67
+        
+        ld      a,$01
+        ld      [$.D283],a
+        
+        ;remove a life...
+        ld      hl,$.LIVES
+        dec     [hl]
+        
+        set     2,[iy+#vars.flags6]
+        jp      ._54aa
+        
+._67    xor     A`zero
+        ld      hl,$0080
+        
+        bit     3,[iy+#vars.unknown0]
+        jr      nz,._71
+        
+        ld      de,[$.SONIC.Yspeed]
+        bit     7,d
+        jr      nz,._68
+        
+        ld      hl,$0600
+        and     a
+        sbc     hl,de
+        jr      c,._72
+        
+._68    ex      de,hl
+        ld      b,[ix+#mob.Ydirection]
+        ld      a,h
+        cp      $80
+        jr      nc,._69
+        
+        cp      $08
+        jr      nc,._70
+        
+._69    ld      de,$0030
+        ld      c,$00
+._70    add     hl,de
+        ld      a,b
+        adc     a,c
+._71    ld      [$.SONIC.Yspeed],hl
+        ld      [$.SONIC.Ydirection],a
+        
+._72    xor     A`zero
+        ld      L`zero,A`zero
+        ld      H`zero,A`zero
+        ld      [$.SONIC.Xspeed],HL`zero
+        ld      [$.SONIC.Xdirection],A`zero
+
+._54aa
+        ld      [IX`mob+#mob.unknown14],$0b
+        bit     3,[IY`vars+#vars.unknown0]
+        jp      z,._4c39
+        ld      [IX`mob+#mob.unknown14],$15
+        jp      ._4c39
+
+        ;====================================================================[$54BC]===
+        ;referenced by table at `_58e5` - index $00
+        ;air
+        
+INDEX   ._54bc
+
+        ;check if the player is underwater
+        bit     7,[iy+#vars.flags6]             ;underwater flag
+        ret     nz                              ;this solidity is not valid underwater
+        
+        res     4,[ix+#mob.flags]               ;turn off mob underwater flag
+        ret
+
+        ;====================================================================[$54C6]===
+        ;referenced by table at `_58e5` - index $01
+        ;spikes?
+        
+INDEX   ._54c6
+        
+        bit     0,[iy+#vars.scrollRingFlags]    ;is the player dead?
+        jp      z,:hitPlayer._35fd              ;if not, damage them
+        ret
+
+        ;====================================================================[$54CE]===
+        ;referenced by table at `_58e5` - index $02
+        ;jump ramp?
+        
+INDEX   ._54ce
+        ld      a,[ix+#mob.X+0]
+        add     a,$0c
+        and     $1f
+        cp      $1a
+        ret     c
+        
+        ld      a,[$.SONIC.flags]
+        rrca    
+        jr      c,._73
+        
+        and     $02
+        ret     z
+        
+._73    ld      l,[ix+#mob.Xspeed+0]
+        ld      h,[ix+#mob.Xspeed+1]
+        bit     7,[ix+#mob.Xdirection]
+        ret     nz
+        ld      de,$0301
+        and     a
+        sbc     hl,de
+        ret     c
+        ld      l,[ix+#mob.Xspeed+1]
+        ld      h,[ix+#mob.Xdirection]
+        add     hl,hl
+        ld      a,l
+        cpl     
+        ld      l,a
+        ld      a,h
+        cpl     
+        ld      h,a
+        inc     hl
+        ld      [ix+#mob.Yspeed+0],$00
+        ld      [ix+#mob.Yspeed+1],l
+        ld      [ix+#mob.Ydirection],h
+        
+        ld      a,$05
+        rst     :rst_playSFX
+        
+        ret
+
+        ;====================================================================[$550F]===
+        ;referenced by table at `_58e5` - index $03
+        ;horizontal spring? (facing left)
+        
+INDEX   ._550f
+        ld      a,[ix+#mob.X+0]
+        add     a,$0c
+        and     $1f
+        cp      $10
+        ret     c
+        
+        ld      [ix+#mob.Xspeed+0],$00
+        ld      [ix+#mob.Xspeed+1],$F8
+        ld      [ix+#mob.Xdirection],$FF
+        set     1,[ix+#mob.flags]
+        
+        ld      a,$04
+        rst     :rst_playSFX
+        
+        ret
+        
+        ;====================================================================[$552D]===
+        ;referenced by table at `_58e5` - index $04
+        ;vertical spring?
+        
+INDEX   ._552d 
+        ld      a,[ix+#mob.X+0]
+        add     a,$0c
+        and     $1f
+        cp      $10
+        ret     c
+        
+        bit     7,[ix+#mob.flags]
+        ret     z
+        
+        ld      a,[$.D2B9]
+        and     $80
+        ret     nz
+        
+        res     6,[iy+#vars.flags6]
+        ld      [ix+#mob.Yspeed+0],$00
+        ld      [ix+#mob.Yspeed+1],$F4
+        ld      [ix+#mob.Ydirection],$FF
+        
+        ld      a,$04
+        rst     :rst_playSFX
+        
+        ret
+
+        ;====================================================================[$5556]===
+        ;referenced by table at `_58e5` - index $05
+        
+INDEX   ._5556
+        ld      a,[ix+#mob.X+0]
+        add     a,$0c
+        and     $1f
+        cp      $10
+        ret     nc
+        
+        res     6,[iy+#vars.flags6]
+        ld      [ix+#mob.Xspeed+0],$00
+        ld      [ix+#mob.Xspeed+1],$08
+        ld      [ix+#mob.Xdirection],$00
+        res     1,[ix+#mob.flags]
+        
+        ld      a,$04
+        rst     :rst_playSFX
+        
+        ret
+
+        ;====================================================================[$5578]===
+        ;referenced by table at `_58e5` - index $06
+
+INDEX   ._5578
+        bit     7,[ix+#mob.flags]
+        ret     z
+        
+        ld      hl,[$.SONIC.Xsubpixel]
+        ld      a,[$.SONIC.X+1]
+        ld      de,$fe80
+        add     hl,de
+        adc     a,$ff
+        ld      [$.SONIC.Xsubpixel],hl
+        ld      [$.SONIC.X+1],a
+        ret
+
+        ;====================================================================[$5590]===
+        ;referenced by table at `_58e5` - index $07
+        
+INDEX   ._5590
+        bit     7,[ix+#mob.flags]
+        ret     z
+        
+        ld      hl,[$.SONIC.Xsubpixel]
+        ld      a,[$.SONIC.X+1]
+        ld      de,$0200
+        add     hl,de
+        adc     a,$00
+        ld      [$.SONIC.Xsubpixel],hl
+        ld      [$.SONIC.X+1],a
+        ret
+
+        ;====================================================================[$55A8]===
+        ;referenced by table at `_58e5` - index $08
+        ;water? (non-raster)
+        
+INDEX   ._55a8
+        bit     4,[ix+#mob.flags]               ;mob underwater?
+        jr      nz,._74
+        
+        ld      a,$12                           ;splash?
+        rst     :rst_playSFX
+        
+._74    set     4,[ix+#mob.flags]               ;set mob underwater
+        ret
+
+        ;====================================================================[$55B6]===
+        ;referenced by table at `_58e5` - index $09
+        ;vertical spring? (up-centre)
+        
+INDEX   ._55b6
+        ld      a,[ix+#mob.X+0]
+        add     a,$0c
+        and     $1f
+        cp      $08
+        ret     c
+        
+        cp      $18
+        ret     nc
+        
+        bit     7,[ix+#mob.flags]
+        ret     z
+        
+        ld      a,[$.D2B9]
+        and     $80
+        ret     nz
+        
+        res     6,[iy+#vars.flags6]
+        ld      [ix+#mob.Yspeed+0],$00
+        ld      [ix+#mob.Yspeed+1],$f4
+        ld      [ix+#mob.Ydirection],$ff
+        
+        ld      a,$04
+        rst     :rst_playSFX
+        
+        ret
+
+        ;====================================================================[$55E2]===
+        ;referenced by table at `_58e5` - index $0A
+        
+INDEX   ._55e2
+        bit     7,[ix+#mob.Ydirection]
+        ret     nz
+        
+        ld      a,$05
+        rst     :rst_playSFX
+        
+        ret
+
+        ;====================================================================[$55EB]===
+        ;referenced by table at `_58e5` - index $0B
+        
+INDEX   ._55eb
+        bit     4,[iy+#vars.flags6]
+        ret     nz
+        
+        ld      a,[$.SONIC.X]
+        add     a,$0c
+        and     $1f
+        cp      $08
+        ret     c
+        
+        cp      $18
+        ret     nc
+        
+        ld      hl,[$.SONIC.X]
+        ld      bc,$000c
+        add     hl,bc
+        ld      a,l
+        add     a,a
+        rl      h
+        add     a,a
+        rl      h
+        add     a,a
+        rl      h
+        ld      e,h
+        ld      hl,[$.SONIC.Y]
+        ld      bc,$0010
+        add     hl,bc
+        ld      a,l
+        add     a,a
+        rl      h
+        add     a,a
+        rl      h
+        add     a,a
+        rl      h
+        ld      d,h
+        ld      hl,._5643
+        ld      b,$05
+        
+._75    ld      a,[hl]
+        inc     hl
+        cp      e
+        jr      nz,._76
+        ld      a,[hl]
+        cp      d
+        jr      nz,._76
+        inc     hl
+        ld      [$.D2D5],hl
+        ld      a,$50
+        ld      [$.D28A],a
+        
+        ld      a,$06
+        rst     :rst_playSFX
+        ret
+
+._76    inc     hl
+        inc     hl
+        inc     hl
+        inc     hl
+        djnz    ._75
+        
+        ret
+
+._5643  BYTE    $34 $3C $34 $2F $00 $19 $3A $19 $04 $00 $0E $3A $00 $00 $16 $1B
+        BYTE    $32 $00 $00 $17 $2F $0C $00 $00 $FF
+
+        ;====================================================================[$565C]===
+        ;referenced by table at `_58e5` - index $0C
+
+INDEX   ._565c
+        ld      hl,[$.SONIC.Xspeed]
+        ld      a,[$.SONIC.Xdirection]
+        ld      de,$FFF8
+        add     hl,de
+        adc     a,$FF
+        ld      [$.SONIC.Xspeed],hl
+        ld      [$.SONIC.Xdirection],a
+        
+        bit     4,[ix+#mob.flags]               ;mob underwater?
+        jr      nz,._77
+        
+        ld      a,$12
+        rst     :rst_playSFX
+        
+._77    set     4,[ix+#mob.flags]               ;set mob underwater
+        ret
+
+        ;====================================================================[$567C]===
+        ;referenced by table at `_58e5` - index $0D
+
+INDEX   ._567c
+        xor     a;zero                          `set A to 0
+        ld      hl,$0005
+        ld      [$.SONIC.Xspeed+0],a;zero
+        ld      [$.SONIC.Xspeed+1],hl
+        res     1,[ix+#mob.flags]
+._568a  ld      a,$06
+        ld      [$.D28C],a
+
+        ;--------------------------------------------------------------------[$568F]---
+
+._568f  ld      a,[iy+#vars.joypad]
+        or      $0f
+        ld      [iy+#vars.joypad],a
+        ld      hl,$0004
+        ld      [$.SONIC.Yspeed+1],hl
+        res     0,[ix+#mob.flags]
+        res     2,[ix+#mob.flags]
+        ret
+
+        ;====================================================================[$56A6]===
+        ;referenced by table at `_58e5` - index $0E
+
+INDEX   ._56a6
+        xor     A`zero
+        ld      HL,$0006
+        ld      [$.SONIC.Xspeed+0],A`zero
+        ld      [$.SONIC.Xspeed+1],HL
+        res     1,[IX+#mob.flags]
+        jr      ._568a
+
+        ;====================================================================[$56B6]===
+        ;referenced by table at `_58e5` - index $0F
+        
+INDEX   ._56b6
+        xor     a`zero
+        ld      hl,$fffb
+        ld      [$.SONIC.Xspeed+0],a`zero
+        ld      [$.SONIC.Xspeed+1],hl
+        set     1,[ix+#mob.flags]
+        jr      ._568a
+
+        ;====================================================================[$56C6]===
+        ;referenced by table at `_58e5` - index $10
+        
+INDEX   ._56c6
+        xor     a`zero
+        ld      hl,$FFFA
+        ld      [$.SONIC.Xspeed+0],a`zero
+        ld      [$.SONIC.Xspeed+1],hl
+        set     1,[ix+#mob.flags]
+        jr      ._568a
+        
+        ;====================================================================[$56D6]===
+        ;referenced by table at `_58e5` - index $11
+        
+INDEX   ._56d6
+        ld      a,[$.D2E1]
+        cp      $08
+        ret     nc
+        
+        call    ._5727
+        ld      de,$0001
+        ld      hl,[$.SONIC.Yspeed]
+        ld      a,l
+        cpl     
+        ld      l,a
+        ld      a,h
+        cpl     
+        ld      h,a
+        ld      a,[$.SONIC.Ydirection]
+        cpl     
+        add     hl,de
+        adc     a,$00
+        and     a
+        jp      p,._78
+        
+        ld      de,$ffc8
+        add     hl,de
+        adc     a,$ff
+        
+._78    ld      [$.SONIC.Yspeed],hl
+        ld      [$.SONIC.Ydirection],a
+        ld      bc,$000c
+        ld      hl,[$.SONIC.X]
+        add     hl,bc
+        ld      a,l
+        and     $e0
+        ld      l,a
+        ld      [$.D2E2],hl
+        ld      bc,$0010
+        ld      hl,[$.SONIC.Y]
+        add     hl,bc
+        ld      a,l
+        and     $e0
+        ld      l,a
+        ld      [$.D2E4],hl
+        ld      a,$10
+        ld      [$.D2E1],a
+        
+        ld      a,$07
+        rst     :rst_playSFX
+        
+        ret
+
+        ;--------------------------------------------------------------------[$5727]---
+        ;called by functions referenced by `_58e5`
+
+._5727  ld      hl,[$.SONIC.Xspeed]
+        ld      a,[$.SONIC.Xdirection]
+        ld      c,a
+        and     $80
+        ld      b,a
+        ld      a,[$.SONIC.X]
+        add     a,$0c
+        and     $1f
+        sub     $10
+        and     $80
+        cp      b
+        jr      z,._79
+        ld      a,l
+        cpl     
+        ld      l,a
+        ld      a,h
+        cpl     
+        ld      h,a
+        ld      a,c
+        cpl     
+        ld      c,a
+._79    ld      de,$0001
+        ld      a,c
+        add     hl,de
+        adc     a,$00
+        ld      e,l
+        ld      d,h
+        ld      c,a
+        sra     c
+        rr      d
+        rr      e
+        add     hl,de
+        adc     a,c
+        ld      [$.SONIC.Xspeed],hl
+        ld      [$.SONIC.Xdirection],a
+        ret
+
+        ;====================================================================[$5761]===
+        ;referenced by table at `_58e5` - index $12
+        
+INDEX   ._5761
+        ld      [ix+#mob.Yspeed+0],$00
+        ld      [ix+#mob.Yspeed+1],$f6
+        ld      [ix+#mob.Ydirection],$ff
+        
+        ld      a,$04
+        rst     :rst_playSFX
+        
+        ret
+
+        ;====================================================================[$5771]===
+        ;referenced by table at `_58e5` - index $13
+        
+INDEX   ._5771
+        ld      [ix+#mob.Yspeed+0],$00
+        ld      [ix+#mob.Yspeed+1],$F4
+        ld      [ix+#mob.Ydirection],$FF
+        
+        ld      a,$04
+        rst     :rst_playSFX
+        
+        ret
+
+        ;====================================================================[$5781]===
+        ;referenced by table at `_58e5` - index $14
+        
+INDEX   ._5781
+        ld      [ix+#mob.Yspeed+0],$00
+        ld      [ix+#mob.Yspeed+1],$F2
+        ld      [ix+#mob.Ydirection],$FF
+        
+        ld      a,$04
+        rst     :rst_playSFX
+        
+        ret
+
+        ;====================================================================[$5791]===
+        ;referenced by table at `_58e5` - index $15
+        
+INDEX   ._5791
+        ld      a,[$.D2B1]
+        and     a
+        ret     nz
+        
+        ld      de,$0001
+        ld      hl,[$.SONIC.Xspeed]
+        ld      a,l
+        cpl     
+        ld      l,a
+        ld      a,h
+        cpl     
+        ld      h,a
+        ld      a,[$.SONIC.Xdirection]
+        cpl     
+        add     hl,de
+        adc     a,$00
+        ld      de,$ff00
+        ld      c,$ff
+        jp      m,._80
+        
+        ld      de,$0100
+        ld      c,$00
+._80    add     hl,de
+        adc     a,c
+        ld      [$.SONIC.Xspeed],hl
+        ld      [$.SONIC.Xdirection],a
+._57be  ld      hl,$.D2B1
+        ld      [hl],$04
+        inc     hl
+        ld      [hl],$0e
+        inc     hl
+        ld      [hl],$3f
+        
+        ld      a,$07
+        rst     :rst_playSFX
+        
+        ret
+
+        ;====================================================================[$57CD]===
+        ;referenced by table at `_58e5` - index $16
+        
+INDEX   ._57cd
+        call    ._5727
+        ld      de,$0001
+        ld      hl,[$.SONIC.Yspeed]
+        ld      a,l
+        cpl     
+        ld      l,a
+        ld      a,h
+        cpl     
+        ld      h,a
+        ld      a,[$.SONIC.Ydirection]
+        cpl     
+        add     hl,de
+        adc     a,$00
+        and     a
+        jp      p,._81
+        
+        ld      de,$ffc8
+        add     hl,de
+        adc     a,$ff
+._81    ld      [$.SONIC.Yspeed],hl
+        ld      [$.SONIC.Ydirection],a
+        jp      ._57be
+
+        ;====================================================================[$57F6]===
+        ;referenced by table at `_58e5` - index $17
+        
+INDEX   ._57f6
+        ld      hl,[$.D2E9]
+        ld      de,$0082
+        and     a
+        sbc     hl,de
+        ret     c
+        bit     0,[iy+#vars.scrollRingFlags]
+        jp      z,:hitPlayer._35fd
+        ret
+
+        ;====================================================================[$5808]===
+        ;referenced by table at `_58e5` - index $18
+        
+INDEX   ._5808
+        ld      a,[$.SONIC.flags]
+        rlca    
+        ret     nc
+        
+        ld      hl,[$.SONIC.X]
+        ld      bc,$000C
+        add     hl,bc
+        ld      a,l
+        and     $1F
+        cp      $10
+        jr      nc,._5858
+        
+._581b  ld      hl,[$.SONIC.X]
+        ld      bc,$000c
+        add     hl,bc
+        ld      a,l
+        and     $e0
+        ld      c,a
+        ld      b,h
+        ld      hl,[$.SONIC.Y]
+        ld      de,$0010
+        add     hl,de
+        ld      a,l
+        and     $e0
+        ld      e,a
+        ld      d,h
+        call    ._5893
+        ret     c
+        
+        ld      bc,$000c
+        ld      de,$0010
+        call    :getFloorLayoutRAMAddressForMob
+        ld      c,$00
+        ld      a,[hl]
+        cp      $8a
+        jr      z,._5849
+        ld      c,$89
+._5849  ld      [hl],c
+        ret
+
+        ;====================================================================[$584B]===
+        ;referenced by table at `_58e5` - index $19
+        
+INDEX   ._584b
+        ld      hl,[$.SONIC.X]
+        ld      bc,$000c
+        add     hl,bc
+        ld      a,l
+        and     $1f
+        cp      $10
+        ret     c
+        
+._5858  ld      a,l
+        and     $e0
+        add     a,$10
+        ld      c,a
+        ld      b,h
+        ld      hl,[$.SONIC.Y]
+        ld      de,$0010
+        add     hl,de
+        ld      a,l
+        and     $e0
+        ld      e,a
+        ld      d,h
+        call    ._5893
+        ret     c
+        
+        ld      bc,$000c
+        ld      de,$0010
+        call    :getFloorLayoutRAMAddressForMob
+        ld      c,$00
+        ld      a,[hl]
+        cp      $89
+        jr      z,._5849
+        ld      c,$8a
+        ld      [hl],c
+        ret
+
+        ;====================================================================[$5883]===
+        ;referenced by table at `_58e5` - index $1A
+
+INDEX   ._5883
+        ld      hl,[$.SONIC.X]
+        ld      bc,$000c
+        add     hl,bc
+        ld      a,l
+        and     $1f
+        cp      $10
+        ret     nc
+        jp      ._581b
+
+        ;--------------------------------------------------------------------[$5893]---
+        ;called by functions referenced by `58e5`
+
+._5893  push    bc, de
+        call    :findEmptyMob
+        pop     de, bc
+        ret     c
+        
+        push    ix, hl
+        pop     ix
+        
+        xor     A`zero                          ;set A to 0
+        ld      [IX`mob+#mob.type]          $2E ;falling bridge piece
+        ld      [IX`mob+#mob.Xsubpixel]     A`zero
+        ld      [IX`mob+#mob.X+0]           C
+        ld      [IX`mob+#mob.X+1]           B
+        ld      [IX`mob+#mob.Ysubpixel]     A`zero
+        ld      [IX`mob+#mob.Y+0]           E
+        ld      [IX`mob+#mob.Y+1]           D
+        ld      [IX`mob+#mob.Xspeed+0]      A`zero
+        ld      [IX`mob+#mob.Xspeed+1]      A`zero
+        ld      [IX`mob+#mob.Xdirection]    A`zero
+        ld      [IX`mob+#mob.Yspeed+0]      A`zero
+        ld      [IX`mob+#mob.Yspeed+1]      A`zero
+        ld      [IX`mob+#mob.Ydirection]    A`zero
+        ld      [IX`mob+#mob.flags]         A`zero
+        
+        pop     ix
+        and     A`zero
+        ret
+
+        ;====================================================================[$58D0]===
+        ;referenced by table at `_58e5` - index $1B
+        
+INDEX   ._58d0
+        bit     7,[IX+#mob.flags]
+        ret     z
+        
+        ;is Sonic on the screen (vertically)
+        ld      HL`sonicY   [$.SONIC.Y]
+        ld      DE`cameraY  [$.CAMERA_Y]
+        and     A`flags
+        sbc     HL`sonicY   DE`cameraY
+        ret     nc
+        
+        ;clear joypad input
+        ld      [IY+#vars.joypad],$FF
+        ret
+        
+        ;===============================================================================
+        ;lookup table to the functions above
+         ;(these probably handle the different solidity values)
+        
+._58e5  WORD    ._54bc, ._54c6, ._54ce, ._550f, ._552d, ._5556, ._5578, ._5590  ;$58E5
+        WORD    ._55a8, ._55b6, ._55e2, ._55eb, ._565c, ._567c, ._56a6, ._56b6
+        WORD    ._56c6, ._56d6, ._5761, ._5771, ._5781, ._5791, ._57cd, ._57f6
+        WORD    ._5808, ._584b, ._5883, ._58d0
+
+        ;--------------------------------------------------------------------[$591D]---
+        ;sprite layouts
+
+._591d  ;Sonic's sprite layout
+        BYTE    $B4 $B6 $B8 $FF $FF $FF
+        BYTE    $BA $BC $BE $FF $FF $FF
+        BYTE    $FF $FF
+._592b
+        BYTE    $B8 $B6 $B4 $FF $FF $FF
+        BYTE    $BE $BC $BA $FF $FF $FF
+        BYTE    $FF $FF
+._5939
+        BYTE    $B4 $B6 $B8 $FF $FF $FF
+        BYTE    $BA $BC $BE $FF $FF $FF
+        BYTE    $98 $9A $FF $FF $FF $FF
+._594b
+        BYTE    $B4 $B6 $B8 $FF $FF $FF
+        BYTE    $BA $BC $BE $FF $FF $FF
+        BYTE    $FE $9C $9E $FF $FF $FF
+        
+._595d  ;unknown data
+        BYTE    $00 $00 $00 $00 $00 $00 $00 $00
+._5965  ;unknown data
+        BYTE    $99 $59 $99 $59 $CB $59 $DD $59 $DF $59 $E2 $59 $E5 $59 $FB $59
+        BYTE    $FE $59 $01 $5A $53 $5A $65 $5A $68 $5A $6B $5A $AF $5A $C5 $5A
+        BYTE    $CC $5A $D0 $5A $DE $5A $E1 $5A $E4 $5A $E7 $5A $EA $5A $00 $5B
+        BYTE    $03 $5B $06 $5B $00 $00 $00 $00 $00 $00 $00 $00 $01 $01 $01 $01
+        BYTE    $01 $01 $01 $01 $02 $02 $02 $02 $02 $02 $02 $02 $03 $03 $03 $03
+        BYTE    $03 $03 $03 $03 $04 $04 $04 $04 $04 $04 $04 $04 $05 $05 $05 $05
+        BYTE    $05 $05 $05 $05 $FF $00 $0D $0D $0D $0D $0E $0E $0E $0E $0F $0F
+        BYTE    $0F $0F $10 $10 $10 $10 $FF $00 $FF $00 $13 $FF $00 $06 $FF $00
+        BYTE    $08 $08 $08 $08 $09 $09 $09 $09 $0A $0A $0A $0A $0B $0B $0B $0B
+        BYTE    $0C $0C $0C $0C $FF $00 $07 $FF $00 $00 $FF $00 $0C $0C $0C $0C
+        BYTE    $0C $0C $0C $0C $0C $0C $0C $0C $0C $0C $0C $0C $08 $08 $08 $08
+        BYTE    $08 $08 $08 $08 $08 $08 $08 $08 $08 $08 $08 $08 $09 $09 $09 $09
+        BYTE    $09 $09 $09 $09 $09 $09 $09 $09 $09 $09 $09 $09 $0A $0A $0A $0A
+        BYTE    $0A $0A $0A $0A $0A $0A $0A $0A $0A $0A $0A $0A $0B $0B $0B $0B
+        BYTE    $0B $0B $0B $0B $0B $0B $0B $0B $0B $0B $0B $0B $FF $00 $13 $13
+        BYTE    $13 $13 $13 $13 $13 $13 $25 $25 $25 $25 $25 $25 $25 $25 $FF $00
+        BYTE    $11 $FF $00 $14 $FF $00 $16 $16 $16 $16 $16 $16 $16 $16 $16 $16
+        BYTE    $16 $16 $16 $16 $16 $16 $15 $15 $15 $15 $15 $15 $15 $15 $15 $15
+        BYTE    $15 $15 $15 $15 $15 $15 $15 $15 $16 $16 $16 $16 $16 $16 $16 $16
+        BYTE    $16 $16 $16 $16 $16 $16 $16 $16 $17 $17 $17 $17 $17 $17 $17 $17
+        BYTE    $17 $17 $17 $17 $17 $17 $17 $17 $FF $22 $19 $19 $19 $19 $1A $1A
+        BYTE    $1B $1B $1C $1C $1D $1D $1E $1E $1F $1F $20 $20 $21 $21 $FF $12
+        BYTE    $0C $08 $09 $0A $0B $FF $00 $12 $12 $FF $00 $12 $12 $12 $12 $12
+        BYTE    $12 $24 $24 $24 $24 $24 $24 $FF $00 $00 $FF $00 $26 $FF $00 $22
+        BYTE    $FF $00 $23 $FF $00 $21 $21 $20 $20 $1F $1F $1E $1E $1D $1D $1C
+        BYTE    $1C $1B $1B $1A $1A $19 $19 $19 $19 $FF $12 $19 $FF $00 $1A $FF
+        BYTE    $00 $1B $FF $00
+}

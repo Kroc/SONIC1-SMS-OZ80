@@ -1,0 +1,258 @@
+;; Sonic 1 Master System Disassembly
+   -------------------------------------------------------------------------------------------------
+   created by Kroc Camen <kroc@camendesign.com> and given to the Public Domain; you may do anything
+   you like with this code as long as you respect the TradeMarks and (any) Copyrights within.
+   absolutely no warranty implied
+   =================================================================================================
+;;
+
+;spike ball (Labyrinth)
+
+PROC    :mob_trap_spikeBall                     SECTION ::mobs                  ;$88FB
+        ;==============================================================================
+PARAMS  IX`mob          ``Address of the current mob being processed
+{
+        set     5,[ix+#mob.flags]               ;mob does not collide with the floor
+        ld      [ix+#mob.width], 8
+        ld      [ix+#mob.height],12
+        bit     0,[ix+#mob.flags]
+        jr      nz,._1
+        ld      l,[ix+#mob.X+0]
+        ld      h,[ix+#mob.X+1]
+        ld      de,$0008
+        add     hl,de
+        ld      [ix+#mob.unknown12],l
+        ld      [ix+#mob.unknown13],h
+        ld      l,[ix+#mob.Y+0]
+        ld      h,[ix+#mob.Y+1]
+        ld      de,$0008
+        add     hl,de
+        ld      [ix+#mob.unknown14],l
+        ld      [ix+#mob.unknown15],h
+        set     0,[ix+#mob.flags]
+._1     ld      l,[ix+#mob.unknown11]
+        ld      h,$00
+        add     hl,hl
+        ld      de,._898e
+        add     hl,de
+        ld      e,[hl]
+        inc     hl
+        ld      c,[hl]
+        ld      d,$00
+        ld      b,d
+        bit     7,e
+        jr      z,._2
+        dec     d
+._2     bit     7,c
+        jr      z,._3
+        dec     b
+._3     ld      l,[ix+#mob.unknown12]
+        ld      h,[ix+#mob.unknown13]
+        add     hl,de
+        ld      [ix+#mob.X+0],l
+        ld      [ix+#mob.X+1],h
+        ld      l,[ix+#mob.unknown14]
+        ld      h,[ix+#mob.unknown15]
+        add     hl,bc
+        ld      [ix+#mob.Y+0],l
+        ld      [ix+#mob.Y+1],h
+        ld      hl,$0204
+        ld      [$.TEMP6],hl
+        call    :detectCollisionWithSonic
+        call    nc,:hitPlayer._35fd
+        ld      [ix+#mob.spriteLayout+0],LO ._8987
+        ld      [ix+#mob.spriteLayout+1],HI ._8987
+        inc     [ix+#mob.unknown11]
+        ld      a,[ix+#mob.unknown11]
+        cp      $b4
+        ret     c
+        ld      [ix+#mob.unknown11],$00
+        ret
+ 
+        ;sprite layout
+._8987  BYTE $60, $62, $FF, $FF, $FF, $FF
+        BYTE $FF
+
+        ;I imagine this a set of X/Y positions to do the spiked-ball rotation
+._898e  ;180 lines, ergo 2deg per frame?
+        BYTE $40, $00
+        BYTE $40, $02
+        BYTE $40, $04
+        BYTE $40, $07
+        BYTE $3F, $09
+        BYTE $3F, $0B
+        BYTE $3F, $0D
+        BYTE $3E, $0F
+        BYTE $3E, $12
+        BYTE $3D, $14
+        BYTE $3C, $16
+        BYTE $3B, $18
+        BYTE $3A, $1A
+        BYTE $3A, $1C
+        BYTE $39, $1E
+        BYTE $37, $20
+        BYTE $36, $22
+        BYTE $35, $24
+        BYTE $34, $26
+        BYTE $32, $27
+        BYTE $31, $29
+        BYTE $30, $2B
+        BYTE $2E, $2C
+        BYTE $2C, $2E
+        BYTE $2B, $30
+        BYTE $29, $31
+        BYTE $27, $32
+        BYTE $26, $34
+        BYTE $24, $35
+        BYTE $22, $36
+        BYTE $20, $37
+        BYTE $1E, $39
+        BYTE $1C, $3A
+        BYTE $1A, $3A
+        BYTE $18, $3B
+        BYTE $16, $3C
+        BYTE $14, $3D
+        BYTE $12, $3E
+        BYTE $0F, $3E
+        BYTE $0D, $3F
+        BYTE $0B, $3F
+        BYTE $09, $3F
+        BYTE $07, $40
+        BYTE $04, $40
+        BYTE $02, $40
+        BYTE $00, $40
+        BYTE $FE, $40
+        BYTE $FC, $40
+        BYTE $F9, $40
+        BYTE $F7, $3F
+        BYTE $F5, $3F
+        BYTE $F3, $3F
+        BYTE $F1, $3E
+        BYTE $EE, $3E
+        BYTE $EC, $3D
+        BYTE $EA, $3C
+        BYTE $E8, $3B
+        BYTE $E6, $3A
+        BYTE $E4, $3A
+        BYTE $E2, $39
+        BYTE $E0, $37
+        BYTE $DE, $36
+        BYTE $DC, $35
+        BYTE $DA, $34
+        BYTE $D9, $32
+        BYTE $D7, $31
+        BYTE $D5, $30
+        BYTE $D4, $2E
+        BYTE $D2, $2C
+        BYTE $D0, $2B
+        BYTE $CF, $29
+        BYTE $CE, $27
+        BYTE $CC, $26
+        BYTE $CB, $24
+        BYTE $CA, $22
+        BYTE $C9, $20
+        BYTE $C7, $1E
+        BYTE $C6, $1C
+        BYTE $C6, $1A
+        BYTE $C5, $18
+        BYTE $C4, $16
+        BYTE $C3, $14
+        BYTE $C2, $12
+        BYTE $C2, $0F
+        BYTE $C1, $0D
+        BYTE $C1, $0B
+        BYTE $C1, $09
+        BYTE $C0, $07
+        BYTE $C0, $04
+        BYTE $C0, $02
+        BYTE $C0, $00
+        BYTE $C0, $FE
+        BYTE $C0, $FC
+        BYTE $C0, $F9
+        BYTE $C1, $F7
+        BYTE $C1, $F5
+        BYTE $C1, $F3
+        BYTE $C2, $F1
+        BYTE $C2, $EE
+        BYTE $C3, $EC
+        BYTE $C4, $EA
+        BYTE $C5, $E8
+        BYTE $C6, $E6
+        BYTE $C6, $E4
+        BYTE $C7, $E2
+        BYTE $C9, $E0
+        BYTE $CA, $DE
+        BYTE $CB, $DC
+        BYTE $CC, $DA
+        BYTE $CE, $D9
+        BYTE $CF, $D7
+        BYTE $D0, $D5
+        BYTE $D2, $D4
+        BYTE $D4, $D2
+        BYTE $D5, $D0
+        BYTE $D7, $CF
+        BYTE $D9, $CE
+        BYTE $DA, $CC
+        BYTE $DC, $CB
+        BYTE $DE, $CA
+        BYTE $E0, $C9
+        BYTE $E2, $C7
+        BYTE $E4, $C6
+        BYTE $E6, $C6
+        BYTE $E8, $C5
+        BYTE $EA, $C4
+        BYTE $EC, $C3
+        BYTE $EE, $C2
+        BYTE $F1, $C2
+        BYTE $F3, $C1
+        BYTE $F5, $C1
+        BYTE $F7, $C1
+        BYTE $F9, $C0
+        BYTE $FC, $C0
+        BYTE $FE, $C0
+        BYTE $00, $C0
+        BYTE $02, $C0
+        BYTE $04, $C0
+        BYTE $07, $C0
+        BYTE $09, $C1
+        BYTE $0B, $C1
+        BYTE $0D, $C1
+        BYTE $0F, $C2
+        BYTE $12, $C2
+        BYTE $14, $C3
+        BYTE $16, $C4
+        BYTE $18, $C5
+        BYTE $1A, $C6
+        BYTE $1C, $C6
+        BYTE $1E, $C7
+        BYTE $20, $C9
+        BYTE $22, $CA
+        BYTE $24, $CB
+        BYTE $26, $CC
+        BYTE $27, $CE
+        BYTE $29, $CF
+        BYTE $2B, $D0
+        BYTE $2C, $D2
+        BYTE $2E, $D4
+        BYTE $30, $D5
+        BYTE $31, $D7
+        BYTE $32, $D9
+        BYTE $34, $DA
+        BYTE $35, $DC
+        BYTE $36, $DE
+        BYTE $37, $E0
+        BYTE $39, $E2
+        BYTE $3A, $E4
+        BYTE $3A, $E6
+        BYTE $3B, $E8
+        BYTE $3C, $EA
+        BYTE $3D, $EC
+        BYTE $3E, $EE
+        BYTE $3E, $F1
+        BYTE $3F, $F3
+        BYTE $3F, $F5
+        BYTE $3F, $F7
+        BYTE $40, $F9
+        BYTE $40, $FC
+        BYTE $40, $FE
+}

@@ -1,0 +1,91 @@
+;; Sonic 1 Master System Disassembly
+   -------------------------------------------------------------------------------------------------
+   created by Kroc Camen <kroc@camendesign.com> and given to the Public Domain; you may do anything
+   you like with this code as long as you respect the TradeMarks and (any) Copyrights within.
+   absolutely no warranty implied
+   =================================================================================================
+;;
+
+;all emeralds animation
+
+PROC    :mob_anim_emeralds                      SECTION ::mobs                  ;$BF4C
+        ;==============================================================================
+PARAMS  IX`mob          ``Address of the current mob being processed
+{
+        set     5,[ix+#mob.flags]               ;mob does not collide with the floor
+        ld      hl,$5400                        ;$15400 - emerald image
+        call    ::main:loadPowerUpIcon
+        
+        bit     0,[ix+#mob.flags]
+        jr      nz,._1
+        
+        xor     a`zero                          ;set A to 0
+        ld      [ix+#mob.spriteLayout+0],a`zero
+        ld      [ix+#mob.spriteLayout+1],a`zero
+        ld      [ix+#mob.Xspeed+0],a`zero
+        ld      [ix+#mob.Xspeed+1],a`zero
+        ld      [ix+#mob.Xdirection],a`zero
+        
+        inc     [ix+#mob.unknown11]
+        ld      a,[ix+#mob.unknown11]
+        cp      $50
+        ret     c
+        set     0,[ix+#mob.flags]
+        ld      [ix+#mob.unknown11],$64
+        ret
+        
+._1     ld      a,[ix+#mob.unknown11]
+        and     a
+        jr      z,._2
+        dec     [ix+#mob.unknown11]
+        jr      ._3
+        
+._2     ld      [ix+#mob.Yspeed+0],$80
+        ld      [ix+#mob.Yspeed+1],$ff
+        ld      [ix+#mob.Ydirection],$ff
+._3     ld      hl,._bff1
+        ld      a,[$.FRAMECOUNT]
+        rrca    
+        jr      nc,._4
+        ld      a,[iy+#vars.spriteUpdateCount]
+        ld      hl,[$.SPRITETABLE_ADDR]
+        push    af
+        push    hl
+        ld      hl,$.SPRITETABLE
+        ld      [$.SPRITETABLE_ADDR],hl
+        ld      l,[ix+#mob.Y+0]
+        ld      h,[ix+#mob.Y+1]
+        ld      de,[$.CAMERA_Y]
+        and     a
+        sbc     hl,de
+        ex      de,hl
+        ld      l,[ix+#mob.X+0]
+        ld      h,[ix+#mob.X+1]
+        ld      bc,[$.CAMERA_X]
+        and     a
+        sbc     hl,bc
+        ld      bc,._bff1                       ;address of sprite layout
+        call    :processSpriteLayout
+        pop     hl
+        pop     af
+        ld      [$.SPRITETABLE_ADDR],hl
+        ld      [iy+#vars.spriteUpdateCount],a
+._4     ld      l,[ix+#mob.Y+0]
+        ld      h,[ix+#mob.Y+1]
+        ld      de,$0020
+        add     hl,de
+        ld      de,[$.CAMERA_Y]
+        and     a
+        sbc     hl,de
+        ret     nc
+        ld      a,$01
+        ld      [$.D289],a
+        set     2,[iy+#vars.unknown_0D]
+        ret
+
+;sprite layout
+._bff1  BYTE $5C, $5E, $FF, $FF, $FF, $FF
+        BYTE $FF
+
+        BYTE $49, $43, $20, $54, $48, $45, $20, $48
+}

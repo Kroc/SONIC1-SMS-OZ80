@@ -1,0 +1,20 @@
+;; Sonic 1 Master System Disassembly
+   -------------------------------------------------------------------------------------------------
+   created by Kroc Camen <kroc@camendesign.com> and given to the Public Domain; you may do anything
+   you like with this code as long as you respect the TradeMarks and (any) Copyrights within.
+   absolutely no warranty implied
+   =================================================================================================
+;;
+
+;sprite layout, shared by Scrap Brain boss and Final Boss
+ ;(likely "running Robotnik")
+TABLE   :_baf9                                  SECTION ::mobs   
+{
+        BYTE $FE $0A $0C $0E $FF $FF
+        BYTE $28 $2A $2C $2E $FF $FF
+        BYTE $FE $4A $4C $4E $FF $FF
+        
+        BYTE $FE $0A $0C $0E $FF $FF
+        BYTE $28 $2A $2C $2E $FF $FF
+        BYTE $FE $02 $04 $06 $FF $FF
+}

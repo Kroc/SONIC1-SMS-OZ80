@@ -1,0 +1,683 @@
+;; Sonic 1 Master System Disassembly
+   -------------------------------------------------------------------------------------------------
+   created by Kroc Camen <kroc@camendesign.com> and given to the Public Domain; you may do anything
+   you like with this code as long as you respect the TradeMarks and (any) Copyrights within.
+   absolutely no warranty implied
+   =================================================================================================
+;;
+
+PROC    :mob_boss_skyBase                       SECTION ::mobs                  ;$B634
+        ;===============================================================================
+PARAMS  IX`mob          ``Address of the current mob being processed
+{
+        ld      [ix+#mob.width]     30
+        ld      [ix+#mob.height]    47
+        set     5,[ix+#mob.flags]               ;mob does not collide with the floor
+        bit     2,[ix+#mob.flags]
+        jp      nz,._b821
+        call    :_7ca6
+        call    ._b7e6
+        bit     0,[ix+#mob.flags]
+        jr      nz,._1
+        
+        ld      hl,$0350
+        ld      de,$0120
+        call    :_7c8c
+        
+        ld      l,[ix+#mob.X+0]
+        ld      h,[ix+#mob.X+1]
+        ld      de,$0008
+        add     hl,de
+        ld      [ix+#mob.X+0],l
+        ld      [ix+#mob.X+1],h
+        ld      [ix+#mob.unknown11],l
+        ld      [ix+$12],h
+        ld      l,[ix+#mob.Y+0]
+        ld      h,[ix+#mob.Y+1]
+        ld      de,$0010
+        add     hl,de
+        ld      [ix+#mob.Y+0],l
+        ld      [ix+#mob.Y+1],h
+        ld      [ix+#mob.unknown13],l
+        ld      [ix+#mob.unknown14],h
+        xor     a`zero
+        ld      [$.D2EC],a`zero
+        
+        ld      a,::sound:S1_MusicPointers.boss3.index ;=$0D
+        rst     :rst_playMusic
+        
+        set     4,[iy+#vars.unknown0]
+        set     0,[ix+#mob.flags]
+._1     ld      a,[ix+#mob.unknown15]
+        and     a
+        jp      nz,._4
+        call    ._b99f
+        ld      a,[$.FRAMECOUNT]
+        and     $07
+        jp      nz,._8
+        ld      a,[ix+#mob.unknown16]
+        cp      $1c
+        jr      nc,._2
+        inc     [ix+#mob.unknown17]
+        ld      a,[ix+#mob.unknown17]
+        cp      $02
+        jp      c,._3
+._2     ld      [ix+#mob.unknown17],$00
+._3     inc     [ix+#mob.unknown16]
+        ld      a,[ix+#mob.unknown16]
+        cp      $28
+        jp      c,._8
+        ld      [ix+#mob.unknown16],$00
+        inc     [ix+#mob.unknown15]
+        jp      ._8
+        
+._4     dec     a
+        jr      nz,._5
+        ld      [ix+#mob.Yspeed+0],$40
+        ld      [ix+#mob.Yspeed+1],$fe
+        ld      [ix+#mob.Ydirection],$ff
+        inc     [ix+#mob.unknown15]
+        ld      l,[ix+#mob.unknown11]
+        ld      h,[ix+$12]
+        ld      de,$0004
+        add     hl,de
+        ld      [ix+#mob.X+0],l
+        ld      [ix+#mob.X+1],h
+        ld      [ix+#mob.spriteLayout+0],LO :_bb1d
+        ld      [ix+#mob.spriteLayout+1],HI :_bb1d
+        jp      ._8
+        
+._5     dec     a
+        jp      nz,._7
+        ld      l,[ix+#mob.Yspeed+0]
+        ld      h,[ix+#mob.Yspeed+1]
+        ld      a,[ix+#mob.Ydirection]
+        ld      de,$000e
+        add     hl,de
+        adc     a,$00
+        ld      c,a
+        jp      m,._6
+        ld      a,h
+        cp      $02
+        jr      c,._6
+        ld      hl,$0200
+._6     ld      [ix+#mob.Yspeed+0],l
+        ld      [ix+#mob.Yspeed+1],h
+        ld      [ix+#mob.Ydirection],c
+        ld      [ix+#mob.spriteLayout+0],LO :_bb1d
+        ld      [ix+#mob.spriteLayout+1],HI :_bb1d
+        ld      l,[ix+#mob.Y+0]
+        ld      h,[ix+#mob.Y+1]
+        dec     hl
+        ld      e,[ix+#mob.unknown13]
+        ld      d,[ix+#mob.unknown14]
+        and     a
+        sbc     hl,de
+        jr      c,._8
+        ld      [ix+#mob.Y+0],e
+        ld      [ix+#mob.Y+1],d
+        xor     a`zero
+        ld      [ix+#mob.unknown16],a`zero
+        ld      [ix+#mob.Yspeed+0],a`zero
+        ld      [ix+#mob.Yspeed+1],a`zero
+        ld      [ix+#mob.Ydirection],a`zero
+        inc     [ix+#mob.unknown15]
+        jp      ._8
+        
+._7     dec     a
+        jp      nz,._8
+        ld      l,[ix+#mob.unknown11]
+        ld      h,[ix+$12]
+        ld      [ix+#mob.X+0],l
+        ld      [ix+#mob.X+1],h
+        ld      a,[ix+#mob.unknown16]
+        and     a
+        call    z,._b9d5
+        ld      [ix+#mob.unknown17],$02
+        set     1,[ix+#mob.flags]
+        call    ._b99f
+        inc     [ix+#mob.unknown16]
+        ld      a,[ix+#mob.unknown16]
+        cp      $12
+        jr      c,._8
+        res     1,[ix+#mob.flags]
+        xor     a`zero
+        ld      [ix+#mob.unknown15],a`zero
+        ld      [ix+#mob.unknown16],a`zero
+        
+._8     ld      hl,$ba31
+        bit     1,[ix+#mob.flags]
+        jr      z,._9
+        ld      hl,._ba3b
+._9     ld      de,$.TEMP1
+        ldi     
+        ldi     
+        ldi     
+        ldi     
+        ldi     
+        ldi     
+        ldi     
+        ldi     
+        ld      a,[hl]
+        inc     hl
+        push    hl
+        call    :_3581
+        ld      hl,[$.TEMP4]
+        ld      de,$0008
+        add     hl,de
+        ld      [$.TEMP4],hl
+        pop     hl
+        ld      a,[hl]
+        call    :_3581
+        ld      a,[$.D2EC]
+        cp      $0c
+        ret     c
+        xor     a`zero
+        ld      [ix+#mob.unknown11],a`zero
+        ld      [ix+#mob.unknown16],a`zero
+        ld      [ix+#mob.unknown17],a`zero
+        set     2,[ix+#mob.flags]
+        res     4,[iy+#vars.unknown0]
+        
+        ld      a,::sound:S1_MusicPointers.scrapBrain.index    ;=$04
+        rst     :rst_playMusic
+        
+        ld      a,$21
+        rst     :rst_playSFX
+        ret
+        
+        ;--------------------------------------------------------------------[$B7E6]----
+
+._b7e6  ld      a,[$.D2B1]
+        and     a
+        ret     nz
+        bit     0,[iy+#vars.scrollRingFlags]
+        ret     nz
+        ld      a,[$.SONIC.flags]
+        rrca    
+        jr      c,._10
+        and     $02
+        ret     z
+._10    ld      hl,[$.SONIC.X]
+        ld      de,$0410
+        and     a
+        sbc     hl,de
+        ret     c
+        ld      hl,$fd00
+        ld      a,$ff
+        ld      [$.SONIC.Xspeed],hl
+        ld      [$.SONIC.Xdirection],a
+        ld      hl,$.D2B1
+        ld      [hl],$18
+        inc     hl
+        ld      [hl],$0c
+        inc     hl
+        ld      [hl],$3f
+        ld      a,$01
+        rst     :rst_playSFX
+        ld      hl,$.D2EC
+        inc     [hl]
+        ret
+
+        ;--------------------------------------------------------------------[$B821]----
+
+._b821  bit     3,[ix+#mob.flags]
+        jp      nz,._20
+        res     5,[ix+#mob.flags]               ;make mob adhere to the floor
+        ld      a,[ix+#mob.unknown11]
+        cp      $0f
+        jr      nc,._11
+        add     a,a
+        add     a,a
+        ld      e,a
+        add     a,a
+        add     a,e
+        ld      e,a
+        ld      d,$00
+        ld      hl,$ba45
+        add     hl,de
+        ld      e,[hl]
+        inc     hl
+        ld      d,[hl]
+        inc     hl
+        ld      [$.D2AB],de
+        ld      e,[hl]
+        inc     hl
+        ld      d,[hl]
+        inc     hl
+        ld      [$.D2AD],de
+        ld      [$.D2AF],hl
+        inc     [ix+#mob.unknown11]
+        ld      a,[ix+#mob.unknown11]
+        cp      $0f
+        jr      nz,._11
+        set     5,[iy+#vars.flags0]
+        res     1,[iy+#vars.flags2]
+        
+        ;something to do with scrolling
+        ld      hl,$0550
+        ld      [$.LEVEL_RIGHT],hl
+        
+._11    ld      e,[ix+#mob.X+0]
+        ld      d,[ix+#mob.X+1]
+        ld      hl,$05e0
+        xor     a`zero
+        sbc     hl,de
+        jr      nc,._12
+        ld      c,a`zero
+        ld      b,a`zero
+        jp      ._15
+        
+._12    ex      de,hl
+        ld      de,[$.SONIC.X]
+        xor     a`zero
+        sbc     hl,de
+        ld      de,$0040
+        xor     a`zero
+        ld      bc,[$.SONIC.Xspeed]
+        bit     7,b
+        jr      nz,._13
+        sbc     hl,de
+        jr      c,._14
+._13    ld      bc,$ff80
+._14    inc     b
+._15    ld      [ix+#mob.Xspeed+0],c
+        ld      [ix+#mob.Xspeed+1],b
+        ld      [ix+#mob.Xdirection],a
+        ld      a,[ix+#mob.unknown17]
+        cp      $06
+        jr      nz,._16
+        ld      a,[ix+#mob.unknown16]
+        dec     a
+        jr      nz,._16
+        bit     7,[ix+#mob.flags]
+        jr      z,._16
+        ld      [ix+#mob.Yspeed+0],$00
+        ld      [ix+#mob.Yspeed+1],$ff
+        ld      [ix+#mob.Ydirection],$ff
+._16    ld      de,$0017
+        ld      bc,$0036
+        call    :getFloorLayoutRAMAddressForMob
+        ld      e,[hl]
+        ld      d,$00
+        ld      hl,$3f28
+        add     hl,de
+        ld      a,[hl]
+        and     $3f
+        and     a
+        jr      z,._17
+        bit     7,[ix+#mob.flags]
+        jr      z,._17
+        ld      [ix+#mob.Yspeed+0],$80
+        ld      [ix+#mob.Yspeed+1],$fd
+        ld      [ix+#mob.Ydirection],$ff
+._17    ld      de,$0000
+        ld      bc,$0008
+        call    :getFloorLayoutRAMAddressForMob
+        ld      a,[hl]
+        cp      $49
+        jr      nz,._18
+        bit     7,[ix+#mob.flags]
+        jr      z,._18
+        xor     a`zero
+        ld      [ix+#mob.unknown16],a`zero
+        ld      [ix+#mob.unknown17],a`zero
+        ld      [ix+#mob.Xspeed+0],a`zero
+        ld      [ix+#mob.Xspeed+1],a`zero
+        ld      [ix+#mob.Xdirection],a`zero
+        ld      [ix+#mob.unknown11],$e0
+        ld      [ix+$12],$05
+        ld      [ix+#mob.unknown13],$60
+        ld      [ix+#mob.unknown14],$01
+        
+        ld      hl,$0550
+        ld      de,$0120
+        call    :_7c8c
+        
+        set     3,[ix+#mob.flags]
+        jp      ._20
+        
+._18    ld      l,[ix+#mob.Yspeed+0]
+        ld      h,[ix+#mob.Yspeed+1]
+        ld      a,[ix+#mob.Ydirection]
+        ld      de,$000e
+        add     hl,de
+        adc     a,$00
+        ld      c,a
+        jp      m,._19
+        ld      a,h
+        cp      $02
+        jr      c,._19
+        ld      hl,$0200
+._19    ld      [ix+#mob.Yspeed+0],l
+        ld      [ix+#mob.Yspeed+1],h
+        ld      [ix+#mob.Ydirection],c
+        ld      bc,._ba28
+        ld      de,:_baf9
+        call    :_7c41
+        ret
+        
+._20    ld      [iy+#vars.joypad],$ff
+        call    ._b99f
+        ld      a,[ix+#mob.unknown16]
+        cp      $30
+        jr      nc,._22
+        ld      c,a
+        ld      a,[$.FRAMECOUNT]
+        and     $07
+        jr      nz,._21
+        ld      a,[ix+#mob.unknown17]
+        inc     a
+        and     $01
+        ld      [ix+#mob.unknown17],a
+        inc     [ix+#mob.unknown16]
+._21    ld      a,c
+        cp      $2c
+        ret     c
+        ld      [ix+#mob.spriteLayout+0],LO :_bb77
+        ld      [ix+#mob.spriteLayout+1],HI :_bb77
+        ret
+        
+._22    xor     a`zero
+        ld      [ix+#mob.spriteLayout+0],a`zero
+        ld      [ix+#mob.spriteLayout+1],a`zero
+        inc     [ix+#mob.unknown16]
+        ld      a,[ix+#mob.unknown16]
+        cp      $70
+        ret     c
+        ld      [ix+#mob.type],$FF              ;remove mob?
+        ret
+        
+        ;--------------------------------------------------------------------[$B99F]----
+
+._b99f  ld      hl,._ba1c
+        ld      a,[ix+#mob.unknown17]
+        add     a,a
+        add     a,a
+        ld      e,a
+        ld      d,$00
+        ld      b,d
+        add     hl,de
+        ld      c,[hl]
+        inc     hl
+        ld      e,[hl]
+        inc     hl
+        ld      a,[hl]
+        inc     hl
+        ld      h,[hl]
+        ld      l,a
+        ld      [ix+#mob.spriteLayout+0],l
+        ld      [ix+#mob.spriteLayout+1],h
+        ld      l,[ix+#mob.unknown11]
+        ld      h,[ix+$12]
+        add     hl,bc
+        ld      [ix+#mob.X+0],l
+        ld      [ix+#mob.X+1],h
+        ld      l,[ix+#mob.unknown13]
+        ld      h,[ix+#mob.unknown14]
+        add     hl,de
+        ld      [ix+#mob.Y+0],l
+        ld      [ix+#mob.Y+1],h
+        ret
+
+        ;--------------------------------------------------------------------[$B9D5]----
+
+._b9d5  bit     5,[IY+#vars.unknown0]
+        ret     nz
+        
+        call    :findEmptyMob
+        ret     c
+        
+        push    IX
+        push    HL
+        pop     IX
+        
+        xor     A`zero                          ;set A to 0
+        ld      [IX+#mob.type],$47              ;unknown mob
+        ld      [IX+#mob.Xsubpixel],A`zero
+        ld      HL,$0420
+        ld      [IX+#mob.X+0],L
+        ld      [IX+#mob.X+1],H
+        ld      [IX+#mob.Ysubpixel],A`zero
+        ld      HL,$012f
+        ld      [IX+#mob.Y+0],L
+        ld      [IX+#mob.Y+1],H
+        ld      [IX+#mob.unknown11],A`zero
+        ld      [IX+#mob.flags],A`zero
+        ld      [IX+#mob.Xspeed+0],A`zero
+        ld      [IX+#mob.Xspeed+1],A`zero
+        ld      [IX+#mob.Xdirection],A`zero
+        ld      [IX+#mob.Yspeed+0],A`zero
+        ld      [IX+#mob.Yspeed+1],A`zero
+        ld      [IX+#mob.Ydirection],A`zero
+        
+        pop     IX
+        ret
+
+._ba1b  BYTE    $C9                             ;unused?
+._ba1c  BYTE    $00 $00 $F9 $BA $00 $02 $0B $BB $00 $07 $0B $BB
+._ba28  BYTE    $03 $08 $04 $07 $05 $08 $04 $07 $FF $30 $04 $A0 $01 $00 $00
+._ba37  BYTE    $00 $00 $20 $22                 ;unused, or part of above?
+._ba3b  BYTE    $30 $04 $A0 $01 $00 $00 $00 $00 $24 $26 $20 $04 $60 $01 $37 $10
+        BYTE    $38 $10 $4A $10 $4B $10 $30 $04 $60 $01 $28 $10 $19 $10 $4C $10
+        BYTE    $4D $10 $40 $04 $60 $01 $00 $10 $2D $10 $4E $10 $4F $10 $20 $04
+        BYTE    $70 $01 $00 $00 $00 $00 $00 $00 $00 $00 $30 $04 $70 $01 $00 $00
+        BYTE    $00 $00 $00 $00 $00 $00 $40 $04 $70 $01 $00 $00 $00 $00 $00 $00
+        BYTE    $00 $00 $20 $04 $80 $01 $00 $00 $00 $00 $00 $00 $00 $00 $30 $04
+        BYTE    $80 $01 $00 $00 $00 $00 $00 $00 $00 $00 $40 $04 $80 $01 $00 $00
+        BYTE    $00 $00 $00 $00 $00 $00 $20 $04 $90 $01 $00 $00 $00 $00 $00 $00
+        BYTE    $00 $00 $30 $04 $90 $01 $00 $00 $00 $00 $00 $00 $00 $00 $40 $04
+        BYTE    $90 $01 $00 $00 $00 $00 $00 $00 $00 $00 $20 $04 $A0 $01 $5A $10
+        BYTE    $5B $10 $37 $10 $3B $10 $30 $04 $A0 $01 $5C $10 $5D $10 $3C $10
+        BYTE    $00 $10 $40 $04 $A0 $01 $5E $10 $5F $10 $00 $10 $2D $10
+}
+
+INCLUDE "mobs\boss_running.oz80"
+
+;part of sky boss only
+TABLE   :_bb1d                                  SECTION ::mobs                  ;$BB1D
+{
+        BYTE    $10 $12 $14 $16 $FF $FF
+        BYTE    $30 $32 $34 $FE $FF $FF
+        BYTE    $50 $52 $54 $FE $FF $FF
+        
+        BYTE    $18 $1A $1C $1E $FF $FF
+        BYTE    $FE $3A $3C $3E $FF $FF
+        BYTE    $FE $64 $66 $68 $FF $FF
+        
+        BYTE    $18 $1A $1C $1E $FF $FF
+        BYTE    $FE $3A $3C $3E $FF $FF
+        BYTE    $FE $6A $6C $6E $FF $FF
+        
+        BYTE    $18 $1A $1C $1E $FF $FF
+        BYTE    $FE $3A $3C $3E $FF $FF
+        BYTE    $70 $72 $5A $5C $5E $FF
+        
+        BYTE    $00 $0A $0C $0E $FF $FF
+        BYTE    $28 $2A $2C $2E $FF $FF
+        BYTE    $00 $4A $4C $4E $FF $FF
+}
+
+;also part of sky base boss only
+TABLE   :_bb77                                  SECTION ::mobs                  ;$BB77
+{
+        BYTE    $FE $FF $FF $FF $FF $FF
+        BYTE    $FE $44 $46 $FF $FF $FF
+        BYTE    $FF
+}
+
+PROC    :mob_boss_electricBeam                  SECTION ::mobs                  ;$BB84
+        ;===============================================================================
+PARAMS  IX`mob          ``Address of the current mob being processed
+{
+        set     5,[ix+#mob.flags]               ;mob does not collide with the floor
+        ld      hl,$0008
+        ld      [$.D26B],hl
+        
+        bit     0,[ix+#mob.flags]
+        jr      nz,._1
+
+        ;UNKNOWN
+        ld      hl,$ef3f
+        ld      de,$2000
+        ld      a,$0c
+        call    ::main:decompressArt
+
+        ld      [ix+$12],$01
+        set     0,[ix+#mob.flags]
+._1     ld      hl,$0390
+        ld      [$.TEMP1],hl
+        ld      l,[ix+#mob.unknown11]
+        ld      h,$00
+        ld      [$.TEMP4],hl
+        ld      l,h
+        ld      [$.TEMP6],hl
+        ld      de,$011a
+        ld      hl,._bcdd
+        call    ._bca5
+        ld      e,[ix+#mob.unknown11]
+        ld      d,$00
+        ld      [$.TEMP4],de
+        ld      de,$01d2
+        ld      hl,._bcdd
+        call    ._bca5
+        bit     4,[iy+#vars.unknown0]
+        ret     z
+        bit     1,[ix+#mob.flags]
+        jr      z,._2
+        ld      a,[$.FRAMECOUNT]
+        bit     0,a
+        ret     nz
+        and     $02
+        ld      e,a
+        ld      d,$00
+        ld      hl,._bcc7
+        add     hl,de
+        ld      b,$0a
+        ld      de,$0130
+        
+.loop   push    bc
+        push    de
+        call    ._bca5
+        pop     de
+        push    hl
+        ld      hl,$0010
+        add     hl,de
+        ex      de,hl
+        pop     hl
+        pop     bc
+        djnz    .loop
+        
+        ld      hl,$0390
+        ld      c,[ix+#mob.unknown11]
+        ld      b,$00
+        add     hl,bc
+        ld      c,l
+        ld      b,h
+        ld      hl,$000c
+        add     hl,bc
+        ld      de,[$.SONIC.X]
+        and     a
+        sbc     hl,de
+        jr      c,._2
+        ld      hl,$000e
+        add     hl,de
+        and     a
+        sbc     hl,bc
+        jr      c,._2
+        bit     0,[iy+#vars.scrollRingFlags]
+        call    z,:hitPlayer._35fd
+        
+._2     ld      a,[$.D2EC]
+        cp      $06
+        jr      nc,._5
+        bit     1,[ix+#mob.flags]
+        jr      nz,._3
+        ld      a,[ix+#mob.unknown11]
+        inc     a
+        ld      [ix+#mob.unknown11],a
+        cp      $80
+        ret     c
+        ld      a,[$.FRAMECOUNT]
+        ld      c,a
+        and     $01
+        ret     nz
+        set     1,[ix+#mob.flags]
+        ret
+        
+._3     ld      a,[$.FRAMECOUNT]
+        and     $0f
+        jr      nz,._4
+        
+        ld      A`sfx           $13
+        rst     :rst_playSFX
+        
+._4     dec     [ix+#mob.unknown11]
+        ret     nz
+        ld      [ix+#mob.unknown11],$00
+        res     1,[ix+#mob.flags]
+        ret
+        
+._5     ld      hl,[$.SONIC.X]
+        ld      e,[ix+#mob.X+0]
+        ld      d,[ix+#mob.X+1]
+        and     a
+        sbc     hl,de
+        jr      nc,._6
+        ld      a,[ix+#mob.unknown11]
+        and     a
+        jr      z,._7
+        dec     [ix+#mob.unknown11]
+        jr      ._7
+        
+._6     ld      a,[ix+#mob.unknown11]
+        cp      $80
+        jr      nc,._7
+        inc     [ix+#mob.unknown11]
+._7     res     1,[ix+#mob.flags]
+        ld      a,[$.FRAMECOUNT]
+        ld      c,a
+        and     $40
+        ret     nz
+        ld      a,[$.D2EC]
+        cp      $06
+        ret     z
+        set     1,[ix+#mob.flags]
+        ld      a,c
+        and     $1f
+        ret     nz
+        
+        ld      A`sfx           $13
+        rst     :rst_playSFX
+        
+        ret
+        
+        ;--------------------------------------------------------------------[$BAC5]----
+
+._bca5  ld      [$.TEMP3],de
+        ld      a,[hl]
+        inc     hl
+        push    hl
+        call    :_3581
+        pop     hl
+        ld      a,[hl]
+        inc     hl
+        push    hl
+        ld      hl,[$.TEMP4]
+        push    hl
+        ld      de,$0008
+        add     hl,de
+        ld      [$.TEMP4],hl
+        call    :_3581
+        pop     hl
+        ld      [$.TEMP4],hl
+        pop     hl
+        ret
+        
+        ;-------------------------------------------------------------------------------
+
+._bcc7  BYTE    $36 $38 $56 $58 $36 $38 $56 $58 $36 $38 $56 $58 $36 $38 $56 $58
+        BYTE    $36 $38 $56 $58 $36 $38
+._bcdd  BYTE    $40 $42        
+        
+}

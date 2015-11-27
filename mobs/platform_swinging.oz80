@@ -1,0 +1,249 @@
+;; Sonic 1 Master System Disassembly
+   -------------------------------------------------------------------------------------------------
+   created by Kroc Camen <kroc@camendesign.com> and given to the Public Domain; you may do anything
+   you like with this code as long as you respect the TradeMarks and (any) Copyrights within.
+   absolutely no warranty implied
+   =================================================================================================
+;;
+
+;wooden platform - swinging (Green Hill)
+
+PROC    :mob_platform_swinging                  SECTION ::mobs                  ;$673C
+        ;==============================================================================
+PARAMS  IX`mob          ``Address of the current mob being processed
+{        
+        set     5,[ix+#mob.flags]               ;mob does not collide with the floor
+        ld      hl,$0020
+        ld      [$.D267],hl
+        ld      hl,$0048
+        ld      [$.D269],hl
+        ld      hl,$0030
+        ld      [$.D26B],hl
+        ld      hl,$0030
+        ld      [$.D26D],hl
+        bit     0,[ix+#mob.flags]
+        jr      nz,._1
+        ld      l,[ix+#mob.X+0]
+        ld      h,[ix+#mob.X+1]
+        ld      [ix+$12],l
+        ld      [ix+#mob.unknown13],h
+        ld      l,[ix+#mob.Y+0]
+        ld      h,[ix+#mob.Y+1]
+        ld      [ix+#mob.unknown14],l
+        ld      [ix+#mob.unknown15],h
+        ld      [ix+#mob.unknown11],$e0
+        set     0,[ix+#mob.flags]
+        set     1,[ix+#mob.flags]
+._1     ld      [ix+#mob.width],$1a
+        ld      [ix+#mob.height],$10
+        ld      l,[ix+#mob.X+0]
+        ld      h,[ix+#mob.X+1]
+        ld      [$.TEMP1],hl
+        ld      hl,._682f
+        ld      e,[ix+#mob.unknown11]
+        ld      d,$00
+        add     hl,de
+        ld      c,l
+        ld      b,h
+        ld      a,[bc]
+        and     a
+        jp      p,._2
+        dec     d
+._2     ld      e,a
+        ld      l,[ix+$12]
+        ld      h,[ix+#mob.unknown13]
+        add     hl,de
+        ld      [ix+#mob.X+0],l
+        ld      [ix+#mob.X+1],h
+        ld      de,[$.TEMP1]
+        and     a
+        sbc     hl,de
+        ld      [$.TEMP1],hl
+        inc     bc
+        ld      d,$00
+        ld      a,[bc]
+        and     a
+        jp      p,._3
+        dec     d
+._3     ld      e,a
+        ld      l,[ix+#mob.unknown14]
+        ld      h,[ix+#mob.unknown15]
+        add     hl,de
+        ld      [ix+#mob.Y+0],l
+        ld      [ix+#mob.Y+1],h
+        
+        ld      a,[$.SONIC.Ydirection]
+        and     a
+        jp      m,._4
+        
+        ld      hl,$0806
+        ld      [$.TEMP6],hl
+        call    :detectCollisionWithSonic
+        jr      c,._4
+        ld      hl,[$.SONIC.X]
+        ld      de,[$.TEMP1]
+        add     hl,de
+        ld      [$.SONIC.X],hl
+        ld      bc,$0010
+        ld      de,$0000
+        call    :_LABEL_7CC1_12
+._4     ld      hl,:object_platform_spriteLayouts._6911
+        ld      a,[$.LEVEL_SOLIDITY]
+        and     a
+        jr      z,._5
+        ld      hl,:object_platform_spriteLayouts._6923
+._5     ld      [ix+#mob.spriteLayout+0],l
+        ld      [ix+#mob.spriteLayout+1],h
+        bit     1,[ix+#mob.flags]
+        jr      nz,._6
+        ld      a,[ix+#mob.unknown11]
+        inc     a
+        inc     a
+        ld      [ix+#mob.unknown11],a
+        cp      $e0
+        ret     c
+        set     1,[ix+#mob.flags]
+        ret
+        
+._6     ld      a,[ix+#mob.unknown11]
+        dec     a
+        dec     a
+        ld      [ix+#mob.unknown11],a
+        ret     nz
+        res     1,[ix+#mob.flags]
+        ret
+        
+._682f  ;this is swinging position data
+        BYTE $B3, $00
+        BYTE $B3, $01
+        BYTE $B3, $02
+        BYTE $B3, $02
+        BYTE $B3, $03
+        BYTE $B3, $04
+        BYTE $B3, $05
+        BYTE $B3, $06
+        BYTE $B4, $07
+        BYTE $B4, $08
+        BYTE $B4, $09
+        BYTE $B4, $0B
+        BYTE $B4, $0C
+        BYTE $B4, $0D
+        BYTE $B5, $0E
+        BYTE $B5, $0F
+        BYTE $B5, $11
+        BYTE $B5, $12
+        BYTE $B6, $13
+        BYTE $B6, $15
+        BYTE $B7, $16
+        BYTE $B7, $18
+        BYTE $B8, $19
+        BYTE $B8, $1B
+        BYTE $B9, $1D
+        BYTE $B9, $1E
+        BYTE $BA, $20
+        BYTE $BB, $22
+        BYTE $BC, $23
+        BYTE $BD, $25
+        BYTE $BE, $27
+        BYTE $BF, $29
+        BYTE $C0, $2B
+        BYTE $C2, $2D
+        BYTE $C3, $2F
+        BYTE $C4, $31
+        BYTE $C6, $32
+        BYTE $C8, $34
+        BYTE $CA, $36
+        BYTE $CC, $38
+        BYTE $CE, $3A
+        BYTE $D0, $3C
+        BYTE $D2, $3E
+        BYTE $D4, $3F
+        BYTE $D7, $41
+        BYTE $DA, $43
+        BYTE $DC, $44
+        BYTE $DF, $45
+        BYTE $E2, $47
+        BYTE $E5, $48
+        BYTE $E8, $49
+        BYTE $EC, $4A
+        BYTE $EF, $4B
+        BYTE $F2, $4C
+        BYTE $F6, $4C
+        BYTE $F9, $4C
+        BYTE $FC, $4D
+        BYTE $00, $4D
+        BYTE $03, $4D
+        BYTE $07, $4C
+        BYTE $0A, $4C
+        BYTE $0E, $4C
+        BYTE $11, $4B
+        BYTE $14, $4A
+        BYTE $18, $49
+        BYTE $1B, $48
+        BYTE $1E, $47
+        BYTE $21, $45
+        BYTE $24, $44
+        BYTE $27, $42
+        BYTE $29, $41
+        BYTE $2C, $3F
+        BYTE $2E, $3D
+        BYTE $31, $3B
+        BYTE $33, $3A
+        BYTE $35, $38
+        BYTE $37, $36
+        BYTE $39, $34
+        BYTE $3A, $32
+        BYTE $3C, $30
+        BYTE $3E, $2E
+        BYTE $3F, $2C
+        BYTE $40, $2A
+        BYTE $41, $28
+        BYTE $43, $26
+        BYTE $44, $24
+        BYTE $45, $23
+        BYTE $45, $21
+        BYTE $46, $1F
+        BYTE $47, $1D
+        BYTE $48, $1C
+        BYTE $48, $1A
+        BYTE $49, $18
+        BYTE $49, $17
+        BYTE $4A, $15
+        BYTE $4A, $14
+        BYTE $4B, $12
+        BYTE $4B, $11
+        BYTE $4B, $0F
+        BYTE $4B, $0E
+        BYTE $4C, $0D
+        BYTE $4C, $0C
+        BYTE $4C, $0A
+        BYTE $4C, $09
+        BYTE $4C, $08
+        BYTE $4C, $07
+        BYTE $4D, $06
+        BYTE $4D, $05
+        BYTE $4D, $04
+        BYTE $4D, $03
+        BYTE $4D, $02
+        BYTE $4D, $01
+        BYTE $4D, $00
+}
+
+;--------------------------------------------------------------------------------------
+;sprite layout (other platform objects share this)
+
+TABLE   :object_platform_spriteLayouts          SECTION ::mobs   
+{
+._6911  BYTE $FE, $FF, $FF, $FF, $FF, $FF
+        BYTE $18, $1A, $18, $1A, $FF, $FF
+        BYTE $FF, $FF, $FF, $FF, $FF, $FF
+._6923  BYTE $FE, $FF, $FF, $FF, $FF, $FF
+        BYTE $6C, $6E, $6E, $48, $FF, $FF
+        BYTE $FF, $FF
+
+._6931  BYTE $FE, $FF, $FF, $FF
+        BYTE $FF, $FF
+        
+        BYTE $6C, $6E, $6C, $6E, $FF, $FF
+        BYTE $FF, $FF
+}

@@ -1,0 +1,95 @@
+;; Sonic 1 Master System Disassembly
+   -------------------------------------------------------------------------------------------------
+   created by Kroc Camen <kroc@camendesign.com> and given to the Public Domain; you may do anything
+   you like with this code as long as you respect the TradeMarks and (any) Copyrights within.
+   absolutely no warranty implied
+   =================================================================================================
+;;
+
+;moving spiked wall (Sky Base)
+
+PROC    :_b398                                  SECTION ::mobs                  ;$B398
+        ;==============================================================================
+PARAMS  IX`mob          ``Address of the current mob being processed
+{
+        set     5,[ix+#mob.flags]               ;mob does not collide with the floor
+        bit     0,[ix+#mob.flags]
+        jr      nz,._1
+        ld      l,[ix+#mob.X+0]
+        ld      h,[ix+#mob.X+1]
+        ld      [ix+#mob.unknown11],l
+        ld      [ix+$12],h
+        set     0,[ix+#mob.flags]
+._1     ld      [ix+#mob.width],$0c
+        ld      [ix+#mob.height],$2e
+        ld      [ix+#mob.spriteLayout+0],LO ._b45b
+        ld      [ix+#mob.spriteLayout+1],HI ._b45b
+        ld      hl,$0202
+        ld      [$.TEMP6],hl
+
+        call    :detectCollisionWithSonic
+        call    nc,:hitPlayer._35fd
+        ld      l,[ix+#mob.Xsubpixel]
+        ld      h,[ix+#mob.X+0]
+        ld      a,[ix+#mob.X+1]
+        ld      de,$0080
+        add     hl,de
+        adc     a,$00
+        ld      l,h
+        ld      h,a
+        ld      [$.TEMP1],hl
+        ld      l,[ix+#mob.Y+0]
+        ld      h,[ix+#mob.Y+1]
+        ld      [$.TEMP3],hl
+        ld      hl,$0000
+        ld      [$.TEMP4],hl
+        ld      hl,$fff0
+        ld      [$.TEMP6],hl
+        ld      a,$16
+        call    :_3581
+        ld      hl,$0008
+        ld      [$.TEMP4],hl
+        ld      a,$18
+        call    :_3581
+        ld      l,[ix+#mob.X+0]
+        ld      h,[ix+#mob.X+1]
+        ld      de,$0580
+        xor     a`zero
+        ld      [ix+#mob.Xspeed+0],a`zero
+        ld      [ix+#mob.Xspeed+1],a`zero
+        ld      [ix+#mob.Xdirection],a`zero
+        sbc     hl,de
+        ret     nc
+        ld      c,[ix+#mob.Y+0]
+        ld      b,[ix+#mob.Y+1]
+        ld      hl,$0040
+        add     hl,bc
+        ld      de,[$.CAMERA_Y]
+        and     a
+        sbc     hl,de
+        jr      nc,._2
+        ld      a,[ix+#mob.unknown11]
+        ld      [ix+#mob.X+0],a
+        ld      a,[ix+$12]
+        ld      [ix+#mob.X+1],a
+._2     ld      de,[$.SONIC.Y]
+        ld      hl,$ffe0
+        add     hl,bc
+        xor     a`zero
+        sbc     hl,de
+        ret     nc
+        ld      hl,$002c
+        add     hl,bc
+        xor     a`zero
+        sbc     hl,de
+        ret     c
+        ld      [ix+#mob.Xspeed+0],$80
+        ld      [ix+#mob.Xspeed+1],a`zero
+        ld      [ix+#mob.Xdirection],a`zero
+        ret
+        
+        ;sprite layout
+._b45b  BYTE $16, $18, $FF, $FF, $FF, $FF
+        BYTE $16, $18, $FF, $FF, $FF, $FF
+        BYTE $16, $18, $FF, $FF, $FF, $FF
+}

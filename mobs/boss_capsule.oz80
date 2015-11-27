@@ -1,0 +1,253 @@
+;; Sonic 1 Master System Disassembly
+   -------------------------------------------------------------------------------------------------
+   created by Kroc Camen <kroc@camendesign.com> and given to the Public Domain; you may do anything
+   you like with this code as long as you respect the TradeMarks and (any) Copyrights within.
+   absolutely no warranty implied
+   =================================================================================================
+;;
+
+;capsule
+
+PROC    :mob_boss_capsule                       SECTION ::mobs                  ;$732C
+        ;==============================================================================
+PARAMS  IX`mob          ``Address of the current mob being processed
+{
+        set     5,[ix+#mob.flags]               ;mob does not collide with the floor
+        bit     0,[ix+#mob.flags]
+        jr      nz,._1
+        ld      l,[ix+#mob.Y+0]
+        ld      h,[ix+#mob.Y+1]
+        ld      de,$0010
+        add     hl,de
+        ld      [ix+#mob.Y+0],l
+        ld      [ix+#mob.Y+1],h
+        set     0,[ix+#mob.flags]
+._1     ld      [ix+#mob.width], 28
+        ld      [ix+#mob.height],64
+        ld      hl,._7564
+        bit     1,[ix+#mob.flags]
+        jr      z,._2
+        ld      hl,._757c
+._2     ld      a,[$.FRAMECOUNT]
+        rrca    
+        jr      nc,._3
+        ld      de,$000c
+        add     hl,de
+._3     ld      c,[hl]
+        inc     hl
+        ld      b,[hl]
+        inc     hl
+        ex      de,hl
+        ld      l,[ix+#mob.X+0]
+        ld      h,[ix+#mob.X+1]
+        add     hl,bc
+        ld      [$.D2AB],hl
+        ex      de,hl
+        ld      c,[hl]
+        inc     hl
+        ld      b,[hl]
+        inc     hl
+        ld      [$.D2AF],hl
+        ld      l,[ix+#mob.Y+0]
+        ld      h,[ix+#mob.Y+1]
+        add     hl,bc
+        ld      [$.D2AD],hl
+        ld      hl,._752e
+        ld      a,[$.FRAMECOUNT]
+        and     $10
+        jr      z,._4
+        ld      hl,._7552
+._4     ld      [ix+#mob.spriteLayout+0],l
+        ld      [ix+#mob.spriteLayout+1],h
+        ld      hl,[$.CAMERA_X]
+        ld      [$.LEVEL_LEFT],hl
+        
+        ;something to do with scrolling
+        ld      l,[ix+#mob.X+0]
+        ld      h,[ix+#mob.X+1]
+        ld      de,$FF90
+        add     hl,de
+        ld      [$.LEVEL_RIGHT],hl
+        
+        ld      hl,$0002
+        ld      [$.TEMP6],hl
+        call    :detectCollisionWithSonic
+        jp      c,._8
+        
+        ld      a,[$.SONIC.Ydirection]
+        and     a
+        jp      m,._8
+        
+        ld      e,[ix+#mob.Y+0]
+        ld      d,[ix+#mob.Y+1]
+        ld      hl,[$.SONIC.Y]
+        and     a
+        sbc     hl,de
+        jr      c,._6
+        ld      l,[ix+#mob.X+0]
+        ld      h,[ix+#mob.X+1]
+        ld      de,$0010
+        add     hl,de
+        ld      de,$ffea
+        ld      bc,[$.SONIC.X]
+        and     a
+        sbc     hl,bc
+        jr      nc,._5
+        ld      de,$001d
+._5     ld      l,[ix+#mob.X+0]
+        ld      h,[ix+#mob.X+1]
+        add     hl,de
+        ld      [$.SONIC.X],hl
+        jp      ._7
+        
+._6     ld      hl,[$.SONIC.X]
+        ld      bc,$000c
+        add     hl,bc
+        ld      c,l
+        ld      b,h
+        ld      e,[ix+#mob.X+0]
+        ld      d,[ix+#mob.X+1]
+        and     a
+        sbc     hl,de
+        ret     c
+        ex      de,hl
+        ld      de,$0020
+        add     hl,de
+        and     a
+        sbc     hl,bc
+        ret     c
+        ld      a,c
+        and     $1f
+        ld      c,a
+        ld      b,$00
+        ld      hl,._750e
+        add     hl,bc
+        ld      c,[hl]
+        ld      l,[ix+#mob.Y+0]
+        ld      h,[ix+#mob.Y+1]
+        ld      de,$ffe0
+        add     hl,de
+        add     hl,bc
+        ld      [$.SONIC.Y],hl
+        ld      a,[$.D2E8]
+        ld      hl,[$.D2E6]
+        ld      [$.SONIC.Yspeed],hl
+        ld      [$.SONIC.Ydirection],a
+        ld      hl,$.SONIC.flags
+        set     7,[hl]
+        ld      a,c
+        cp      $03
+        ret     nz
+        ld      [ix+#mob.spriteLayout+0],LO ._7540
+        ld      [ix+#mob.spriteLayout+1],HI ._7540
+        bit     1,[iy+#vars.flags6]
+        jr      nz,._9
+        set     1,[iy+#vars.flags6]
+        
+        ;Stop Sonic's movement (reset speed and direction)
+._7     xor     a`zero
+        ld      l`zero,a`zero
+        ld      h`zero,a`zero
+        ld      [$.SONIC.Xspeed],hl`zero
+        ld      [$.SONIC.Xdirection],a`zero
+        
+._8     bit     1,[iy+#vars.flags6]
+        ret     z
+._9     ld      a,[ix+$12]
+        cp      $08
+        jr      nc,._10
+        inc     [ix+#mob.unknown11]
+        ld      a,[ix+#mob.unknown11]
+        cp      $14
+        ret     c
+        ld      [ix+#mob.unknown11],$00
+        call    :_7a3a
+        inc     [ix+$12]
+        ret
+        
+._10    bit     1,[ix+#mob.flags]
+        jr      nz,._11
+        ld      a,$a0
+        ld      [$.D289],a
+        
+        ld      a,::sound:S1_MusicPointers.actComplete.index   ;=$09
+        rst     :rst_playMusic
+        
+        set     1,[ix+#mob.flags]
+._11    xor     a`zero
+        ld      [ix+#mob.spriteLayout+0],a`zero
+        ld      [ix+#mob.spriteLayout+1],a`zero
+        res     5,[iy+#vars.flags0]
+        ld      a,[$.FRAMECOUNT]
+        and     $0f
+        ret     nz
+        call    ::main:_LABEL_625_57
+        and     $01
+        add     a,$23
+        call    ._74b6
+        inc     [ix+#mob.unknown16]
+        ld      a,[ix+#mob.unknown16]
+        cp      $0c
+        ret     c
+        ld      [ix+#mob.type],$FF              ;remove object?
+        ret
+
+        ;--------------------------------------------------------------------[$74B6]---
+
+._74b6  ld      [$.D216],a
+        call    :findEmptyMob
+        ret     c
+        ld      e,[ix+#mob.X+0]
+        ld      d,[ix+#mob.X+1]
+        ld      c,[ix+#mob.Y+0]
+        ld      b,[ix+#mob.Y+1]
+        push    ix
+        push    hl
+        pop     ix
+        ld      a,[$.D216]
+        ld      [ix+#mob.type],a
+        
+        xor     a`zero                          ;set A to 0
+        ld      [ix+#mob.unknown16],a`zero
+        ld      [ix+#mob.unknown17],a`zero
+        ld      [ix+#mob.Xsubpixel],a`zero
+        ld      hl,$0008
+        add     hl,de
+        ld      [ix+#mob.X+0],l
+        ld      [ix+#mob.X+1],h
+        ld      [ix+#mob.Ysubpixel],a`zero
+        ld      hl,$001a
+        add     hl,bc
+        ld      [ix+#mob.Y+0],l
+        ld      [ix+#mob.Y+1],h
+        call    ::main:_LABEL_625_57
+        ld      [ix+#mob.Yspeed+0],a
+        call    ::main:_LABEL_625_57
+        and     $01
+        inc     a
+        inc     a
+        neg     
+        ld      [ix+#mob.Yspeed+1],a
+        ld      [ix+#mob.Ydirection],$ff
+        pop     ix
+        ret
+
+._750e  BYTE $15 $12 $11 $10 $10 $0F $0E $0D $03 $03 $03 $03 $03 $03 $03 $03
+        BYTE $03 $03 $03 $03 $03 $03 $03 $03 $0D $0E $0F $10 $10 $11 $12 $15
+
+        ;sprite layout
+._752e  BYTE $00 $02 $04 $06 $FF $FF
+        BYTE $20 $22 $24 $26 $FF $FF
+        BYTE $40 $42 $44 $46 $FF $FF
+._7540  BYTE $00 $08 $0A $06 $FF $FF
+        BYTE $20 $22 $24 $26 $FF $FF
+        BYTE $40 $42 $44 $46 $FF $FF
+._7552  BYTE $00 $68 $6A $06 $FF $FF
+        BYTE $20 $22 $24 $26 $FF $FF
+        BYTE $40 $42 $44 $46 $FF $FF
+
+._7564  BYTE $00 $00 $30 $00 $60 $19 $62 $19 $61 $19 $63 $19 $10 $00 $30 $00
+        BYTE $64 $19 $66 $19 $65 $19 $67 $19
+._757c  BYTE $00 $00 $20 $00 $00 $00 $00 $00 $49 $19 $4B $19 $10 $00 $20 $00
+        BYTE $00 $00 $00 $00 $4D $19 $4F $19
+}

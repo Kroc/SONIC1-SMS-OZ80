@@ -1,0 +1,634 @@
+;; Sonic 1 Master System Disassembly
+   -------------------------------------------------------------------------------------------------
+   created by Kroc Camen <kroc@camendesign.com> and given to the Public Domain; you may do anything
+   you like with this code as long as you respect the TradeMarks and (any) Copyrights within.
+   absolutely no warranty implied
+   =================================================================================================
+;;
+
+SECTION ::sound         SLOT 1
+
+INCLUDE "driver.oz80"
+
+TABLE   :S1_MusicPointers                       SECTION ::sound                 ;$C716
+        ;===============================================================================
+{
+INDEX   .greenHill                              ;=$00
+    WORD    :S1_Music_GreenHill			        ;$47D0 [$C7D0]
+        
+INDEX   .bridge                                 ;=$01
+    WORD    :S1_Music_Bridge			        ;$574A [$D74A]
+        
+INDEX   .jungle                                 ;=$02
+    WORD    :S1_Music_Jungle			        ;$524A [$D24A]
+        
+INDEX   .labyrinth                              ;=$03
+    WORD    :S1_Music_Labyrinth			        ;$760C [$F60C]
+        
+INDEX   .scrapBrain                             ;=$04
+    WORD    :S1_Music_ScrapBrain			    ;$5B4F [$DB4F]
+        
+INDEX   .skyBase                                ;=$05
+    WORD    :S1_Music_SkyBase			        ;$61A7 [$E1A7]
+        
+INDEX   .titleScreen                            ;=$06
+    WORD    :S1_Music_TitleScreen		        ;$64C3 [$E4C3]
+        
+INDEX   .mapScreen                              ;=$07
+    WORD    :S1_Music_MapScreen			        ;$663C [$E63C]
+        
+INDEX   .invincibility                          ;=$08
+    WORD    :S1_Music_Invinciblity		        ;$6704 [$E704]
+        
+INDEX   .actComplete                            ;=$09
+    WORD    :S1_Music_ActComplete		        ;$68B4 [$E8B4]
+        
+INDEX   .death                                  ;=$0A
+    WORD    :S1_Music_Death			            ;$6991 [$E991]
+        
+INDEX   .boss1                                  ;=$0B
+    WORD    :S1_Music_Boss			            ;$6AC0 [$EAC0]
+        
+INDEX   .boss2                                  ;=$0C
+    WORD    :S1_Music_Boss			            ;$6AC0 [$EAC0]
+        
+INDEX   .boss3                                  ;=$0D
+    WORD    :S1_Music_Boss			            ;$6AC0 [$EAC0]
+        
+INDEX   .ending                                 ;=$0E
+    WORD    :S1_Music_Ending			        ;$6D54 [$ED54]
+    
+    ;an unused entry
+INDEX   .unused1
+    WORD    :S1_Music_GreenHill			        ;$47D0 [$C7D0]
+        
+INDEX   .specialStage                           ;=$10
+    WORD    :S1_Music_SpecialStage		        ;$712C [$F12C]
+
+    ;a couple of unused entries
+INDEX   .unused2    
+    WORD    :S1_Music_GreenHill			        ;$47D0 [$C7D0]
+INDEX   .unused3
+    WORD    :S1_Music_GreenHill			        ;$47D0 [$C7D0]
+
+INDEX   .allEmeralds                            ;=$13
+    WORD    :S1_Music_AllEmeralds		        ;$798C [$F98C]
+        
+INDEX   .emerald                                ;=$14
+    WORD    :S1_Music_Emerald			        ;$7A26 [$FA26]
+}
+
+TABLE   :S1_SFXPointers                         SECTION ::sound                 ;$C740
+        ;===============================================================================
+{
+    WORD    :_fb27, $0002                       ;$7B27 [$FB27]
+    WORD    :_fb43, $0002                       ;$7B43 [$FB43]
+    WORD    :_fb74, $0002                       ;$7B74 [$FB74]
+    WORD    :_fb98, $0002                       ;$7B98 [$FB98]
+    WORD    :_fbbf, $0002                       ;$7BBF [$FBBF]
+    WORD    :_fbe6, $0002                       ;$7BE6 [$FBE6]
+    WORD    :_fc18, $0002                       ;$7C18 [$FC18]
+    WORD    :_fc42, $0002                       ;$7C42 [$FC42]
+    WORD    :_fc5e, $0001                       ;$7C5E [$FC5E]
+    WORD    :_fc8e, $0001                       ;$7C8E [$FC8E]
+    WORD    :_fcb7, $0002                       ;$7CB7 [$FCB7]
+    WORD    :_fcd8, $0001                       ;$7CD8 [$FCD8]
+    WORD    :_fcfd, $0001                       ;$7CFD [$FCFD]
+    WORD    :_fd24, $0001                       ;$7D24 [$FD24]
+    WORD    :_fd62, $0002                       ;$7D62 [$FD62]
+    WORD    :_fd62, $0001                       ;$7D62 [$FD62]
+    WORD    :_fd62, $0002                       ;$7D62 [$FD62]
+    WORD    :_fd62, $0002                       ;$7D62 [$FD62]
+    WORD    :_fd88, $0002                       ;$7D88 [$FD88]
+    WORD    :_fdb1, $0001                       ;$7DB1 [$FDB1]
+    WORD    :_fdb1, $0002                       ;$7DB1 [$FDB1]
+    WORD    :_fdb1, $0002                       ;$7DB1 [$FDB1]
+    WORD    :_fdb1, $0002                       ;$7DB1 [$FDB1]
+    WORD    :_fde6, $0001                       ;$7DE6 [$FDE6]
+    WORD    :_fe0c, $0001                       ;$7E0C [$FE0C]
+    WORD    :_fe2f, $0002                       ;$7E2F [$FE2F]
+    WORD    :_fe48, $0001                       ;$7E48 [$FE48]
+    WORD    :_fe5c, $0001                       ;$7E5C [$FE5C]
+    WORD    :_fe74, $0001                       ;$7E74 [$FE74]
+    WORD    :_fea4, $0001                       ;$7EA4 [$FEA4]
+    WORD    :_fecc, $0002                       ;$7ECC [$FECC]
+    WORD    :_fecc, $0002                       ;$7ECC [$FECC]
+    WORD    :_fee8, $0002                       ;$7EE8 [$FEE8]
+    WORD    :_ff08, $0001                       ;$7F08 [$FF08]
+    WORD    :_ff4e, $0001                       ;$7F4E [$FF4E]
+    WORD    :_ff83, $0002                       ;$7F83 [$FF83]
+}
+
+INCLUDE "song_greenHill.oz80"
+INCLUDE "song_marble.oz80"
+INCLUDE "song_jungle.oz80"
+INCLUDE "song_bridge.oz80"
+INCLUDE "song_scrapBrain.oz80"
+INCLUDE "song_skyBase.oz80"
+INCLUDE "song_titleScreen.oz80"
+INCLUDE "song_mapScreen.oz80"
+INCLUDE "song_invincibility.oz80"
+INCLUDE "song_actComplete.oz80"
+INCLUDE "song_death.oz80"
+INCLUDE "song_boss.oz80"
+INCLUDE "song_ending.oz80"
+INCLUDE "song_specialStage.oz80"
+INCLUDE "song_labyrinth.oz80"
+INCLUDE "song_allEmeralds.oz80"
+INCLUDE "song_emerald.oz80"
+
+TYPE    #sfxHeader
+[
+    .overriddenTrack            BYTE
+    .tempoDivider               WORD
+    .tickDivider                WORD
+    .unused                     BYTE
+]
+
+TABLE   :_fb27                                  SECTION ::sound                 ;$FB27
+        ;===============================================================================
+{
+    ;DATA    #sfxHeader
+    BYTE    $02 WORD $0001 $0001 BYTE $00
+            
+    BYTE    $82 $FF $00 $FA $00 $32 $0A
+    BYTE    $83 $03 $01 $FA $F0 $FF
+    BYTE    $81 $0F $15 $03 $1A $15
+    BYTE    $81 $00
+    BYTE    $FE
+}
+
+TABLE   :_fb43                                  SECTION ::sound                 ;$FB43
+        ;===============================================================================
+{
+    ;DATA    #sfxHeader
+    BYTE    $02 WORD $0001 $0001 BYTE $00
+            
+    BYTE    $82 $FF $00 $FA $00 $32 $0A
+    BYTE    $8A $01
+    BYTE    $81 $0F $10 $00 $07 $00 $04 $00 $00 $00
+    BYTE    $86
+.a  BYTE    $17 $00 $15 $00 $14 $00 $12 $00 $10 $00 $0B $00 $8C $8C $8C $8C
+    BYTE    $87 $03
+    WORD    .a - :                              ;$1A $00
+    BYTE    $81 $00
+    BYTE    $FE
+}
+
+TABLE   :_fb74                                  SECTION ::sound                 ;$FB74
+        ;===============================================================================
+{
+    ;DATA    #sfxHeader
+    BYTE    $02 WORD $0001 $0001 BYTE $00
+            
+    BYTE    $82 $FF $00 $FA $00 $32 $0A
+    BYTE    $81 $0F $34 $04 $37 $04 $40 $04 $8C $8C $40 $04 $8C $8C $40 $04
+    BYTE    $8C $8C $40 $04
+    BYTE    $81 $00 $FE
+}
+
+TABLE   :_fb98                                  SECTION ::sound                 ;$FB98
+        ;===============================================================================
+{
+    ;DATA   #sfxHeader
+    BYTE    $02 WORD $0001 $0001 BYTE $00
+    
+    BYTE    $82 $FF $00 $FA $00 $32 $0A
+    BYTE    $81 $0F
+    BYTE    $8A $01 $28 $00 $2A $00 $28 $00 $2A $00 $7F $02
+    BYTE    $86
+.a  BYTE    $28 $00 $2A $00
+    BYTE    $87 $09
+    WORD    .a - :                              ;$1C $00
+    BYTE    $81 $00
+    BYTE    $FE
+}
+
+TABLE   :_fbbf                                  SECTION ::sound                 ;$FBBF
+        ;===============================================================================
+{
+    BYTE    $02 WORD $0001 $0001 BYTE $00
+    
+    BYTE    $82 $FF $00 $FA $00 $32 $0A
+    BYTE    $81 $0F
+    BYTE    $8A $01
+    BYTE    $86
+.a  BYTE    $17 $00 $19 $00 $1B $00 $20 $00 $22 $00 $24 $00 $8C $8C
+    BYTE    $87 $07
+    WORD    .a - :                              ;$12 $00
+    BYTE    $81 $00
+    BYTE    $FE
+}
+
+TABLE   :_fbe6                                  SECTION ::sound                 ;FBE6
+        ;===============================================================================
+{
+    BYTE    $02 WORD $0001 $0001 BYTE $00
+    
+    BYTE    $83 $01 $01 $FA $F2 $FF
+    BYTE    $82 $FF $00 $FA $00 $32 $0A
+    BYTE    $81 $0A
+    BYTE    $86
+.a  BYTE    $3B $02 $8D $8B
+    BYTE    $87 $03
+    WORD    .a - :                              ;$16 $00
+    BYTE    $3B $02
+    BYTE    $83 $01 $01 $FA $17 $00
+    BYTE    $86
+.b  BYTE    $4B $03 $8D $8C
+    BYTE    $87 $0E
+    WORD    .b - :                              ;$27 $00
+    BYTE    $81 $00
+    BYTE    $FE
+}
+    
+TABLE   :_fc18                                  SECTION ::sound                 ;$FC18
+        ;===============================================================================
+{
+    BYTE    $02 WORD $0001 $0001 BYTE $00
+    
+    BYTE    $83 $01 $01 $FA $FE $FF
+    BYTE    $82 $FF $00 $FA $00 $32 $0A
+    BYTE    $81 $0A
+    BYTE    $86
+.a  BYTE    $3B $0C $8D $8B
+    BYTE    $87 $04
+    WORD    .a - :                              ;$16 $00
+    BYTE    $86
+.b  BYTE    $3B $0C $8D $8C
+    BYTE    $87 $06
+    WORD    .b - :                              ;$1F $00
+    BYTE    $81 $00
+    BYTE    $FE
+}
+    
+TABLE   :_fc42                                  SECTION ::sound                 ;$FC42
+        ;===============================================================================
+{
+    BYTE    $02 $01 $00 $01 $00 $00
+    BYTE    $82 $FF $00 $FA $00 $32 $0A
+    BYTE    $81 $0F
+    BYTE    $86
+.a  BYTE    $10 $01 $30 $01 $8C
+    BYTE    $87 $0F
+    WORD    .a - :                              ;$10 $00
+    BYTE    $81 $00
+    BYTE    $FE
+}
+    
+TABLE   :_fc5e                                  SECTION ::sound                 ;$FC5E
+        ;===============================================================================
+{
+    BYTE    $02 $01 $00 $01 $00 $00
+    BYTE    $83 $01 $01 $FA $BF $FF
+    BYTE    $82 $FF $00 $FA $00 $32 $0A
+    BYTE    $8A $06
+    BYTE    $81 $0F
+    BYTE    $86
+.a  BYTE    $10 $00 $8C $12 $00 $8C $14 $00 $8C $15 $00 $8C $17 $00 $8C
+    BYTE    $19 $00
+    BYTE    $87 $03
+    WORD    .a - :                              ;$18 $00
+    BYTE    $81 $00
+    BYTE    $FE
+}
+    
+TABLE   :_fc8e                                  SECTION ::sound                 ;$FC8E
+        ;===============================================================================
+{
+    BYTE    $02 $01 $00 $01 $00 $00
+    BYTE    $82 $FF $00 $FA $00 $32 $0A
+    BYTE    $8A $04
+    BYTE    $81 $0F $38 $00 $40 $00 $43 $00 $40 $00 $43 $00
+    BYTE    $86
+.a  BYTE    $48 $00 $7F $00 $8C $8C
+    BYTE    $87 $07
+    WORD    .a - :                              ;$1C $00
+    BYTE    $81 $00
+    BYTE    $FE
+}
+    
+TABLE   :_fcb7                                  SECTION ::sound                 ;FCB7
+        ;===============================================================================
+{
+    BYTE    $02 $01 $00 $01 $00 $00
+    BYTE    $82 $FF $00 $FA $00 $32 $0A
+    BYTE    $81 $0F
+    BYTE    $86
+.a  BYTE    $18 $01 $7F $01 $8C $10 $01 $7F $01 $8C
+    BYTE    $87 $07
+    WORD    .a - :                              ;$10 $00
+    BYTE    $81 $00
+    BYTE    $FE
+}
+
+TABLE   :_fcd8                                  SECTION ::sound                 ;$FCD8
+        ;===============================================================================
+{
+    BYTE    $02 $01 $00 $01 $00 $00
+    BYTE    $82 $FF $00 $FA $00 $32 $0A
+    BYTE    $8A $01
+    BYTE    $81 $0F
+    BYTE    $86
+.a  BYTE    $3B $00 $49 $00 $7F $02 $3B $00 $49 $00 $7F $02
+    BYTE    $87 $FF
+    WORD    .a - :                              ;$12 $00
+    BYTE    $81 $00
+    BYTE    $FE
+}
+   
+TABLE   :_fcfd                                  SECTION ::sound                 ;$FCFD
+        ;===============================================================================
+{
+    BYTE    $02 WORD $0001 $0001 BYTE $00
+    BYTE    $82 $FF $1E $C8 $1E $0A $01
+    BYTE    $83 $01 $01 $FA $F0 $FF
+    BYTE    $81 $0F $10 $02 $7F $02
+    BYTE    $86
+.a  BYTE    $19 $0C $8C $8C $8C $8C
+    BYTE    $87 $03
+    WORD    .a - :                              ;$1A $00
+    BYTE    $81 $00
+    BYTE    $FE
+}
+
+TABLE   :_fd24                                  SECTION ::sound                 ;FD24
+        ;===============================================================================
+{
+    BYTE    $02 WORD $0001 $0001 BYTE $00
+    BYTE    $82 $FF $00 $FA $00 $00 $0A
+    BYTE    $83 $01 $01 $FA $C4 $FF
+    BYTE    $81 $00
+    BYTE    $86
+.a  BYTE    $00 $09 $8B
+    BYTE    $87 $0A
+    WORD    .a - :                              ;$16 $00
+    BYTE    $86
+.b  BYTE    $86
+.c  BYTE    $00 $09 $00 $09 $8B
+    BYTE    $87 $04
+    WORD    .c - :                              ;$1F $00
+    BYTE    $86
+.d  BYTE    $00 $09
+    BYTE    $87 $08
+    WORD    .d - :                              ;$29 $00
+    BYTE    $86
+.e  BYTE    $00 $09 $00 $09 $8C
+    BYTE    $87 $04
+    WORD    .e - :                              ;$30 $00
+    BYTE    $87 $FF
+    WORD    .b - :                              ;$1E $00
+    BYTE    $FE
+}
+    
+TABLE   :_fd62                                  SECTION ::sound                 ;FD62
+        ;===============================================================================
+{
+    BYTE    $02 WORD $0001 $0001 BYTE $00
+    BYTE    $82 $FF $00 $FF $00 $0A $01
+    BYTE    $81 $0F
+    BYTE    $86
+.a  BYTE    $00 $01 $01 $01
+    BYTE    $87 $02
+    WORD    .a - :                              ;$10 $00
+    BYTE    $7F $05
+    BYTE    $86
+.b  BYTE    $00 $01 $01 $01
+    BYTE    $87 $10
+    WORD    .b - :                              ;$1B $00
+    BYTE    $81 $00
+    BYTE    $FE
+}
+    
+TABLE   :_fd88                                  SECTION ::sound                 ;$FD88
+        ;===============================================================================
+{
+    BYTE    $03 WORD $0001 $0001 BYTE $00
+    BYTE    $81 $0D
+    BYTE    $82 $FF $00 $FA $00 $32 $0A
+    BYTE    $8A $02
+    BYTE    $89 $05
+    BYTE    $00 $00 $7F $00
+    BYTE    $89 $04
+    BYTE    $81 $0C $00 $00 $8B
+    BYTE    $86
+.a  BYTE    $00 $00 $8C
+    BYTE    $87 $0D
+    WORD    .a - :                              ;$1F $00
+    BYTE    $81 $00
+    BYTE    $FE
+}
+ 
+TABLE   :_fdb1                                  SECTION ::sound                 ;$FDB1
+        ;===============================================================================
+{
+    BYTE    $02 WORD $0001 $0001 BYTE $00
+    BYTE    $82 $FF $00 $FA $00 $32 $0A
+    BYTE    $81 $0F
+    BYTE    $8A $01
+    BYTE    $01 $00 $7F $00 $02 $00 $7F $00 $03 $00 $7F $00
+    BYTE    $86
+.a  BYTE    $04 $00 $7F $00
+    BYTE    $87 $0F
+    WORD    .a - :                              ;$1E $00
+    BYTE    $86
+.b  BYTE    $04 $00 $7F $00 $7F $00 $8C
+    BYTE    $87 $0F
+    WORD    .b - :                              ;$27 $00
+    BYTE    $81 $00
+    BYTE    $FE
+}
+ 
+TABLE   :_fde6                                  SECTION ::sound                 ;$FDE6
+        ;===============================================================================
+{   
+    BYTE    $03 WORD $0001 $0001 BYTE $00
+    BYTE    $81 $07
+    BYTE    $82 $FF $00 $FA $00 $32 $0A
+    BYTE    $89 $06
+    BYTE    $86
+.a  BYTE    $00 $0C $8B
+    BYTE    $87 $07
+    WORD    .a - :                              ;$12 $00
+    BYTE    $00 $30
+    BYTE    $86
+.b  BYTE    $00 $02 $8C
+    BYTE    $87 $0E
+    WORD    .b - :                              ;$1C $00
+    BYTE    $81 $00
+    BYTE    $FE
+}
+
+TABLE   :_fe0c                                  SECTION ::sound                 ;$FE0C
+        ;===============================================================================
+{   BYTE    $03 WORD $0001 $0001 BYTE $00
+    BYTE    $81 $0F
+    BYTE    $82 $FF $00 $FA $00 $32 $0A
+    BYTE    $89 $06
+    BYTE    $86
+.a  BYTE    $00 $03 $7F $03 $8C $8C $8C $8C
+    BYTE    $87 $03
+    WORD    .a - :                              ;$12 $00
+    BYTE    $00 $03
+    BYTE    $81 $00
+    BYTE    $FE
+}
+
+TABLE   :_fe2f                                  SECTION ::sound                 ;$FE2F
+        ;===============================================================================
+{
+    BYTE    $02 WORD $0001 $0001 BYTE $00
+    BYTE    $82 $FF $00 $FA $00 $00 $0A
+    BYTE    $81 $0E
+    BYTE    $86
+.a  BYTE    $0C $02 $0D $02
+    BYTE    $87 $0A
+    WORD    .a - :                              ;$10 $00
+    BYTE    $FE
+}
+
+TABLE   :_fe48                                  SECTION ::sound                 ;$FE48
+        ;===============================================================================
+{
+    BYTE    $02 WORD $0001 $0001 BYTE $00
+    BYTE    $82 $FF $00 $FA $00 $32 $0A
+    BYTE    $81 $0D $49 $03
+    BYTE    $81 $00
+    BYTE    $FE
+}
+
+TABLE   :_fe5c                                  SECTION ::sound                 ;$FE5C
+        ;===============================================================================
+{   
+    BYTE    $03 WORD $0001 $0001 BYTE $00
+    BYTE    $81 $0F
+    BYTE    $82 $FF $0A $96 $14 $50 $0A
+    BYTE    $8A $10
+    BYTE    $89 $06
+    BYTE    $00 $12
+    BYTE    $81 $00
+    BYTE    $FE
+}
+    
+TABLE   :_fe74                                  SECTION ::sound                 ;$FE74
+        ;===============================================================================
+{
+    BYTE    $02 WORD $0001 $0001 BYTE $00
+    BYTE    $82 $FF $00 $FA $00 $32 $0A
+    BYTE    $8A $01
+    BYTE    $81 $0F $0C $02 $7F $02
+    BYTE    $86
+.a  BYTE    $11 $00 $09 $00 $07 $00 $04 $00 $03 $00 $00 $00 $0E $00 $0C $00
+    BYTE    $8C $8C $8C
+    BYTE    $87 $04
+    WORD    .a - :                              ;$16 $00
+    BYTE    $81 $00
+    BYTE    $FE
+}
+    
+TABLE   :_fea4                                  SECTION ::sound                 ;$FEA4
+        ;===============================================================================
+{
+    BYTE    $02 WORD $0001 $0001 BYTE $00
+    BYTE    $82 $FF $00 $FA $00 $32 $0A
+    BYTE    $81 $0F
+    BYTE    $8A $01
+    BYTE    $17 $00 $10 $00 $07 $00 $00 $00 $0C $00
+    BYTE    $86
+.a   BYTE    $4B $00 $0B $00 $8C
+    BYTE    $87 $0F
+    WORD    .a - :                              ;$1C $00
+    BYTE    $81 $00
+    BYTE    $FE
+}
+    
+TABLE   :_fecc                                  SECTION ::sound                 ;$FECC
+        ;===============================================================================
+{
+    BYTE    $02 WORD $0001 $0001 BYTE $00
+    BYTE    $82 $FF $00 $FA $00 $32 $0A
+    BYTE    $81 $0F
+    BYTE    $86
+.a  BYTE    $19 $01 $39 $01 $8C
+    BYTE    $87 $0F
+    WORD    .a - : ;$10 $00
+    BYTE    $81 $00
+    BYTE    $FE
+}
+
+TABLE   :_fee8                                  SECTION ::sound                 ;$FEE8
+        ;===============================================================================
+{
+    BYTE    $03 WORD $0001 $0001 BYTE $00
+    BYTE    $82 $FF $00 $FA $00 $32 $0A
+    BYTE    $8A $03
+    BYTE    $81 $0E
+    BYTE    $89 $06
+    BYTE    $86
+.a  BYTE    $00 $00 $7F $00 $8C
+    BYTE    $87 $0E
+    WORD    .a - :                              ;$14 $00
+    BYTE    $81 $00
+    BYTE    $FE
+}
+
+TABLE   :_ff08                                  SECTION ::sound                 ;$FF08
+        ;===============================================================================
+{
+    BYTE    $02 WORD $0001 $0001 BYTE $00
+    BYTE    $82 $FF $00 $FA $00 $32 $0A
+    BYTE    $81 $0F
+    BYTE    $8A $01
+    BYTE    $09 $00 $7F $00 $47 $00 $7F $00 $40 $00 $5B $00 $7F $00 $57 $02
+    BYTE    $54 $00 $4B $00 $7F $02 $5B $00 $7F $00 $54 $00 $7F $00 $5B $00
+    BYTE    $7F $00
+    BYTE    $81 $0C
+    BYTE    $86
+.a  BYTE    $5B $00 $0C $00 $7F $00 $57 $00 $8C
+    BYTE    $87 $06
+    WORD    .a - :                              ;$36 $00
+    BYTE    $81 $00
+    BYTE    $FE
+}
+
+TABLE   :_ff4e                                  SECTION ::sound                 ;$FF4E
+        ;===============================================================================
+{
+    BYTE    $02 WORD $0001 $0001 BYTE $00
+    BYTE    $82 $FF $00 $FA $00 $00 $0A
+    BYTE    $81 $0B
+    BYTE    $8A $01
+    BYTE    $19 $00 $8B $15 $00 $8B $22 $00 $27 $00 $7F $03 $2B $00 $32 $00
+    BYTE    $36 $00 $39 $00 $7F $06
+    BYTE    $81 $05 $2B $00 $32 $00 $36 $00 $39 $00
+    BYTE    $81 $00
+    BYTE    $FE
+        
+    BYTE    $00
+}
+
+TABLE   :_ff83                                  SECTION ::sound                 ;$FF83
+        ;===============================================================================
+{
+    BYTE    $02 WORD $0001 $0001 BYTE $00
+    BYTE    $83 $01 $01 $FA $F2 $FF
+    BYTE    $82 $FF $00 $FA $00 $00 $0A
+    BYTE    $86
+.a  BYTE    $81 $0A
+    BYTE    $86
+.b  BYTE    $30 $06 $8B
+    BYTE    $87 $04
+    WORD    .b - :                              ;$17 $00
+    BYTE    $86
+.c  BYTE    $30 $06 $8C $8C
+    BYTE    $87 $05
+    WORD    .c - :                              ;$1F $00
+    BYTE    $87 $FF
+    WORD    .a - :                              ;$14 $00
+    BYTE    $81 $00
+    BYTE    $FE
+    
+    ;the background text in the original ROM
+    BYTE    "Master System & Game Gear Version. '1991 (C)Ancient. (BANK0-4)", $A2
+            "SONIC THE HEDGE"
+}

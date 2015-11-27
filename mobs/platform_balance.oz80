@@ -1,0 +1,225 @@
+;; Sonic 1 Master System Disassembly
+   -------------------------------------------------------------------------------------------------
+   created by Kroc Camen <kroc@camendesign.com> and given to the Public Domain; you may do anything
+   you like with this code as long as you respect the TradeMarks and (any) Copyrights within.
+   absolutely no warranty implied
+   =================================================================================================
+;;
+
+;balance (Bridge)
+
+PROC    :mob_platform_balance                   SECTION ::mobs                  ;$866C
+        ;==============================================================================
+PARAMS  IX`mob          ``Address of the current mob being processed
+{
+        set     5,[ix+#mob.flags]               ;mob does not collide with the floor
+        bit     0,[ix+#mob.flags]
+        jr      nz,._1
+        ld      [ix+#mob.unknown11],$1c
+        ld      l,[ix+#mob.X+0]
+        ld      h,[ix+#mob.X+1]
+        ld      de,$fff0
+        add     hl,de
+        ld      [ix+#mob.X+0],l
+        ld      [ix+#mob.X+1],h
+        set     0,[ix+#mob.flags]
+._1     ld      l,[ix+#mob.unknown14]
+        ld      h,[ix+#mob.unknown15]
+        ld      a,[ix+#mob.unknown16]
+        ld      e,[ix+#mob.unknown12]
+        ld      d,[ix+#mob.unknown13]
+        ld      c,$00
+        bit     7,d
+        jr      z,._2
+        dec     c
+._2     add     hl,de
+        adc     a,c
+        ld      [ix+#mob.unknown14],l
+        ld      [ix+#mob.unknown15],h
+        ld      [ix+#mob.unknown16],a
+        ld      c,h
+        ld      b,a
+        ld      hl,$0038
+        add     hl,de
+        ld      [ix+#mob.unknown12],l
+        ld      [ix+#mob.unknown13],h
+        bit     7,h
+        jr      nz,._7
+        rlca    
+        jr      c,._7
+        ld      a,[ix+#mob.unknown11]
+        and     a
+        jr      z,._6
+        bit     1,[ix+#mob.flags]
+        jr      z,._4
+        ld      a,l
+        or      h
+        jr      nz,._3
+        ld      a,[$.D2E8]
+        ld      hl,[$.D2E6]
+        ld      [$.SONIC.Yspeed],hl
+        ld      [$.SONIC.Ydirection],a
+        jr      ._4
+        
+._3     ld      a,l
+        cpl     
+        ld      l,a
+        ld      a,h
+        cpl     
+        ld      h,a
+        inc     hl
+        ld      de,[$.D2E6]
+        add     hl,de
+        ld      [$.SONIC.Yspeed],hl
+        
+        ld      a,$FF
+        ld      [$.SONIC.Ydirection],a          ;set Sonic as currently jumping
+        
+._4     ld      a,$1c
+        sub     c
+        ld      [ix+#mob.unknown11],a
+        jr      z,._5
+        jr      nc,._7
+._5     bit     1,[ix+#mob.flags]
+        jr      z,._6
+        ld      a,$04
+        rst     :rst_playSFX
+._6     xor     a`zero
+        ld      [ix+#mob.unknown11],a`zero
+        ld      [ix+#mob.unknown12],a`zero
+        ld      [ix+#mob.unknown13],a`zero
+        ld      [ix+#mob.unknown14],a`zero
+        ld      [ix+#mob.unknown15],$1C
+        ld      [ix+#mob.unknown16],a`zero
+._7     ld      l,[ix+#mob.X+0]
+        ld      h,[ix+#mob.X+1]
+        ld      [$.TEMP1],hl
+        ld      l,[ix+#mob.Y+0]
+        ld      h,[ix+#mob.Y+1]
+        ld      [$.TEMP3],hl
+        ld      hl,$0000
+        ld      [$.TEMP4],hl
+        ld      l,[ix+#mob.unknown11]
+        ld      de,$0010
+        add     hl,de
+        ld      [$.TEMP6],hl
+        ld      hl,._8830
+        call    ._881a
+        ld      hl,$0028
+        ld      [$.TEMP4],hl
+        ld      a,$1c
+        sub     [ix+#mob.unknown11]
+        ld      l,a
+        ld      h,$00
+        ld      de,$0010
+        add     hl,de
+        ld      [$.TEMP6],hl
+        ld      hl,._8830
+        call    ._881a
+        ld      hl,$002c
+        ld      [$.TEMP4],hl
+        ld      l,[ix+#mob.unknown15]
+        ld      h,[ix+#mob.unknown16]
+        ld      [$.TEMP6],hl
+        ld      hl,._8834
+        call    ._881a
+        res     1,[ix+#mob.flags]
+        ld      [ix+#mob.width],$14
+        ld      a,$02
+        ld      [$.TEMP6],a
+        ld      a,[ix+#mob.unknown11]
+        ld      c,a
+        add     a,$08
+        ld      [ix+#mob.height],a
+        ld      a,c
+        add     a,$04
+        ld      [$.TEMP7],a
+        call    :detectCollisionWithSonic
+        jr      nc,._8
+        
+        ld      a,[$.SONIC.Ydirection]
+        and     a
+        ret     m
+        
+        ld      [ix+#mob.width],$3c
+        ld      a,$2a
+        ld      [$.TEMP6],a
+        ld      a,$1c
+        sub     [ix+#mob.unknown11]
+        add     a,$08
+        ld      [ix+#mob.height],a
+        ld      a,$1c
+        sub     [ix+#mob.unknown11]
+        add     a,$04
+        ld      [$.TEMP7],a
+        call    :detectCollisionWithSonic
+        jr      nc,._9
+        ret
+        
+._8     set     1,[ix+#mob.flags]
+        
+        ld      a,[$.SONIC.Ydirection]
+        and     a
+        ret     m
+        
+        ld      a,[ix+#mob.unknown11]
+        cp      $1c
+        jr      z,._9
+        ld      hl,[$.SONIC.Yspeed]
+        ld      a,l
+        cpl     
+        ld      l,a
+        ld      a,h
+        cpl     
+        ld      h,a
+        inc     hl
+        ld      [ix+#mob.unknown12],l
+        ld      [ix+#mob.unknown13],h
+        ld      a,[$.SONIC.Yspeed+1]
+        add     a,[ix+#mob.unknown11]
+        ld      [ix+#mob.unknown11],a
+        cp      $1c
+        jr      c,._10
+        ld      [ix+#mob.unknown11],$1c
+._9     ld      a,[$.D2E8]
+        ld      hl,[$.D2E6]
+        ld      [$.SONIC.Yspeed],hl
+        ld      [$.SONIC.Ydirection],a
+._10    ld      l,[ix+#mob.Y+0]
+        ld      h,[ix+#mob.Y+1]
+        ld      bc,$0010
+        add     hl,bc
+        ld      a,[$.TEMP7]
+        sub     $04
+        ld      c,a
+        add     hl,bc
+        ld      a,[$.SONIC.height]
+        ld      c,a
+        xor     a`zero
+        sbc     hl,bc
+        ld      [$.SONIC.Y],hl
+        ld      hl,$.SONIC.flags
+        set     7,[hl]
+        ret
+        
+        ;------------------------------------------------------------------------------
+
+._881a  ld      a,[hl]
+        and     a
+        ret     m
+        push    hl
+        call    :_3581
+        ld      hl,[$.TEMP4]
+        ld      de,$0008
+        add     hl,de
+        ld      [$.TEMP4],hl
+        pop     hl
+        inc     hl
+        jp      ._881a
+        
+        ;------------------------------------------------------------------------------
+
+._8830  BYTE $36, $38, $3A, $FF
+._8834  BYTE $3C, $3E, $FF
+
+}

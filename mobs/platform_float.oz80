@@ -1,0 +1,147 @@
+;; Sonic 1 Master System Disassembly
+   -------------------------------------------------------------------------------------------------
+   created by Kroc Camen <kroc@camendesign.com> and given to the Public Domain; you may do anything
+   you like with this code as long as you respect the TradeMarks and (any) Copyrights within.
+   absolutely no warranty implied
+   =================================================================================================
+;;
+
+;platform - float up (Labyrinth)
+
+PROC    :mob_platform_float                     SECTION ::mobs                  ;$90C0
+        ;==============================================================================
+PARAMS  IX`mob          ``Address of the current mob being processed
+{
+        set     5,[ix+#mob.flags]               ;mob does not collide with the floor
+        ld      [ix+#mob.width], 30
+        ld      [ix+#mob.height],28
+        ld      [ix+#mob.spriteLayout+0],LO ._91de
+        ld      [ix+#mob.spriteLayout+1],HI ._91de
+        bit     1,[ix+#mob.flags]
+        jr      nz,._1
+        ld      l,[ix+#mob.X+0]
+        ld      h,[ix+#mob.X+1]
+        ld      [ix+#mob.unknown11],l
+        ld      [ix+$12],h
+        ld      l,[ix+#mob.Y+0]
+        ld      h,[ix+#mob.Y+1]
+        ld      de,$ffff
+        add     hl,de
+        ld      [ix+#mob.Y+0],l
+        ld      [ix+#mob.Y+1],h
+        ld      [ix+#mob.unknown13],l
+        ld      [ix+#mob.unknown14],h
+        set     1,[ix+#mob.flags]
+._1     ld      bc,$0010
+        ld      de,$0020
+        call    :getFloorLayoutRAMAddressForMob
+        ld      e,[hl]
+        ld      d,$00
+        ld      a,[$.LEVEL_SOLIDITY]
+        add     a,a
+        ld      c,a
+        ld      b,d
+        ld      hl,:S1_Solidity_Blocks
+        add     hl,bc
+        ld      a,[hl]
+        inc     hl
+        ld      h,[hl]
+        ld      l,a
+        add     hl,de
+        ld      a,[hl]
+        and     $3f
+        ld      c,$00
+        ld      l,c
+        ld      h,c
+        cp      $1e
+        jr      z,._2
+        bit     0,[ix+#mob.flags]
+        jr      z,._3
+        ld      l,[ix+#mob.Yspeed+0]
+        ld      h,[ix+#mob.Yspeed+1]
+        ld      a,[ix+#mob.Ydirection]
+        ld      de,$fff8
+        add     hl,de
+        adc     a,$ff
+        ld      c,a
+        ld      a,h
+        neg     
+        cp      $02
+        jr      c,._2
+        ld      hl,$ff00
+        ld      c,$ff
+._2     ld      [ix+#mob.Yspeed+0],l
+        ld      [ix+#mob.Yspeed+1],h
+        ld      [ix+#mob.Ydirection],c
+._3     ld      e,[ix+#mob.X+0]
+        ld      d,[ix+#mob.X+1]
+        ld      hl,[$.CAMERA_X]
+        ld      bc,$ffe0
+        add     hl,bc
+        and     a
+        sbc     hl,de
+        jr      nc,._4
+        ld      hl,[$.CAMERA_X]
+        inc     h
+        and     a
+        sbc     hl,de
+        jr      c,._4
+        ld      e,[ix+#mob.Y+0]
+        ld      d,[ix+#mob.Y+1]
+        ld      hl,[$.CAMERA_Y]
+        ld      bc,$ffe0
+        add     hl,bc
+        and     a
+        sbc     hl,de
+        jr      nc,._4
+        ld      hl,[$.CAMERA_Y]
+        ld      bc,$00e0
+        add     hl,bc
+        and     a
+        sbc     hl,de
+        jr      nc,._5
+._4     ld      l,[ix+#mob.unknown11]
+        ld      h,[ix+$12]
+        ld      [ix+#mob.X+0],l
+        ld      [ix+#mob.X+1],h
+        ld      l,[ix+#mob.unknown13]
+        ld      h,[ix+#mob.unknown14]
+        ld      [ix+#mob.Y+0],l
+        ld      [ix+#mob.Y+1],h
+        
+        xor     a`zero                          ;set A to 0
+        ld      [ix+#mob.Xsubpixel],a`zero
+        ld      [ix+#mob.Ysubpixel],a`zero
+        ld      [ix+#mob.Yspeed+0],a`zero
+        ld      [ix+#mob.Yspeed+1],a`zero
+        ld      [ix+#mob.Ydirection],a`zero
+        res     0,[ix+#mob.flags]
+        ret
+        
+        ;------------------------------------------------------------------------------
+        
+._5     ld      hl,$0e02
+        ld      [$.TEMP6],hl
+        call    :detectCollisionWithSonic
+        ret     c
+        set     0,[ix+#mob.flags]
+        ld      a,[$.SONIC.Yspeed+1]
+        and     a
+        jp      p,._6
+        neg     
+        cp      $02
+        ret     nc
+        
+._6     ld      e,[ix+#mob.Yspeed+0]
+        ld      d,[ix+#mob.Yspeed+1]
+        ld      bc,$0010
+        call    :_LABEL_7CC1_12
+        ret
+        
+        ;------------------------------------------------------------------------------
+
+        ;sprite layout
+._91de  BYTE $FE, $FF, $FF, $FF, $FF, $FF
+        BYTE $16, $18, $1A, $1C, $FF, $FF
+        BYTE $FF
+}

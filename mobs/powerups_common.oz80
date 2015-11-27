@@ -1,0 +1,537 @@
+;; Sonic 1 Master System Disassembly
+   -------------------------------------------------------------------------------------------------
+   created by Kroc Camen <kroc@camendesign.com> and given to the Public Domain; you may do anything
+   you like with this code as long as you respect the TradeMarks and (any) Copyrights within.
+   absolutely no warranty implied
+   =================================================================================================
+;;
+
+;NOTE: the power-ups share code between themselves
+
+PROC    :mob_powerUp_ring                       SECTION ::mobs                  ;$5B09
+        ;==============================================================================
+PARAMS  IX`mob          ``Address of the current mob being processed
+{       
+        ld      [ix+#mob.width], 20
+        ld      [ix+#mob.height],24
+        call    :_5da8
+        ld      hl,$0003
+        ld      [$.TEMP6],hl
+        call    :detectCollisionWithSonic
+        jr      c,._1
+        call    :_5deb
+        jr      c,._1
+        
+        ;Add 10 rings to the ring count
+._5b24  ld      a,$10
+        call    :increaseRings
+        
+._5b29  xor     a`zero                          ;set A to 0
+        ld      [ix+#mob.spriteLayout+0],a`zero
+        ld      [ix+#mob.spriteLayout+1],a`zero
+        ret     
+        
+        ;------------------------------------------------------------------------------
+        
+._1     ld      hl,$5180                        ;$15180 - blinking items art
+._5b34
+        call    ::main:loadPowerUpIcon
+        ld      [ix+#mob.spriteLayout+0],LO ._5bbf
+        ld      [ix+#mob.spriteLayout+1],HI ._5bbf
+        ld      a,[$.FRAMECOUNT]
+        and     $07
+        cp      $05
+        ret     nc
+        ld      [ix+#mob.spriteLayout+0],LO ._5bcc
+        ld      [ix+#mob.spriteLayout+1],HI ._5bcc
+        ld      l,[ix+#mob.Xsubpixel]
+        ld      h,[ix+#mob.X+0]
+        ld      a,[ix+#mob.X+1]
+        ld      e,[ix+#mob.Xspeed+0]
+        ld      d,[ix+#mob.Xspeed+1]
+        add     hl,de
+        adc     a,[ix+#mob.Xdirection]
+        ld      l,h
+        ld      h,a
+        ld      [$.TEMP1],hl
+        ld      l,[ix+#mob.Ysubpixel]
+        ld      h,[ix+#mob.Y+0]
+        ld      a,[ix+#mob.Y+1]
+        bit     7,[ix+#mob.flags]
+        jr      nz,._2
+        ld      e,[ix+#mob.Yspeed+0]
+        ld      d,[ix+#mob.Yspeed+1]
+        add     hl,de
+        adc     a,[ix+#mob.Ydirection]
+._2     ld      l,h
+        ld      h,a
+        ld      [$.TEMP3],hl
+        ld      hl,$0004
+        ld      [$.TEMP4],hl
+        ld      hl,$0000
+        ld      [$.TEMP6],hl
+        ld      a,$5c
+        call    :_3581
+        ld      hl,$000c
+        ld      [$.TEMP4],hl
+        ld      a,$5e
+        call    :_3581
+        bit     1,[ix+#mob.flags]
+        ret     z
+        ld      l,[ix+#mob.Yspeed+0]
+        ld      h,[ix+#mob.Yspeed+1]
+        ld      a,[ix+#mob.Ydirection]
+        ld      de,$0040
+        add     hl,de
+        adc     a,$00
+        ld      [ix+#mob.Yspeed+0],l
+        ld      [ix+#mob.Yspeed+1],h
+        ld      [ix+#mob.Ydirection],a
+        ret
+        
+._5bbf
+        BYTE $54, $56, $58, $FF, $FF, $FF
+        BYTE $AA, $AC, $AE, $FF, $FF, $FF
+        BYTE $FF
+._5bcc
+        BYTE $54, $FE, $58, $FF, $FF, $FF
+        BYTE $AA, $AC, $AE, $FF, $FF, $FF
+        BYTE $FF
+}
+
+PROC    :mob_powerUp_speed                      SECTION ::mobs                  ;$5BD9
+        ;==============================================================================
+PARAMS  IX`mob          ``Address of the current mob being processed
+{       
+        ld      [ix+#mob.width], 20
+        ld      [ix+#mob.height],24
+        call    :_5da8
+        ld      hl,$0003
+        ld      [$.TEMP6],hl
+        call    :detectCollisionWithSonic
+        jr      c,._1
+        call    :_5deb
+        jr      c,._1
+        ld      a,$f0
+        ld      [$.SONIC.unknown15],a
+        ld      a,$02
+        rst     :rst_playSFX
+        jp      :mob_powerUp_ring._5b29
+        
+._1     ld      hl,$5200
+        jp      :mob_powerUp_ring._5b34
+
+}
+
+PROC    :mob_powerUp_life                       SECTION ::mobs                  ;$5C05
+        ;==============================================================================
+PARAMS  IX`mob          ``Address of the current mob being processed
+{
+        ld      [ix+#mob.width], 20
+        ld      [ix+#mob.height],24
+        call    :_5da8
+        
+        ;check if the level has its bit flag set at $.D305+
+        ld      hl,$.D305
+        call    ::main:getLevelBitFlag
+        ld      a,[hl]
+        and     c
+        jr      z,._1                           ;if not set, skip ahead
+        
+        ld      [ix+#mob.type],$FF              ;remove object?
+        jp      :mob_powerUp_ring._5b29
+        
+._1     ld      hl,$0003
+        ld      [$.TEMP6],hl
+        call    :detectCollisionWithSonic
+        jr      c,._2
+        call    :_5deb
+        jr      c,._2
+        bit     2,[ix+#mob.flags]
+        jp      nz,:mob_powerUp_ring._5b24
+        ld      hl,$.LIVES
+        inc     [hl]
+        
+        ;set the level's bit flag at $.D305+
+        ld      hl,$.D305
+        call    ::main:getLevelBitFlag
+        ld      a,[hl]
+        or      c
+        ld      [hl],a
+        
+        xor     a`zero                          ;set A to 0
+        ld      [ix+#mob.spriteLayout+0],a`zero
+        ld      [ix+#mob.spriteLayout+1],a`zero
+        
+        ld      a,$09
+        rst     :rst_playSFX
+        
+        ld      a,[$.CURRENT_LEVEL]
+        cp      28                              ;special stage?
+        ret     nc
+        
+        ld      hl,$.D280
+        inc     [hl]
+        ret
+        
+        ;------------------------------------------------------------------------------
+._2     ld      a,[$.CURRENT_LEVEL]
+        cp      4                               ;level 4 (Bridge Act 2)?
+        jr      z,._4
+        cp      $09                             ;level 9 (Labyrinth Act 1)?
+        jr      z,._6
+        cp      $0c                             ;level 12 (Scrap Brain Act 1)?
+        jr      z,._7
+        cp      $11                             ;level 11 (Labyrinth Act 3)?
+        jr      z,._8
+        
+._3     ld      hl,$5280
+        jp      :mob_powerUp_ring._5b34
+
+._4     ld      c,$00
+        ld      de,$0040
+        ld      a,[ix+#mob.unknown13]
+        cp      $3c
+        jr      c,._5
+        dec     c
+        ld      de,$ffc0
+._5     ld      [ix+#mob.Yspeed+0],e
+        ld      [ix+#mob.Yspeed+1],d
+        ld      [ix+#mob.Ydirection],c
+        inc     [ix+#mob.unknown13]
+        ld      a,[ix+#mob.unknown13]
+        cp      $50
+        jr      c,._3
+        ld      [ix+#mob.unknown13],$28
+        jr      ._3
+        
+._6     set     2,[ix+#mob.flags]
+        ld      hl,$.D317
+        call    ::main:getLevelBitFlag
+        ld      a,[hl]
+        ld      hl,$5180
+        and     c
+        jp      z,:mob_powerUp_ring._5b34
+        res     2,[ix+#mob.flags]
+        ld      hl,$5280
+        jp      :mob_powerUp_ring._5b34
+        
+._7     set     1,[ix+#mob.flags]
+        ld      [ix+#mob.Xspeed+0],$80
+        ld      [ix+#mob.Xspeed+1],$00
+        ld      [ix+#mob.Xdirection],$00
+        jr      ._3
+        
+._8     ld      a,[$.D280]
+        cp      $11
+        jr      nc,._3
+        ld      [ix+#mob.type],$FF      ;remove object?
+        jr      ._3
+
+}
+
+PROC    :mob_powerUp_shield                     SECTION ::mobs                  ;$5CD7
+        ;==============================================================================
+PARAMS  IX`mob          ``Address of the current mob being processed
+{       
+        ld      [ix+#mob.width], 20
+        ld      [ix+#mob.height],24
+        call    :_5da8
+        ld      hl,$0003
+        ld      [$.TEMP6],hl
+        call    :detectCollisionWithSonic
+        jr      c,._1
+        call    :_5deb
+        jr      c,._1
+        set     5,[iy+#vars.flags6]
+        jp      :mob_powerUp_ring._5b29
+        
+._1     ld      hl,$5300
+        jp      :mob_powerUp_ring._5b34
+
+}
+
+PROC    :mob_powerUp_invincibility              SECTION ::mobs                  ;$5CFF
+        ;==============================================================================
+PARAMS  IX`mob          ``Address of the current mob being processed
+{       
+        ld      [ix+#mob.width], 20
+        ld      [ix+#mob.height],24
+        call    :_5da8
+        ld      hl,$0003
+        ld      [$.TEMP6],hl
+        call    :detectCollisionWithSonic
+        jr      c,._1
+        call    :_5deb
+        jr      c,._1
+        set     0,[iy+#vars.unknown0]
+        ld      a,$F0
+        ld      [$.D28D],a
+        
+        ld      a,::sound:S1_MusicPointers.invincibility.index ;=$08
+        rst     :rst_playMusic
+        
+        jp      :mob_powerUp_ring._5b29
+        
+._1     ld      hl,$5380
+        jp      :mob_powerUp_ring._5b34
+
+}
+
+PROC    :mob_powerUp_checkpoint                 SECTION ::mobs                  ;$5D2F
+        ;==============================================================================
+PARAMS  IX`mob          ``Address of the current mob being processed
+{       
+        ld      [ix+#mob.width], 20
+        ld      [ix+#mob.height],24
+        call    :_5da8
+        ld      hl,$0003
+        ld      [$.TEMP6],hl
+        call    :detectCollisionWithSonic
+        jr      c,._1
+        call    :_5deb
+        jr      c,._1
+        
+        ld      hl,$.D311
+        call    ::main:getLevelBitFlag
+        ld      a,[hl]
+        or      c
+        ld      [hl],a
+        
+        ld      a,[$.CURRENT_LEVEL]
+        add     a,a
+        ld      e,a
+        ld      d,$00
+        ld      hl,$.D32E
+        add     hl,de
+        ex      de,hl                           ;DE is $.D32E + level number * 2
+        ld      l,[ix+#mob.X+0]
+        ld      h,[ix+#mob.X+1]
+        add     hl,hl
+        add     hl,hl
+        add     hl,hl
+        ld      a,h
+        ld      [de],a
+        inc     de
+        ld      l,[ix+#mob.Y+0]
+        ld      h,[ix+#mob.Y+1]
+        add     hl,hl
+        add     hl,hl
+        add     hl,hl
+        ld      a,h
+        dec     a
+        ld      [de],a
+        jp      :mob_powerUp_ring._5b29
+        
+._1     ld      hl,$5480
+        jp      :mob_powerUp_ring._5b34
+
+}
+
+PROC    :mob_powerUp_continue                   SECTION ::mobs                  ;$5D80
+        ;==============================================================================
+PARAMS  IX`mob          ``Address of the current mob being processed
+{       
+        ld      [ix+#mob.width], 20
+        ld      [ix+#mob.height],24
+        call    :_5da8
+        ld      hl,$0003
+        ld      [$.TEMP6],hl
+        call    :detectCollisionWithSonic
+        jr      c,._1
+        call    :_5deb
+        jr      c,._1
+        set     3,[iy+#vars.flags9]
+        jp      :mob_powerUp_ring._5b29
+        
+._1     ld      hl,$5500
+        jp      :mob_powerUp_ring._5b34
+
+}
+
+PROC    :_5da8                                  SECTION ::mobs                  ;$5DA8
+        ;==============================================================================
+PARAMS  IX`mob          ``Address of the current mob being processed
+{       
+        bit     0,[ix+#mob.flags]
+        ret     nz
+        ld      a,[$.LEVEL_SOLIDITY]
+        and     a
+        jr      nz,._1
+        ld      bc,$0000
+        ld      e,c
+        ld      d,b
+        call    :getFloorLayoutRAMAddressForMob
+        ld      de,$0016
+        ld      bc,$0012
+        ld      a,[hl]
+        cp      $ab
+        jr      z,._2
+._1     ld      de,$0004
+        ld      bc,$0000
+._2     ld      l,[ix+#mob.X+0]
+        ld      h,[ix+#mob.X+1]
+        add     hl,de
+        ld      [ix+#mob.X+0],l
+        ld      [ix+#mob.X+1],h
+        ld      l,[ix+#mob.Y+0]
+        ld      h,[ix+#mob.Y+1]
+        add     hl,bc
+        ld      [ix+#mob.Y+0],l
+        ld      [ix+#mob.Y+1],h
+        set     0,[ix+#mob.flags]
+        ret
+
+}
+
+PROC    :_5deb                                  SECTION ::mobs                  ;$5DEB
+        ;==============================================================================
+PARAMS  IX`mob          ``Address of the current mob being processed
+{       
+        ld      hl,$0804
+        ld      [$.TEMP1],hl
+        ld      a,[$.SONIC.flags]
+        and     $01
+        jr      nz,._2
+        ld      de,[$.SONIC.X]
+        ld      c,[ix+#mob.X+0]
+        ld      b,[ix+#mob.X+1]
+        ld      hl,$ffee
+        add     hl,bc
+        and     a
+        sbc     hl,de
+        jr      nc,._4
+        ld      hl,$0010
+        add     hl,bc
+        and     a
+        sbc     hl,de
+        jr      c,._4
+        ld      a,[$.SONIC.flags]
+        and     $04
+        jr      nz,._1
+        ld      l,[ix+#mob.Y+0]
+        ld      h,[ix+#mob.Y+1]
+        ld      a,[$.SONIC.height]
+        ld      c,a
+        xor     a`zero
+        ld      b,a`zero
+        sbc     hl,bc
+        ld      [$.SONIC.Y],hl
+        ld      [$.D28E],a`zero
+        ld      a,[$.D2E8]
+        ld      hl,[$.D2E6]
+        ld      [$.SONIC.Yspeed],hl
+        ld      [$.SONIC.Ydirection],a
+        ld      hl,$.SONIC.flags
+        set     7,[hl]
+        scf     
+        ret
+
+._1     ld      a,[$.SONIC.Ydirection]
+        and     a
+        jp      m,._3
+        
+._2     call    :_36be
+        and     a
+        ret
+
+._3     ld      [ix+#mob.Yspeed+0],$80
+        ld      [ix+#mob.Yspeed+1],$fe
+        ld      [ix+#mob.Ydirection],$ff
+        ld      hl,$0400
+        xor     a`zero
+        ld      [$.SONIC.Yspeed],hl
+        ld      [$.SONIC.Ydirection],a
+        ld      [$.D28E],a
+        set     1,[ix+#mob.flags]
+        scf     
+        ret
+
+._4     ld      hl,[$.SONIC.X]
+        ld      de,$000c
+        add     hl,de
+        ex      de,hl
+        ld      l,[ix+#mob.X+0]
+        ld      h,[ix+#mob.X+1]
+        ld      bc,$000a
+        add     hl,bc
+        ld      bc,$ffeb
+        and     a
+        sbc     hl,de
+        jr      nc,._5
+        ld      bc,$0015
+._5     ld      l,[ix+#mob.X+0]
+        ld      h,[ix+#mob.X+1]
+        add     hl,bc
+        ld      [$.SONIC.X],hl
+        
+        xor     a`zero
+        ld      [$.SONIC.Xsubpixel],a`zero
+        ld      l`zero,a`zero
+        ld      h`zero,a`zero
+        ld      [$.SONIC.Xspeed+0],a`zero
+        ld      [$.SONIC.Xspeed+1],hl`zero
+        scf     
+        ret
+
+}
+
+PROC    :mob_powerUp_emerald                    SECTION ::mobs                  ;$5EA2
+        ;==============================================================================
+PARAMS  IX`mob          ``Address of the current mob being processed
+{       
+        ld      hl,$.D30B
+        call    ::main:getLevelBitFlag
+        ld      a,[hl]
+        and     c
+        jr      nz,._1
+        ld      [ix+#mob.width], 12
+        ld      [ix+#mob.height],17
+        call    :_5da8
+        
+        xor     a`zero
+        ld      [ix+#mob.spriteLayout+0],a`zero
+        ld      [ix+#mob.spriteLayout+1],a`zero
+        
+        ld      hl,$0202
+        ld      [$.TEMP6],hl
+        call    :detectCollisionWithSonic
+        jr      c,._2
+        ld      hl,$.D30B
+        call    ::main:getLevelBitFlag
+        ld      a,[hl]
+        or      c
+        ld      [hl],a
+        ld      hl,$.D27F
+        inc     [hl]
+        ld      a,$fe
+        ld      [$.D28B],a
+        
+        ld      a,::sound:S1_MusicPointers.emerald.index ;=$14
+        rst     :rst_playMusic
+        
+._1     ld      [ix+#mob.type],$FF      ;remove object?
+        ret
+
+._2     ld      a,[$.FRAMECOUNT]
+        rrca    
+        jr      c,._3
+        ld      [ix+#mob.spriteLayout+0],LO ._5f10
+        ld      [ix+#mob.spriteLayout+1],HI ._5f10
+._3     ld      l,[ix+#mob.Yspeed+0]
+        ld      h,[ix+#mob.Yspeed+1]
+        ld      a,[ix+#mob.Ydirection]
+        ld      de,$0020
+        add     hl,de
+        adc     a,$00
+        ld      [ix+#mob.Yspeed+0],l
+        ld      [ix+#mob.Yspeed+1],h
+        ld      [ix+#mob.Ydirection],a
+        ld      hl,$5400                        ;$15400 - emerald in blinking items art
+        call    ::main:loadPowerUpIcon
+        ret
+
+._5f10  BYTE $5C, $5E, $FF, $FF, $FF, $FF
+        BYTE $FF
+
+}

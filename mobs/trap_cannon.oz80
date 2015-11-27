@@ -1,0 +1,121 @@
+;; Sonic 1 Master System Disassembly
+   -------------------------------------------------------------------------------------------------
+   created by Kroc Camen <kroc@camendesign.com> and given to the Public Domain; you may do anything
+   you like with this code as long as you respect the TradeMarks and (any) Copyrights within.
+   absolutely no warranty implied
+   =================================================================================================
+;;
+
+PROC    :mob_trap_cannon                        SECTION ::mobs                  ;$AD6C
+        ;==============================================================================
+PARAMS  IX`mob          ``Address of the current mob being processed
+{
+        set     5,[ix+#mob.flags]               ;mob does not collide with the floor
+        bit     0,[ix+#mob.flags]
+        jr      nz,._1
+        ld      l,[ix+#mob.X+0]
+        ld      h,[ix+#mob.X+1]
+        ld      de,$fffc
+        add     hl,de
+        ld      [ix+#mob.X+0],l
+        ld      [ix+#mob.X+1],h
+        call    ::main:_LABEL_625_57
+        ld      [ix+#mob.unknown11],a
+        set     0,[ix+#mob.flags]
+._1     ld      a,[ix+#mob.unknown11]
+        cp      $64
+        jr      nz,._2
+        call    :findEmptyMob
+        jr      c,._2
+        push    ix
+        ld      e,[ix+#mob.X+0]
+        ld      d,[ix+#mob.X+1]
+        ld      c,[ix+#mob.Y+0]
+        ld      b,[ix+#mob.Y+1]
+        push    hl
+        pop     ix
+        xor     a`zero                          ;set A to 0
+        ld      [ix+#mob.type],$34              ;unknown object
+        ld      [ix+#mob.Xsubpixel],a`zero
+        ld      hl,$0004
+        add     hl,de
+        ld      [ix+#mob.X+0],l
+        ld      [ix+#mob.X+1],h
+        ld      [ix+#mob.Ysubpixel],a`zero
+        ld      hl,$0010
+        add     hl,bc
+        ld      [ix+#mob.Y+0],l
+        ld      [ix+#mob.Y+1],h
+        pop     ix
+        ld      a,$1c
+        rst     :rst_playSFX
+        ld      [ix+$12],$18
+        ld      [ix+#mob.unknown16],$00
+        ld      [ix+#mob.unknown17],$00
+._2     ld      a,[ix+$12]
+        and     a
+        jr      z,._3
+        ld      de,._ae04
+        ld      bc,._adfd
+        call    :_7c41
+        dec     [ix+$12]
+        inc     [ix+#mob.unknown11]
+        ret
+        
+._3     ld      [ix+#mob.spriteLayout+0],a
+        ld      [ix+#mob.spriteLayout+1],a
+        inc     [ix+#mob.unknown11]
+        ret
+        
+._adfd                                                                          ;$ADFD
+        BYTE    $00, $08, $01, $08, $02, $08, $FF
+        
+._ae04  ;sprite layout                                                          ;$AE04
+        BYTE    $FE, $FF, $FF, $FF, $FF, $FF
+        BYTE    $74, $76, $FF, $FF, $FF, $FF
+        BYTE    $FF, $FF, $FF, $FF, $FF, $FF
+        
+        BYTE    $FE, $FF, $FF, $FF, $FF, $FF
+        BYTE    $78, $7A, $FF, $FF, $FF, $FF
+        BYTE    $FF, $FF, $FF, $FF, $FF, $FF
+        
+        BYTE    $FE, $FF, $FF, $FF, $FF, $FF
+        BYTE    $7C, $7E, $FF, $FF, $FF, $FF
+        BYTE    $FF
+}
+
+PROC    :mob_trap_cannonBall                    SECTION ::mobs                  ;$AE35
+        ;==============================================================================
+PARAMS  IX`mob          ``Address of the current mob being processed
+{
+        set     5,[ix+#mob.flags]               ;mob does not collide with the floor
+        ld      [ix+#mob.width],$0c
+        ld      [ix+#mob.height],$0c
+        ld      hl,[$.CAMERA_X]
+        ld      de,$0110
+        add     hl,de
+        ld      e,[ix+#mob.X+0]
+        ld      d,[ix+#mob.X+1]
+        and     a
+        sbc     hl,de
+        jr      nc,._1
+        ld      [ix+#mob.type],$FF              ;remove object?
+._1     ld      hl,$0202
+        ld      [$.TEMP6],hl
+        call    :detectCollisionWithSonic
+        call    nc,:hitPlayer._35fd
+        xor     a`zero
+        ld      [ix+#mob.Xspeed+0],$80
+        ld      [ix+#mob.Xspeed+1],$02
+        ld      [ix+#mob.Xdirection],a`zero
+        ld      [ix+#mob.Yspeed+0],a`zero
+        ld      [ix+#mob.Yspeed+1],a`zero
+        ld      [ix+#mob.Ydirection],a`zero
+        ld      [ix+#mob.spriteLayout+0],LO ._ae81
+        ld      [ix+#mob.spriteLayout+1],HI ._ae81
+        ret
+        
+._ae81  ;sprite layout                                                          ;$AE81
+        BYTE    $02, $04, $FF, $FF, $FF, $FF
+        BYTE    $FF
+}

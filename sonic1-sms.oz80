@@ -1,0 +1,131 @@
+;; Sonic 1 Master System Disassembly
+   -------------------------------------------------------------------------------------------------
+   created by Kroc Camen <kroc@camendesign.com> and given to the Public Domain; you may do anything
+   you like with this code as long as you respect the TradeMarks and (any) Copyrights within.
+   absolutely no warranty implied
+   =================================================================================================
+;;
+
+;; please use tab stops at 8 and a line width of 100 chars, thanks
+   ============================================================================================== ;;
+;;
+    W    A    R    N    I    N    G    !
+    
+    Here be dragons! This disassembly is in progress, expect constant
+    changes as well as future planned improvements:
+    
+    *       split up into categorised files
+    
+    *       fully commented and described program flow
+    
+    *       portable data
+
+   ---------------------------------------------------------------------------------------------- ;;
+;; This source code is given to the public domain:
+   
+   whilst "SEGA" and "Sonic" are registered trademarks of SEGA Enterprises, Ltd., this is not their
+   source code (I haven't broken into SEGA's offices ¬__¬), so not their copyright. Neither does
+   this contain any byte-for-byte data of the original ROM (this is all ASCII codes, even the hex
+   data parts). the fact that this text file can be processed with an algorithm and produces a file
+   that is the same as the original ROM is also not a copyright violation --
+   SEGA don't own a patent on the compiling algorithm
+
+   ---------------------------------------------------------------------------------------------- ;;
+;; this disassembly was made possible by earlier documentation provided by
+   David Declerk, ValleyBell, Penta Penguin and Ravenfreak
+   
+   this disassembly was made by using these tools:
+
+:: SMSExamine: <smspower.org/Development/SMSExamine>
+        this excellent tool disassembles much of the ROM by effectively 'running' the code to
+        determine what parts are code and what parts are data. this saved a very large amount of
+        effort, but due to the dynamic and complex nature of code, it didn't get all of it right,
+        therefore I used:
+ 
+:: dz80: <inkland.org.uk/dz80>
+        to do a byte-for-byte disassembly to fill in the blanks (this had to all be manually
+        labelled!). that was largely wasted time as I later got help from the author of:
+ 
+:: Emulicious: <emulicious.net>
+        which was able to provide a far superior disassembly that filled in all the gaps through
+        a specific configuration file provided kindly by the author to assist me
+ 
+:: WLA DX <villehelin.com/wla.html>
+        I used this assembler to get things working, and after having explored the
+        syntax and the task at hand, I opted to write my own assembler:
+
+:: OZ80MANDIAS <github.com/Kroc/OZ80MANDIAS>
+        A brand-new SMS-specific assembler with a new syntax designed for writing
+        clean, flexible code and data
+        
+;;
+
+
+SYSTEM  "sms"
+INCLUDE "system.sms.oz80"
+
+
+
+
+;;VDP registers are written to by sending first the data byte, and then the 4-bit
+  register number with bit 7 set. for more details, see
+  http://www.smspower.org/Development/VDPRegisters
+;;
+CONST   !VDP_REGISTER_WRITE     %10000000
+CONST   !VDP_REGISTER_0         !VDP_REGISTER_WRITE | 0
+CONST   !VDP_REGISTER_1         !VDP_REGISTER_WRITE | 1
+CONST   !VDP_REGISTER_2         !VDP_REGISTER_WRITE | 2
+CONST   !VDP_REGISTER_5         !VDP_REGISTER_WRITE | 5
+CONST   !VDP_REGISTER_6         !VDP_REGISTER_WRITE | 6
+CONST   !VDP_REGISTER_7         !VDP_REGISTER_WRITE | 7
+CONST   !VDP_REGISTER_8         !VDP_REGISTER_WRITE | 8
+CONST   !VDP_REGISTER_9         !VDP_REGISTER_WRITE | 9
+CONST   !VDP_REGISTER_10        !VDP_REGISTER_WRITE | 10
+
+
+
+;how many blocks (32x32px) fit in the screen width / height
+CONST   !SCREENWIDTH_PX         256
+CONST   !SCREENHEIGHT_PX        192
+CONST   !SCREENWIDTH_BLOCKS     !SCREENWIDTH_PX / 32
+CONST   !SCREENHEIGHT_BLOCKS    !SCREENHEIGHT_PX / 32
+
+;position on the screen of the player's lives display
+CONST   !HUD_LIVES_X            16
+CONST   !HUD_LIVES_Y            172
+
+;number of thousands of pts to get an extra life
+CONST   !SCORE_1UP              5
+
+;number of frames to wait before the idle animation kicks in
+CONST   !IDLE_TIME              6 * 60
+
+;===================================================================================================
+
+INCLUDE "ram.oz80"
+
+SECTION ::interrupts    SLOT 1 KB
+SECTION ::main          ;SLOT 0
+SECTION ::screens       ;SLOT 0
+SECTION ::mobs          ;SLOT 1, 2
+
+INCLUDE "interrupts.oz80"
+
+INCLUDE "main.oz80"
+
+INCLUDE "screens.oz80"
+
+INCLUDE "mobs.oz80"
+
+;===================================================================================================
+;music code and song data
+
+INCLUDE "sound\sound.oz80"
+
+;===================================================================================================
+
+SECTION ::blocks        SLOT 1, 2
+
+TABLE   :S1_BlockMappings                       SECTION ::blocks                ;$10000
+{
+}

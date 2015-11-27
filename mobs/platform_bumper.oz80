@@ -1,0 +1,70 @@
+;; Sonic 1 Master System Disassembly
+   -------------------------------------------------------------------------------------------------
+   created by Kroc Camen <kroc@camendesign.com> and given to the Public Domain; you may do anything
+   you like with this code as long as you respect the TradeMarks and (any) Copyrights within.
+   absolutely no warranty implied
+   =================================================================================================
+;;
+
+;moving bumper (Special Stage)
+
+PROC    :mob_platform_bumper                    SECTION ::mobs                  ;$9AFB
+        ;==============================================================================
+PARAMS  IX`mob          ``Address of the current mob being processed
+{
+        set     5,[ix+#mob.flags]               ;mob does not collide with the floor
+        ld      [ix+#mob.width],$1c
+        ld      [ix+#mob.height],$06
+        ld      [ix+#mob.spriteLayout+0],LO ._9b6e
+        ld      [ix+#mob.spriteLayout+1],HI ._9b6e
+        ld      hl,$0001
+        ld      a,[ix+$12]
+        cp      $60
+        jr      nc,._1
+        ld      hl,$ffff
+._1     ld      [ix+#mob.Xspeed+0],$00
+        ld      [ix+#mob.Xspeed+1],l
+        ld      [ix+#mob.Xdirection],h
+        inc     a
+        cp      $c0
+        jr      c,._2
+        xor     a`zero
+._2     ld      [ix+$12],a`zero
+        ld      a,[ix+#mob.unknown11]
+        and     a
+        jr      nz,._3
+        ld      hl,$0602
+        ld      [$.TEMP6],hl
+        call    :detectCollisionWithSonic
+        ret     c
+        ld      a,[$.D2E8]
+        ld      de,[$.D2E6]
+        ld      c,a
+        ld      hl,[$.SONIC.Yspeed]
+        ld      a,l
+        cpl     
+        ld      l,a
+        ld      a,h
+        cpl     
+        ld      h,a
+        ld      a,[$.SONIC.Ydirection]
+        cpl     
+        add     hl,de
+        adc     a,c
+        ld      de,$0001
+        add     hl,de
+        adc     a,$00
+        ld      [$.SONIC.Yspeed],hl
+        ld      [$.SONIC.Ydirection],a
+        ld      [ix+#mob.unknown11],$08
+        ld      a,$07
+        rst     :rst_playSFX
+        ret
+        
+._3     dec     [ix+#mob.unknown11]
+        ret
+        
+        ;sprite layout
+._9b6e  BYTE $08, $0A, $28, $2A, $FF, $FF
+        BYTE $FF
+}
