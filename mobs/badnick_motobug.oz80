@@ -8,94 +8,255 @@
 
 ;badnick - motobug
 
-PROC    :mob_badnick_motobug                    SECTION ::mobs                  ;$6E0C
-        ;==============================================================================
+;; this is done as a table so that the different AI actions (go left, idle, go right) can be broken
+   down into separate enumerated sub-routines ("!badnickMotobug.-"). the enum is used to build the
+   animation tables. this setup would allow us to add new AI actions in a flexible manner
+;;
+
+TABLE   :badnickMotobug                                     SECTION ::mobs                  ;$6E0C
+;===================================================================================================
+ENUM    !badnickMotobug
+HELP    ``AI for the Motobug Badnick
 PARAMS  IX`mob          ``Address of the current mob being processed
-{
-        res     5,[ix+#mob.flags]               ;mob adheres to the floor
-        ld      [ix+#mob.width], 10
-        ld      [ix+#mob.height],16
-        ld      e,[ix+$12]
-        ld      d,$00
-._1     ld      hl,._6e96
-        add     hl,de
-        ld      [$.TEMP6],hl
-        ld      a,[hl]
-        and     a
-        jr      nz,._2
-        ld      [ix+$12],a
-        ld      e,a
-        jp      ._1
+{       ;-------------------------------------------------------------------------------------------
+        ;this mob adheres to the floor
+        ;TODO: this shouldn't need to be done every frame
+        res     5   [IX`mob+#mob.flags]
         
-._2     dec     a
-        jr      nz,._3
-        ld      c,$ff
-        ld      hl,$ff00
-        jp      ._5
+        ;define the size of the mob
+        ;TODO: we don't need to do this every frame. we could set this up when the mob spawns
+        ld      [IX`mob+#mob.width]     10
+        ld      [IX`mob+#mob.height]    16
         
-._3     dec     a
-        jr      nz,._4
-        ld      c,$00
-        ld      hl,$0100
-        jp      ._5
-._4     ld      c,$00
-        ld      l,c
-        ld      h,c
-._5     ld      [ix+#mob.Xspeed+0],l
-        ld      [ix+#mob.Xspeed+1],h
-        ld      [ix+#mob.Xdirection],c
-        ld      l,[ix+#mob.unknown11]
-        ld      h,[ix+$12]
-        ld      de,$0008
-        add     hl,de
-        ld      [ix+#mob.unknown11],l
-        ld      [ix+$12],h
-        ld      [ix+#mob.Yspeed+0],$00
-        ld      [ix+#mob.Yspeed+1],$02
-        ld      [ix+#mob.Ydirection],$00
-        ld      hl,[$.TEMP6]
-        ld      a,[hl]
-        add     a,a
-        ld      e,a
-        ld      d,$00
-        ld      hl,._6eb1
-        add     hl,de
-        ld      c,[hl]
-        inc     hl
-        ld      b,[hl]
-        ld      de,._6ecb
-        call    :_7c41
-        ld      hl,$0203
-        ld      [$.TEMP6],hl
+        ld      E                   [IX`mob+$12]
+        ld      D                   $00
+        
+        ;note that the next ROW continues the code from this point
+        ;...
+}
+
+;; a "$00" AI action tells the code to repeat the mob's pre-programmed actions,
+   the ":badnickMotobug_anim" table near the bottom of this page gives a list of AI actions
+   the mob will automatically play through
+   
+   whilst this chunk of code is not an AI action itself, we use it to define the zero value enum:
+   "!badnickMotobug.loop" used as the list-terminator
+;; 
+
+ROW     .loop                       TABLE :badnickMotobug                                   ;=$00
+;---------------------------------------------------------------------------------------------------
+PARAMS  IX`mob          ``Address of the current mob being processed
+        DE              ``the high-byte of the mob's counter, provided in the low-byte of DE
+RETURN  $.TEMP6         ``Address within the animation table, for the current frame
+                         ``(this tells the mob what to do each frame)
+ENUM    $00             ;this row MUST be index 0 as the assembly code works on that basis
+{       ;-------------------------------------------------------------------------------------------
+        ld      HL                  :badnickMotobug_anim
+        add     HL                  DE
+        ld      [$.TEMP6]           HL
+        ld      A                   [HL]
+        and     A
+        jr      nz  .moveLeft
+        
+        ;we've hit the end of the animation list, start over
+        ld      [IX`mob+$12]        A                       ;set the mob's counter to 0
+        ld      E                   A                       ;and likewise with the working copy
+        jp      .                                           ;proceed with next frame of animation
+}
+;; the ":badnickMotobug_animActions" table pairs an AI action with an animation,
+   for each action we create we need to push a pointer on to this table ;;
+ROW     .                           TABLE :badnickMotobug_animActions
+{       ;since the "loop" action is just a list-terminator, the following is a dummy entry
+        WORD    :badnickMotobug_animFrames.moveLeft
+}
+
+;this is the mob's first AI action, "move left":
+
+ROW     .moveLeft                   TABLE :badnickMotobug                                   ;=$01
+;---------------------------------------------------------------------------------------------------
+RETURN  A
+        C`direction
+        HL`speed
+{       ;-------------------------------------------------------------------------------------------
+        dec     A
+        jr      nz  .moveRight
+        ld      C`direction         $FF                     ;set direction: left
+        ld      HL`speed            $FF00                   ;set speed: -256
+        jp      .apply
+}
+;; the ":badnickMotobug_animActions" table pairs an AI action with an animation,
+   for each action we create we need to push a pointer on to this table ;;
+ROW     .                           TABLE :badnickMotobug_animActions
+{       ;here we map the "moveLeft" action to the "moveLeft" animation
+        WORD    :badnickMotobug_animFrames.moveLeft
+}
+
+ROW     .moveRight                  TABLE :badnickMotobug                                   ;=$02
+;---------------------------------------------------------------------------------------------------
+RETURN  C`direction
+        HL`speed
+{       ;-------------------------------------------------------------------------------------------
+        dec     A
+        jr      nz  .idleLeft
+        ld      C`direction         $00                     ;set direction: right
+        ld      HL`speed            $0100                   ;set speed: +256
+        jp      .apply
+}
+;; the ":badnickMotobug_animActions" table pairs an AI action with an animation,
+   for each action we create we need to push a pointer on to this table ;;
+ROW     .                           TABLE :badnickMotobug_animActions
+{       ;here we map the "moveRight" action to the "moveRight" animation
+        WORD    :badnickMotobug_animFrames.moveRight
+}
+
+;;  the AI code handles "idleLeft" and "idleRight" actions the same, they only differ in the
+    animation displayed. therefore we define the "idleLeft" index but provide no code,
+    the "idleRight" index will share the same ROM address but have a higher index
+;;
+ROW     .idleLeft                   TABLE :badnickMotobug                                   ;=$03
+
+;; the ":badnickMotobug_animActions" table pairs an AI action with an animation,
+   for each action we create we need to push a pointer on to this table ;;
+ROW     .                           TABLE :badnickMotobug_animActions
+{       ;the "idleLeft" action has to be added to the actions table
+        WORD    :badnickMotobug_animFrames.idleLeft
+}
+
+;we now define the "idleRight" action:
+
+ROW     .idleRight                  TABLE :badnickMotobug                                   ;=$04
+;---------------------------------------------------------------------------------------------------
+RETURN  C`direction         ``direction is set to $00 (default facing right)
+        HL`speed            ``speed is set to $0000
+{       ;-------------------------------------------------------------------------------------------
+        ld      C`direction         $00
+        ld      L`speed             C`zero
+        ld      H`speed             C`zero
+        
+        ;fall through to the ".apply" chunk below:
+        ;...
+}
+;; the ":badnickMotobug_animActions" table pairs an AI action with an animation,
+   for each action we create we need to push a pointer on to this table ;;
+ROW     .                           TABLE :badnickMotobug_animActions
+{       ;here we map the "idleRight" action to the "idleRight" animation
+        WORD    :badnickMotobug_animFrames.idleRight
+}
+
+ROW     .apply                      TABLE :badnickMotobug
+;---------------------------------------------------------------------------------------------------
+PARAMS  IX`mob          ``Address of the current mob being processed
+        HL`speed
+        C`direction     
+        $.TEMP6         
+{       ;-------------------------------------------------------------------------------------------
+        ;apply the chosen direction and speed
+        ld      [IX`mob+#mob.Xspeed+0]      L`speed
+        ld      [IX`mob+#mob.Xspeed+1]      H`speed
+        ld      [IX`mob+#mob.Xdirection]    C`direction
+        
+        ld      L                   [IX`mob+#mob.unknown11]
+        ld      H                   [IX`mob+$12]
+        ld      DE                  $0008
+        add     HL                  DE
+        ld      [IX`mob+#mob.unknown11]     L
+        ld      [IX`mob+$12]                H
+        
+        ;; apply gravity to the mob, it will attempt to move downward any time possible.
+           because it adheres to the ground it won't fall through the floor ;;
+        ld      [IX`mob+#mob.Yspeed+0]      $00
+        ld      [IX`mob+#mob.Yspeed+1]      $02
+        ld      [IX`mob+#mob.Ydirection]    $00
+        
+        ;-------------------------------------------------------------------------------------------
+        
+        ld      HL`addrAnimAction   [$.TEMP6]
+        ld      A`animAction        [HL`addrAnimAction]
+        add     A`offset            A`animAction
+        ld      E`offset            A`offset
+        ld      D`offset            $00
+        ld      HL                  :badnickMotobug_animActions
+        add     HL                  DE
+        ld      C`data              [HL]
+        inc     HL
+        ld      B`data              [HL]
+        ld      DE`layouts          :badnickMotobug_animLayout
+        call    :animateMob
+        
+        ld      HL                  $0203
+        ld      [$.TEMP6]           HL
         call    :detectCollisionWithSonic
-        ld      hl,$0000
-        ld      [$.TEMP1],hl
-        call    nc,:hitPlayer
+        
+        ;if hit, place the explosion in the centre (0,0 offset)
+        ld      HL                  $0000
+        ld      [$.TEMP1]           HL
+        call    nc  :hitPlayer
+        
         ret
+}
 
-._6e96  BYTE $01, $01, $01, $01, $01, $01, $01, $01, $01
-        BYTE $03, $03, $03, $03, $02, $02, $02, $02, $02
-        BYTE $02, $02, $02, $02, $04, $04, $04, $04, $00
+TABLE   :badnickMotobug_anim                                SECTION ::mobs                  ;$6E96
+{       ;===========================================================================================
+        BYTE    !badnickMotobug.left  x 9                   ;go left for 9 seconds?
+        BYTE    !badnickMotobug.idle  x 4
+        BYTE    !badnickMotobug.right x 9
+        BYTE    !badnickMotobug.apply x 4
+        BYTE    !badnickMotobug.loop
+}
 
-._6eb1  WORD ._6ebb, ._6ebb, ._6ec0, ._6ec5, ._6ec8
-._6ebb  BYTE $00, $08, $01, $08, $FF
-._6ec0  BYTE $02, $08, $03, $08, $FF
-._6ec5  BYTE $00, $FF, $FF
-._6ec8  BYTE $02, $FF, $FF
+TABLE   :badnickMotobug_animActions                         SECTION ::mobs                  ;$6EB1
+        ;===========================================================================================
 
-;sprite layout
-._6ecb  BYTE $60, $62, $FF, $FF, $FF, $FF
-        BYTE $FF, $FF, $FF, $FF, $FF, $FF
-        BYTE $FF, $FF, $FF, $FF, $FF, $FF
+TABLE   :badnickMotobug_animFrames                          SECTION ::mobs                  ;$6EBB
+{       ;===========================================================================================
+        ;       sprite layout to use ($FF terminates)   frame length ($FF for infinite)
+ROW    .moveLeft                                                                            ;=$00
+        BYTE    !badnickMotobug_animLayout.leftIdle     8                                   ;$6EBB
+                !badnickMotobug_animLayout.leftMove     8
+                $FF
+        
+ROW    .moveRight                                                                           ;=$01
+        BYTE    !badnickMotobug_animLayout.rightIdle    8                                   ;$6EC0
+                !badnickMotobug_animLayout.rightMove    8
+                $FF
 
-        BYTE $64, $66, $FF, $FF, $FF, $FF
-        BYTE $FF, $FF, $FF, $FF, $FF, $FF
-        BYTE $FF, $FF, $FF, $FF, $FF, $FF
+ROW    .idleLeft                                                                            ;=$02
+        BYTE    !badnickMotobug_animLayout.leftIdle     $FF                                 ;$6EC5
+                $FF
+        
+ROW    .idleRight                                                                           ;=$03        
+        BYTE    !badnickMotobug_animLayout.rightIdle    $FF                                 ;$6EC8
+                $FF
+}
 
-        BYTE $68, $6A, $FF, $FF, $FF, $FF
-        BYTE $FF, $FF, $FF, $FF, $FF, $FF
-        BYTE $FF, $FF, $FF, $FF, $FF, $FF
+;below are the sprite layouts for each frame of animation
 
-        BYTE $6C, $6E, $FF, $FF, $FF, $FF
-        BYTE $FF
+TABLE   :badnickMotobug_animLayout                          SECTION ::mobs                  ;$6ECB
+;===================================================================================================
+ENUM    !badnickMotobug_animLayout                          ;<-- indicies go here
+
+HELP    ``The Sprite Layouts (sprite composition of each animation frame) for the Motobug Badnick
+{       ;-------------------------------------------------------------------------------------------
+        ;facing left -- frame #1
+ROW    .leftIdle                                                                            ;=$00
+        BYTE    $60 $62 $FF $FF $FF $FF
+        BYTE    $FF $FF $FF $FF $FF $FF
+        BYTE    $FF $FF $FF $FF $FF $FF
+        
+        ;facing left -- frame #2 (when moving)
+ROW    .leftMove                                                                            ;=$01
+        BYTE    $64 $66 $FF $FF $FF $FF
+        BYTE    $FF $FF $FF $FF $FF $FF
+        BYTE    $FF $FF $FF $FF $FF $FF
+        
+        ;facing right -- frame #1
+ROW    .rightIdle                                                                           ;$=02
+        BYTE    $68 $6A $FF $FF $FF $FF
+        BYTE    $FF $FF $FF $FF $FF $FF
+        BYTE    $FF $FF $FF $FF $FF $FF
+        
+        ;facing right -- frame #2 (when moving)
+ROW    .rightMove                                                                           ;$=03
+        BYTE    $6C $6E $FF $FF $FF $FF
+        BYTE    $FF
 }
