@@ -44,7 +44,7 @@ PARAMS  IX`mob          ``Address of the current mob being processed
         call    nc,:hitPlayer._35fd
         ld      de,._a173
         ld      bc,._a167
-        call    :_7c41
+        call    :animateMob
         jp      ._5
         
 ._3     cp      $46
@@ -56,7 +56,7 @@ PARAMS  IX`mob          ``Address of the current mob being processed
         
 ._4     ld      de,._a173
         ld      bc,._a16e
-        call    :_7c41
+        call    :animateMob
 ._5     inc     [ix+#mob.unknown11]
         ld      a,[ix+#mob.unknown11]
         cp      $a0

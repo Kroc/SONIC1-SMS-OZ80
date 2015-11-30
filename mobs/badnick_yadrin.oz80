@@ -43,7 +43,7 @@ PARAMS  IX`mob          ``Address of the current mob being processed
         ld      [ix+#mob.Xdirection],$00
         ld      de,._837e
         ld      bc,._8379
-        call    :_7c41
+        call    :animateMob
         jp      ._2
         
 ._1     ld      [ix+#mob.Xspeed+0],$c0
@@ -51,7 +51,7 @@ PARAMS  IX`mob          ``Address of the current mob being processed
         ld      [ix+#mob.Xdirection],$ff
         ld      de,._837e
         ld      bc,._8374
-        call    :_7c41
+        call    :animateMob
 ._2     ld      a,[$.FRAMECOUNT]
         and     $07
         ret     nz

@@ -25,7 +25,7 @@ HELP    ``The data-structure for a mob (Movable Object Block); the game's object
         .unknown11                  BYTE    
         .unknown12                  BYTE    
         .unknown13                  BYTE    
-        .unknown14                  BYTE    
+        .unknown14                  BYTE                    
         .unknown15                  BYTE    
         .unknown16                  BYTE    
         .unknown17                  BYTE    
@@ -1709,13 +1709,15 @@ PARAMS  IX`mob          ``Address of the current mob being processed
         jp      m   ._12                                    ;skip if bit 7 is set
         ld      A                   L
         and     $1F
+        
         exx     
-        ld      HL                  [$.TEMP6]
-        ld      H                   $00
-        ld      DE                  :UnknownCollision._3FF0
-        add     HL                  DE
-        add     A                   [HL]
+        ld      HL'                 [$.TEMP6]
+        ld      H'                  $00
+        ld      DE'                 :UnknownCollision._3FF0
+        add     HL'                 DE'
+        add     A                   [HL']
         exx     
+        
         cp      C
         jr      c   ._34e6
         set     7   [IX`mob+#mob.flags]
@@ -1726,12 +1728,13 @@ PARAMS  IX`mob          ``Address of the current mob being processed
         ld      A                   L
         and     $1F
         exx     
-        ld      HL                  [$.TEMP6]
-        ld      H                   $00
-        ld      DE                  :UnknownCollision._3FF0
-        add     HL                  DE
-        add     A                   [HL]
+        ld      HL'                 [$.TEMP6]
+        ld      H'                  $00
+        ld      DE'                 :UnknownCollision._3FF0
+        add     HL'                 DE'
+        add     A                   [HL']
         exx     
+        
         cp      C
         jr      nc  ._34e6
 ._12    ld      A                   L
@@ -1809,6 +1812,7 @@ PARAMS  IY`vars         ``Address of the common variables (used throughout)
         
         ;copy BC (address of a sprite layout) to its shadow value BC'
         push    BC`layoutData
+        
         exx
         pop     BC'layoutData
         exx
@@ -1820,7 +1824,6 @@ PARAMS  IY`vars         ``Address of the common variables (used throughout)
         ld      C`rows              3
         
 ._1     exx                                                 ;switch to BC/DE/HL shadow values
-        
         ld      HL'xpos             [$.TEMP6]               ;get the starting X-position
                                                             ;(original HL parameter)
         
@@ -1828,7 +1831,6 @@ PARAMS  IY`vars         ``Address of the common variables (used throughout)
            begin a row with $FE to provide a space without ending the data early ;;
         
         ld      A                   [BC'layoutData]         ;get a byte from the sprite layout data
-        
         exx                                                 ;switch to original BC/DE/HL values
         
         cp      $FF                                         ;is the byte $FF?
@@ -1889,22 +1891,22 @@ PARAMS  IY`vars         ``Address of the common variables (used throughout)
         
         ;move across 8 pixels
 ._4     inc     BC'
-        ld      DE'                     $0008
-        add     HL'                     DE'
+        ld      DE'                 $0008
+        add     HL'                 DE'
         
         ;return B to the column count and decrement
         exx
         djnz    .loop
         
         ;move down 16-pixels
-        ld      A                       C
-        ex      DE                      HL
-        ld      C                       16
-        add     HL                      BC
-        ex      DE                      HL
+        ld      A                   C
+        ex      DE                  HL
+        ld      C                   16
+        add     HL                  BC
+        ex      DE                  HL
         
         ;any rows remaining?
-        ld      C                       A
+        ld      C                   A
         dec     C
         jr      nz  ._1
         ret
@@ -1912,84 +1914,85 @@ PARAMS  IY`vars         ``Address of the common variables (used throughout)
         ;-------------------------------------------------------------------------------------------
         ;TODO: need to work this out (when D is $FF)
 ._5     exx
-        ex      DE                      HL
-        ld      hl, $0006
-        add     hl, bc
-        ld      c, l
-        ld      b, h
-        ex      de, hl
+        ex      DE'                 HL'
+        ld      HL'                 $0006
+        add     HL'                 BC'
+        ld      C'                  L'
+        ld      B'                  H'
+        ex      DE'                 HL'
         exx
-        ld      a, c
-        ex      de, hl
-        ld      c, $10
-        add     hl, bc
-        ex      de, hl
-        ld      c, a
-        dec     c
-        jr      nz, ._1
+        
+        ld      A                   C
+        ex      DE                  HL
+        ld      C                   $10
+        add     HL                  BC
+        ex      DE                  HL
+        ld      C                   A
+        dec     C
+        jr      nz  ._1
         
         ret
 }
 
-PROC    :_3581                                  SECTION ::mobs                  ;$3581
-        ;===============================================================================
+PROC    :_3581                                              SECTION ::mobs                  ;$3581
+        ;===========================================================================================
 PARAMS  IY`vars         ``Address of the common variables (used throughout)
         $.TEMP3
         $.TEMP6
         $.TEMP1
         $.TEMP4
 {        
-        ld      hl,[$.TEMP3]
-        ld      bc,[$.TEMP6]
-        add     hl,bc
-        ld      bc,[$.CAMERA_Y]
-        and     a
-        sbc     hl,bc
-        ex      de,hl
-        ld      hl,[$.TEMP1]
-        ld      bc,[$.TEMP4]
-        add     hl,bc
-        ld      bc,[$.CAMERA_X]
-        and     a
-        sbc     hl,bc
-        ld      c,a
-        ld      a,h
-        and     a
+        ld      HL                  [$.TEMP3]
+        ld      BC                  [$.TEMP6]
+        add     HL                  BC
+        ld      BC                  [$.CAMERA_Y]
+        and     A
+        sbc     HL                  BC
+        ex      DE                  HL
+        ld      HL                  [$.TEMP1]
+        ld      BC                  [$.TEMP4]
+        add     HL                  BC
+        ld      BC                  [$.CAMERA_X]
+        and     A
+        sbc     HL                  BC
+        ld      C                   A
+        ld      A                   H
+        and     A
         ret     nz
-        ld      a,d
-        cp      $ff
-        jr      nz,._1
-        ld      a,e
-        cp      $f0
+        ld      A                   D
+        cp      $FF
+        jr      nz  ._1
+        ld      A                   E
+        cp      $F0
         ret     c
         jp      ._2
         
-._1     and     a
+._1     and     A
         ret     nz
-        ld      a,e
-        cp      $c0
+        ld      A                   E
+        cp      $C0
         ret     nc
-._2     ld      h,c
-        ld      bc,[$.SPRITETABLE_ADDR]
-        ld      a,l
-        ld      [bc],a
-        inc     c
-        ld      a,e
-        ld      [bc],a
-        inc     c
-        ld      a,h
-        ld      [bc],a
-        inc     c
-        ld      [$.SPRITETABLE_ADDR],bc
-        inc     [iy+#vars.spriteUpdateCount]
+._2     ld      H                   C
+        ld      BC                  [$.SPRITETABLE_ADDR]
+        ld      A                   L
+        ld      [BC]                A
+        inc     C
+        ld      A                   E
+        ld      [BC]                A
+        inc     C
+        ld      A                   H
+        ld      [BC]                A
+        inc     C
+        ld      [$.SPRITETABLE_ADDR]    BC
+        inc     [IY`vars+#vars.spriteUpdateCount]
         ret
 }
 
-PROC    :layoutSpritesHorizontal                SECTION ::mobs                  ;$35CC
-        ;===============================================================================
-HELP ```Places a set of sprites next to each other, dictated by a small data stream of
-        indexes, with $FE to leave a blank space and $FF to terminate. This routine is
-        typically used to place text and numbers on screen.
+PROC    :layoutSpritesHorizontal                            SECTION ::mobs                  ;$35CC
+        ;===========================================================================================
+HELP ```Places a set of sprites next to each other, dictated by a small data stream of indicies,
+        with $FE to leave a blank space and $FF to terminate. This routine is typically used to
+        place text and numbers on screen.
         ```
 PARAMS  IY`vars         ``Address of the common variables (used throughout)
         B`ypos
@@ -1997,96 +2000,97 @@ PARAMS  IY`vars         ``Address of the common variables (used throughout)
         HL`addr         ;($.SPRITETABLE_ADDR)  
         DE`data         ;$.LAYOUT_BUFFER        : $A0, $A2, $A4, ($80 + $.LIVES * 2), $FF
 {       
-        ld      A`tileIndex, [DE`data]          ;check the current byte in the list
-        cp      $FF                             ;is it an end marker? ($FF)
-        ret     z                               ;if so, return
+        ld      A`tileIndex         [DE`data]               ;check the current byte in the list
+        cp      $FF                                         ;is it an end marker? ($FF)
+        ret     z                                           ;if so, return
         
-        cp      $FE                             ;special case for $FE command
-        jr      z, .skip                        ;(skip ahead)
+        cp      $FE                                         ;special case for $FE command
+        jr      z   .skip                                   ;(skip ahead)
         
-        ld      [HL`addr], C`xpos
+        ld      [HL`addr]           C`xpos
         inc     L`addr
-        ld      [HL`addr], B`ypos
+        ld      [HL`addr]           B`ypos
         inc     L`addr
-        ld      [HL`addr], A`tileIndex
+        ld      [HL`addr]           A`tileIndex
         inc     L`addr
         
         inc     [IY+#vars.spriteUpdateCount]
         
-.skip   inc     DE`data                         ;move to the next data byte
+.skip   inc     DE`data                                     ;move to the next data byte
         ;move right 8 pixels
-        ld      A`xpos, C`xpos
-        add     A`xpos, 8                       
-        ld      C`xpos, A`xpos
-        jp      :                               ;process more sprites in the list
+        ld      A`xpos              C`xpos
+        add     A`xpos              8                       
+        ld      C`xpos              A`xpos
+        jp      :                                           ;process more sprites in the list
 }
 
-PROC    :hitPlayer                              SECTION ::mobs                  ;$35E5
-        ;===============================================================================
+PROC    :hitPlayer                                          SECTION ::mobs                  ;$35E5
+        ;===========================================================================================
 PARAMS  IY`vars         ``Address of the common variables (used throughout)
 {
-        bit     0,[IY+#vars.scrollRingFlags]    ;is the player already dead?
-        ret     nz                              ;if so, leave now
+        bit     0   [IY`vars+#vars.scrollRingFlags]         ;is the player already dead?
+        ret     nz                                          ;if so, leave now
         
-        bit     0,[IY+#vars.unknown0]
-        jp      nz,:_36be
+        bit     0   [IY`vars+#vars.unknown0]
+        jp      nz  :_36be
         
-        ld      A,[$.SONIC.flags]
+        ld      A                   [$.SONIC.flags]
         rrca    
-        jp      c,:_36be
+        jp      c   :_36be
         
         and     %00000010
-        jp      nz,:_36be
+        jp      nz  :_36be
         
-        ;-------------------------------------------------------------------------------
-._35fd                                                                          ;$35FD
-        bit     0,[IY+#vars.flags9]
+        ;-------------------------------------------------------------------------------------------
+._35fd                                                                                      ;$35FD
+        bit     0   [IY`vars+#vars.flags9]
         ret     nz
         
-        bit     6,[IY+#vars.flags6]             ;is player in damage-state?
-        ret     nz                              ;if so, do not continue
+        bit     6   [IY`vars+#vars.flags6]                  ;is player in damage-state?
+        ret     nz                                          ;if so, do not continue
         
-        bit     0,[IY+#vars.unknown0]
+        bit     0   [IY`vars+#vars.unknown0]
         ret     nz
         
-        bit     5,[IY+#vars.flags6]
-        jr      nz,:dropRings._367e
+        bit     5   [IY`vars+#vars.flags6]
+        jr      nz  :dropRings._367e
         
         ;has the player any rings?
-        ld      A`rings         [$.RINGS]
+        ld      A`rings             [$.RINGS]
         and     A`rings
-        jr      nz,:dropRings                       ;if so, drop them
+        jr      nz  :dropRings                              ;if so, drop them
         
-        ;-------------------------------------------------------------------------------
-.kill   ;kill the player!                                                       ;$3618
-        set     0,[IY+#vars.scrollRingFlags]
+        ;-------------------------------------------------------------------------------------------
+.kill   ;kill the player!                                                                   ;$3618
+        
+        set     0   [IY`vars+#vars.scrollRingFlags]
         
         ;set flag 7 on the mob (mob death state?)
-        ld      HL              $.SONIC.flags
-        set     7               [HL]
+        ld      HL                  $.SONIC.flags
+        set     7   [HL]
         
-        ld      HL              $FFFA
-        xor     A`zero                          ;set A to zero
-        ld      [$.SONIC.Yspeed+0]             A`zero
-        ld      [$.SONIC.Yspeed+1]             HL
+        ld      HL                  $FFFA
+        xor     A`zero                                      ;set A to zero
+        ld      [$.SONIC.Yspeed+0]  A`zero
+        ld      [$.SONIC.Yspeed+1]  HL
         
-        ld      A,$60
-        ld      [$.D287],A
+        ld      A                   $60
+        ld      [$.D287]            A
         
-        res     6,[IY+#vars.flags6]             ;turn off damage-state flag
-        res     5,[IY+#vars.flags6]             ;remove shield
-        res     6,[IY+#vars.flags6]             ;TODO: bug or oversight?
-        res     0,[IY+#vars.unknown0]           ;the 0 byte from the level header
+        res     6   [IY+#vars.flags6]                       ;turn off damage-state flag
+        res     5   [IY+#vars.flags6]                       ;remove shield
+        res     6   [IY+#vars.flags6]                       ;TODO: bug or oversight?
+        res     0   [IY+#vars.unknown0]                     ;the 0 byte from the level header
         
         ;play the death sound effect
-        ld      A`sfx           ::sound:S1_MusicPointers.death.index
+        ld      A`sfx               ::sound:S1_MusicPointers.death.index
         rst     :rst_playMusic
         
         ret
 }
 
-PROC    :dropRings                              SECTION ::mobs                  ;$3644
-        ;-------------------------------------------------------------------------------
+PROC    :dropRings                                          SECTION ::mobs                  ;$3644
+        ;-------------------------------------------------------------------------------------------
         ;lose rings!
         
 PARAMS  IX`mob          ``Address of the current mob being processed
@@ -2095,112 +2099,112 @@ PARAMS  IX`mob          ``Address of the current mob being processed
 {       
         ;set player's ring-count to 0
         xor     A`zero
-        ld      [$.RINGS]       A`zero
+        ld      [$.RINGS]           A`zero
         
         ;find an available unused mob-slot
         call    :findEmptyMob
-        jr      c,._367e
+        jr      c   ._367e
         
-        push    IX, HL
+        push    IX  HL
         pop     IX
         
-        ld      [IX+#mob.type],$55              ;"make Sonic blink"?
-        ld      [IX+#mob.unknown11],$06
-        ld      [IX+$12],$00
-        ld      HL,[$.SONIC.X]
-        ld      [IX+#mob.X+0],L
-        ld      [IX+#mob.X+1],H
-        ld      HL,[$.SONIC.Y]
-        ld      [IX+#mob.Y+0],L
-        ld      [IX+#mob.Y+1],H
-        ld      [IX+#mob.Yspeed+0],$00
-        ld      [IX+#mob.Yspeed+1],$fc
-        ld      [IX+#mob.Ydirection],$ff
+        ld      [IX+#mob.type]      $55                     ;"make Sonic blink"?
+        ld      [IX+#mob.unknown11] $06
+        ld      [IX+$12]            $00
+        ld      HL                  [$.SONIC.X]
+        ld      [IX+#mob.X+0]       L
+        ld      [IX+#mob.X+1]       H
+        ld      HL                  [$.SONIC.Y]
+        ld      [IX+#mob.Y+0]       L
+        ld      [IX+#mob.Y+1]       H
+        ld      [IX+#mob.Yspeed+0]  $00
+        ld      [IX+#mob.Yspeed+1]  $FC
+        ld      [IX+#mob.Ydirection]    $FF
         pop     IX
         
-._367e  ld      HL,$.SONIC.flags
-        ld      DE,$fffc
+._367e  ld      HL                  $.SONIC.flags
+        ld      DE                  $FFFC
         xor     A`zero
         
-        bit     4,[HL]
-        jr      z,._1
+        bit     4   [HL]
+        jr      z   ._1
         
-        ld      DE,$fffe
-._1     ld      [$.SONIC.Yspeed+0],A
-        ld      [$.SONIC.Yspeed+1],DE
-        bit     1,[HL]
-        jr      z,._2
-        ld      A,[HL]
+        ld      DE                  $FFFE
+._1     ld      [$.SONIC.Yspeed+0]  A
+        ld      [$.SONIC.Yspeed+1]  DE
+        bit     1   [HL]
+        jr      z   ._2
+        ld      A                   [HL]
         or      $12
-        ld      [HL],A
+        ld      [HL]                A
         xor     A`zero
-        ld      DE,$0002
+        ld      DE                  $0002
         jr      ._3
         
-._2     res     1,[hl]
-        xor     a`zero
-        ld      de,$fffe
-._3     ld      [$.SONIC.Xspeed+0],a
-        ld      [$.SONIC.Xspeed+1],de
-        res     5,[iy+#vars.flags6]
-        set     6,[iy+#vars.flags6]
-        ld      [iy+#vars.joypad],$ff
+._2     res     1   [HL]
+        xor     A`zero
+        ld      DE                  $FFFE
+._3     ld      [$.SONIC.Xspeed+0]  A
+        ld      [$.SONIC.Xspeed+1]  DE
+        res     5   [IY`vars+#vars.flags6]
+        set     6   [IY`vars+#vars.flags6]
+        ld      [IY`vars+#vars.joypad]  $FF
         
-        ld      A,$11
+        ld      A                   $11
         rst     :rst_playSFX
         
         ret
 }
 
-PROC    :_36be                                  SECTION ::mobs                  ;$36BE
-        ;-------------------------------------------------------------------------------
+PROC    :_36be                                              SECTION ::mobs                  ;$36BE
+        ;-------------------------------------------------------------------------------------------
 PARAMS  IX`mob          ``Address of the current mob being processed
         ;TODO: we could use BC/DE as parameters instead of RAM addresses?
         $.TEMP1         ``An X-offset to place the explosion in the right place
         $.TEMP2         ``A Y-offset to place the explosion in the right place
 {        
-        ld      [IX+#mob.type]  $0A             ;change mob to explosion
+        ld      [IX+#mob.type]      $0A                     ;change mob to explosion
         
         ;get the X-offset given in the parameter
-        ld      A`x_offset      [$.TEMP1]
-        ld      E`x_offset      A`x_offset
-        ld      D`x_offset      $00
+        ld      A`x_offset          [$.TEMP1]
+        ld      E`x_offset          A`x_offset
+        ld      D`x_offset          $00
         
-        ld      L`mob_xpos      [IX+#mob.X+0]
-        ld      H`mob_xpos      [IX+#mob.X+1]
-        add     HL`mob_xpos     DE`x_offset
+        ld      L`mob_xpos          [IX+#mob.X+0]
+        ld      H`mob_xpos          [IX+#mob.X+1]
+        add     HL`mob_xpos         DE`x_offset
         
-        ld      [IX+#mob.X+0]  L`mob_xpos
-        ld      [IX+#mob.X+1]  H`mob_xpos
+        ld      [IX+#mob.X+0]       L`mob_xpos
+        ld      [IX+#mob.X+1]       H`mob_xpos
         
         ;get the Y-offset given in the parameter
-        ld      A`x_offset      [$.TEMP2]
-        ld      E`x_offset      A`x_offset      ;note that D is still zero
+        ld      A`x_offset          [$.TEMP2]
+        ld      E`x_offset          A`x_offset              ;note that D is still zero
         
-        ld      L`mob_ypos      [IX+#mob.Y+0]
-        ld      H`mob_ypos      [IX+#mob.Y+1]
-        add     HL`mob_ypos     DE`y_offset
-        ld      [IX+#mob.Y+0]  L`mob_ypos
-        ld      [IX+#mob.Y+1]  H`mob_ypos
+        ld      L`mob_ypos          [IX+#mob.Y+0]
+        ld      H`mob_ypos          [IX+#mob.Y+1]
+        add     HL`mob_ypos         DE`y_offset
+        ld      [IX+#mob.Y+0]       L`mob_ypos
+        ld      [IX+#mob.Y+1]       H`mob_ypos
         
         xor     A`zero
-        ld      [IX+#mob.spriteLayout+0],A`zero
-        ld      [IX+#mob.spriteLayout+1],A`zero
+        ld      [IX+#mob.spriteLayout+0]    A`zero
+        ld      [IX+#mob.spriteLayout+1]    A`zero
         
         ;play the explosion sound
-        ld      A`sfx           $01
+        ld      A`sfx               $01
         rst     :rst_playSFX
         
         ;give the player 100 points
-        ld      DE`hundreds     $0100
-        ld      C`thousands     $00
+        ld      DE`hundreds         $0100
+        ld      C`thousands         $00
         call    :increaseScore
         
         ret
 }
 
-PROC    :getFloorLayoutRAMAddressForMob         SECTION ::mobs                  ;$36F9
-        ;===============================================================================
+PROC    :getFloorLayoutRAMAddressForMob                     SECTION ::mobs                  ;$36F9
+        ;===========================================================================================
 HELP ```Retrieves a location in the Floor Layout in RAM based on the current mob
         ```
 PARAMS  IX`mob          ``Address of the current mob being processed
@@ -2211,213 +2215,213 @@ PARAMS  IX`mob          ``Address of the current mob being processed
 RETURN  HL`addr         ``An address within the floor layout in RAM
 {
         ;how wide is the floor layout?
-        ld      A`floorWidth    [$.LEVEL_FLOORWIDTH]
+        ld      A`floorWidth        [$.LEVEL_FLOORWIDTH]
         cp      128
-        jr      z,.width128
+        jr      z   .width128
         cp      64
-        jr      z,.width64
+        jr      z   .width64
         cp      32
-        jr      z,.width32
+        jr      z   .width32
         cp      16
-        jr      z,.width16
-        
+        jr      z   .width16
         jp      .width256
         
-        ;-------------------------------------------------------------------------------
+        ;-------------------------------------------------------------------------------------------
         ;128 block wide level:
         
 .width128
-        ld      L`mob_ypos      [IX+#mob.Y+0]
-        ld      H`mob_ypos      [IX+#mob.Y+1]
-        add     HL`mob_ypos     DE`yOffset
-        ld      a,l
-        add     a,a
-        rl      h
-        add     a,a
-        rl      h
+        ld      L`mob_ypos          [IX+#mob.Y+0]
+        ld      H`mob_ypos          [IX+#mob.Y+1]
+        add     HL`mob_ypos         DE`yOffset
+        ld      A                   L
+        add     A                   A
+        rl      H
+        add     A                   A
+        rl      H
         and     %10000000
-        ld      l,a
-        ex      de,hl
-        ld      l,[ix+#mob.X+0]
-        ld      h,[ix+#mob.X+1]
-        add     hl,bc
-        ld      a,l
-        add     a,a
-        rl      h
-        add     a,a
-        rl      h
-        add     a,a
-        rl      h
-        ld      l,h
-        ld      h,$00
-        add     hl,de
-        ld      de,$.FLOORLAYOUT
-        add     hl,de
+        ld      L                   A
+        ex      DE                  HL
+        ld      L                   [IX`mob+#mob.X+0]
+        ld      H                   [IX`mob+#mob.X+1]
+        add     HL                  BC
+        ld      A                   L
+        add     A                   A
+        rl      H
+        add     A                   A
+        rl      H
+        add     A                   A
+        rl      H
+        ld      L                   H
+        ld      H                   $00
+        add     HL                  DE
+        ld      DE                  $.FLOORLAYOUT
+        add     HL                  DE
         ret
         
-        ;-------------------------------------------------------------------------------
+        ;-------------------------------------------------------------------------------------------
         ;64 block wide level:
         
 .width64
-        ld      l,[ix+#mob.Y+0]
-        ld      h,[ix+#mob.Y+1]
-        add     hl,de
-        ld      a,l
-        add     a,a
-        rl      h
+        ld      L                   [IX`mob+#mob.Y+0]
+        ld      H                   [IX`mob+#mob.Y+1]
+        add     HL                  DE
+        ld      A                   L
+        add     A                   A
+        rl      H
         and     %11000000
-        ld      l,a
-        ex      de,hl
-        ld      l,[ix+#mob.X+0]
-        ld      h,[ix+#mob.X+1]
-        add     hl,bc
-        ld      a,l
-        add     a,a
-        rl      h
-        add     a,a
-        rl      h
-        add     a,a
-        rl      h
-        ld      l,h
-        ld      h,$00
-        add     hl,de
-        ld      de,$.FLOORLAYOUT
-        add     hl,de
+        ld      L                   A
+        ex      DE                  HL
+        ld      L                   [IX`mob+#mob.X+0]
+        ld      H                   [IX`mob+#mob.X+1]
+        add     HL                  BC
+        ld      A                   L
+        add     A                   A
+        rl      H
+        add     A                   A
+        rl      H
+        add     A                   A
+        rl      H
+        ld      L                   H
+        ld      H                   $00
+        add     HL                  DE
+        ld      DE                  $.FLOORLAYOUT
+        add     HL                  DE
         ret
         
-        ;-------------------------------------------------------------------------------
+        ;-------------------------------------------------------------------------------------------
         ;32 block wide level:
         
 .width32
-        ld      l,[ix+#mob.Y+0]
-        ld      h,[ix+#mob.Y+1]
-        add     hl,de
-        ld      a,l
+        ld      L                   [IX`mob+#mob.Y+0]
+        ld      H                   [IX`mob+#mob.Y+1]
+        add     HL                  DE
+        ld      A                   L
         and     %11100000
-        ld      l,a
-        ex      de,hl
-        ld      l,[ix+#mob.X+0]
-        ld      h,[ix+#mob.X+1]
-        add     hl,bc
-        ld      a,l
-        add     a,a
-        rl      h
-        add     a,a
-        rl      h
-        add     a,a
-        rl      h
-        ld      l,h
-        ld      h,$00
-        add     hl,de
-        ld      de,$.FLOORLAYOUT
-        add     hl,de
+        ld      L                   A
+        ex      DE                  HL
+        ld      L                   [IX`mob+#mob.X+0]
+        ld      H                   [IX`mob+#mob.X+1]
+        add     HL                  BC
+        ld      A                   L
+        add     A                   A
+        rl      H
+        add     A                   A
+        rl      H
+        add     A                   A
+        rl      H
+        ld      L                   H
+        ld      H                   $00
+        add     HL                  DE
+        ld      DE                  $.FLOORLAYOUT
+        add     HL                  DE
         ret
         
-        ;-------------------------------------------------------------------------------
+        ;-------------------------------------------------------------------------------------------
         ;16 block wide level:
         
 .width16
-        ld      l,[ix+#mob.Y+0]
-        ld      h,[ix+#mob.Y+1]
-        add     hl,de
-        ld      a,l
-        srl     h
+        ld      L                   [IX`mob+#mob.Y+0]
+        ld      H                   [IX`mob+#mob.Y+1]
+        add     HL                  DE
+        ld      A                   L
+        srl     H
         rra     
         and     %11110000
-        ld      l,a
-        ex      de,hl
-        ld      l,[ix+#mob.X+0]
-        ld      h,[ix+#mob.X+1]
-        add     hl,bc
-        ld      a,l
-        add     a,a
-        rl      h
-        add     a,a
-        rl      h
-        add     a,a
-        rl      h
-        ld      l,h
-        ld      h,$00
-        add     hl,de
-        ld      de,$.FLOORLAYOUT
-        add     hl,de
+        ld      L                   A
+        ex      DE                  HL
+        ld      L                   [IX`mob+#mob.X+0]
+        ld      H                   [IX`mob+#mob.X+1]
+        add     HL                  BC
+        ld      A                   L
+        add     A                   A
+        rl      H
+        add     A                   A
+        rl      H
+        add     A                   A
+        rl      H
+        ld      L                   H
+        ld      H                   $00
+        add     HL                  DE
+        ld      DE                  $.FLOORLAYOUT
+        add     HL                  DE
         ret
         
-        ;-------------------------------------------------------------------------------
+        ;-------------------------------------------------------------------------------------------
         ;256 block wide level?
         
 .width256
-        ld      L`mob_ypos      [IX+#mob.Y+0]
-        ld      H`mob_ypos      [IX+#mob.Y+1]
-        add     HL`mob_ypos     DE`yOffset
-        ld      A`ypos          L`mob_ypos
-        rlca                                    ;x2 ...
+        ld      L`mob_ypos          [IX+#mob.Y+0]
+        ld      H`mob_ypos          [IX+#mob.Y+1]
+        add     HL`mob_ypos         DE`yOffset
+        ld      A`ypos              L`mob_ypos
+        rlca                                                ;x2 ...
         rl      H`ypos
-        rlca                                    ;x4 ...
+        rlca                                                ;x4 ...
         rl      H`ypos
-        rlca                                    ;x8
+        rlca                                                ;x8
         rl      H`ypos
         
         ;put Y-position aside into DE
-        ex      DE`ypos         HL`yOffset
+        ex      DE`ypos             HL`yOffset
         
-        ld      L`mob_xpos      [IX+#mob.X+0]
-        ld      H`mob_xpos      [IX+#mob.X+1]
-        add     HL`mob_xpos     BC`xOffset
-        ld      A`xpos          L`mob_xpos
-        rlca                                    ;x2 ...
+        ld      L`mob_xpos          [IX+#mob.X+0]
+        ld      H`mob_xpos          [IX+#mob.X+1]
+        add     HL`mob_xpos         BC`xOffset
+        ld      A`xpos              L`mob_xpos
+        rlca                                                ;x2 ...
         rl      H`xpos
-        rlca                                    ;x4 ...
+        rlca                                                ;x4 ...
         rl      H`xpos
-        rlca                                    ;x8
+        rlca                                                ;x8
         rl      H`xpos
-        ld      L`xpos          H`xpos
+        ld      L`xpos              H`xpos
         
-        ld      h,$00
-        ld      e,h
-        add     hl,de
-        ld      DE`floorLayout  $.FLOORLAYOUT
-        add     hl              DE`floorLayout
+        ld      H                   $00
+        ld      E                   H
+        add     HL                  DE
+        ld      DE`floorLayout      $.FLOORLAYOUT
+        add     HL                  DE`floorLayout
         ret
 }
 
-PROC    :updateSonicSpriteFrame                 SECTION ::mobs                  ;$37E0
-        ;===============================================================================
+PROC    :updateSonicSpriteFrame                             SECTION ::mobs                  ;$37E0
+        ;===========================================================================================
 HELP ```Copy the current Sonic animation frame into the sprite data
         ```
 PARAMS  IY`vars         ``Address of the common variables (used throughout)
 {        
-        ld      DE`frameCurrent [$.SONIC_CURRENT_FRAME]
-        ld      HL`framePrev    [$.SONIC_PREVIOUS_FRAME]
+        ld      DE`frameCurrent     [$.SONIC_CURRENT_FRAME]
+        ld      HL`framePrev        [$.SONIC_PREVIOUS_FRAME]
         
         ;has the animation advanced a frame?
-        and     A`flags                         ;ANDing A with itself resets the flags
-        sbc     HL`framePrev    DE`frameCurrent ;check the difference in frame counts
-        ret     z                               ;exit if no progress
+        and     A`flags                                     ;ANDing A with itself resets the flags
+        sbc     HL`framePrev        DE`frameCurrent         ;check the difference in frame counts
+        ret     z                                           ;exit if no progress
         
-        ld      HL`vram         $3680           ;location in VRAM of the Sonic sprite
-        ex      DE`vram         HL`discarded    ;TODO: make this dynamic, somehow
+        ld      HL`vram             $3680                   ;location in VRAM of the Sonic sprite
+        ex      DE`vram             HL`discarded            ;TODO: make this dynamic, somehow
         
-        ;;I can't find an instance where bit 0 of IY+$06 is set,
-          this may be dead code;;
-        bit     0, [iy+#vars.flags6]
-        jp      nz, ._2
+        ;; I can't find an instance where bit 0 of IY+$06 is set,
+           this may be dead code ;;
+        bit     0   [IY`vars+#vars.flags6]
+        jp      nz  ._2
         
-        ;-------------------------------------------------------------------------------
-        ld      A`low           E`vram          ;$80
-        out     [$_SMS_PORTS.VDP.CONTROL] A`low
-        ld      A`hi            D`vram          ;$36
-        or      %01000000                       ;set bit 6 to specify a VDP address
-        out     [$_SMS_PORTS.VDP.CONTROL] A`hi
+        ;-------------------------------------------------------------------------------------------
         
-        xor     A`zero                          ;set A to 0
-        ld      c, $_SMS_PORTS.VDP.DATA
-        ld      e, 24
+        ld      A`low                       E`vram          ;$80
+        out     [$_SMS_PORTS.VDP.CONTROL]   A`low
+        ld      A`hi                        D`vram          ;$36
+        or      %01000000                                   ;set bit 6 to specify a VDP address
+        out     [$_SMS_PORTS.VDP.CONTROL]   A`hi
         
-        ;; by nature of the way the VDP stores image colours across bit-planes, and
-           that the Sonic sprite only uses palette indexes <8, the fourth byte for a
-           tile row is always 0. this is used as a very simple form of compression on
-           the Sonic sprites in the ROM as the fourth byte is excluded from the data ;;
+        xor     A`zero                                      ;set A to 0
+        ld      C                           $_SMS_PORTS.VDP.DATA
+        ld      E                           24
+        
+        ;; by nature of the way the VDP stores image colours across bit-planes, and that the Sonic
+           sprite only uses palette indexes <8, the fourth byte for a tile row is always 0.
+           this is used as a very simple form of compression on the Sonic sprites in the ROM
+           as the fourth byte is excluded from the data ;;
 ._1     outi
         outi
         outi
@@ -2435,231 +2439,239 @@ PARAMS  IY`vars         ``Address of the common variables (used throughout)
         outi
         out     [$_SMS_PORTS.VDP.DATA]    A`zero
         
-        dec     e
-        jp      nz, ._1
+        dec     E
+        jp      nz  ._1
         
-        ld      hl, [$.SONIC_CURRENT_FRAME]
-        ld      [$.SONIC_PREVIOUS_FRAME], hl
+        ld      HL                  [$.SONIC_CURRENT_FRAME]
+        ld      [$.SONIC_PREVIOUS_FRAME]    HL
         ret
         
-        ;-------------------------------------------------------------------------------
+        ;-------------------------------------------------------------------------------------------
         ;adds 285 to the frame address. purpose unknown...
-._2     ld      bc, $011D
-        add     hl, bc
         
-        ld      a, e
-        out     [$_SMS_PORTS.VDP.CONTROL], a
-        ld      a, d
+._2     ld      BC                  $011D
+        add     HL                  BC
+        
+        ld      A                   E
+        out     [$_SMS_PORTS.VDP.CONTROL]   A
+        ld      A                   D
         or      %01000000
-        out     [$_SMS_PORTS.VDP.CONTROL], a
+        out     [$_SMS_PORTS.VDP.CONTROL]   A
         
         exx
-        push    bc
-        ld      b, $18
+        push    BC'
+        ld      B'                  $18
         exx
-        ld      de, $FFFA
-        ld      c, $BE
-        xor     a`zero
+        
+        ld      DE                  $FFFA
+        ld      C                   $BE
+        xor     A`zero
         
 ._3     outi
         outi
         outi
-        out     [$_SMS_PORTS.VDP.DATA], a
-        add     hl, de
+        out     [$_SMS_PORTS.VDP.DATA]  A
+        add     HL                  DE
         outi
         outi
         outi
-        out     [$_SMS_PORTS.VDP.DATA], a
-        add     hl, de
+        out     [$_SMS_PORTS.VDP.DATA]  A
+        add     HL                  DE
         outi
         outi
         outi
-        out     [$_SMS_PORTS.VDP.DATA], a
-        add     hl, de
+        out     [$_SMS_PORTS.VDP.DATA]  A
+        add     HL                  DE
         outi
         outi
         outi
-        out     [$_SMS_PORTS.VDP.DATA], a
-        add     hl, de
-        exx
-        dec     b
-        exx
-        jp      nz, ._3
+        out     [$_SMS_PORTS.VDP.DATA], A
+        add     HL                  DE
         
         exx
-        pop     bc
+        dec     B'
         exx
-        ld      hl, [$.SONIC_CURRENT_FRAME]
-        ld      [$.SONIC_PREVIOUS_FRAME], hl
+        
+        jp      nz  ._3
+        
+        exx
+        pop     BC'
+        exx
+        
+        ld      HL                  [$.SONIC_CURRENT_FRAME]
+        ld      [$.SONIC_PREVIOUS_FRAME]    HL
         ret
 }
 
-PROC    :updateRingFrame                        SECTION ::mobs                  ;$3879
-        ;===============================================================================
+PROC    :updateRingFrame                                    SECTION ::mobs                  ;$3879
+        ;===========================================================================================
 {        
-        ld      de,[$.RING_CURRENT_FRAME]
-        ld      hl,[$.RING_PREVIOUS_FRAME]
+        ld      DE                  [$.RING_CURRENT_FRAME]
+        ld      HL                  [$.RING_PREVIOUS_FRAME]
         
-        and     a
-        sbc     hl,de
+        and     A
+        sbc     HL                  DE
         ret     z
         
-        ld      hl,$1f80                        ;location in VRAM of the ring graphics
-        ex      de,hl
-        di      
-        ld      a,e
-        out     [$_SMS_PORTS.VDP.CONTROL],a
-        ld      a,d
-        or      %01000000
-        out     [$_SMS_PORTS.VDP.CONTROL],a
-        ld      b,$20
+        ld      HL                  $1F80                   ;location in VRAM of the ring graphics
+        ex      DE                  HL
         
-.loop   ld      a,[hl]
-        out     [$_SMS_PORTS.VDP.DATA],a
+        di      
+        
+        ld      A                   E
+        out     [$_SMS_PORTS.VDP.CONTROL]   A
+        ld      A                   D
+        or      %01000000
+        out     [$_SMS_PORTS.VDP.CONTROL]   A
+        ld      B                   $20
+        
+.loop   ld      A                   [HL]
+        out     [$_SMS_PORTS.VDP.DATA]  A
         nop     
-        inc     hl
-        ld      a,[hl]
-        out     [$_SMS_PORTS.VDP.DATA],a
+        inc     HL
+        ld      A                   [HL]
+        out     [$_SMS_PORTS.VDP.DATA]  A
         nop     
-        inc     hl
-        ld      a,[hl]
-        out     [$_SMS_PORTS.VDP.DATA],a
+        inc     HL
+        ld      A                   [HL]
+        out     [$_SMS_PORTS.VDP.DATA]  A
         nop     
-        inc     hl
-        ld      a,[hl]
-        out     [$_SMS_PORTS.VDP.DATA],a
-        inc     hl
+        inc     HL
+        ld      A                   [HL]
+        out     [$_SMS_PORTS.VDP.DATA]  A
+        inc     HL
         djnz    .loop
         
         ei      
-        ld      hl,[$.RING_CURRENT_FRAME]
-        ld      [$.RING_PREVIOUS_FRAME],hl
+        
+        ld      HL                  [$.RING_CURRENT_FRAME]
+        ld      [$.RING_PREVIOUS_FRAME] HL
         ret
 }
 
-PROC    :_LABEL_38B0_51                         SECTION ::mobs                  ;$38B0
-        ;===============================================================================
+PROC    :_LABEL_38B0_51                                     SECTION ::mobs                  ;$38B0
+        ;===========================================================================================
 {        
-        ld      hl, [$.D2AB]
-        ld      a, l
+        ld      HL                  [$.D2AB]
+        ld      A                   L
         and     %11111000
-        ld      l, a
+        ld      L                   A
         
-        ld      de, [$.CAMERA_X]
-        ld      a, e
+        ld      DE                  [$.CAMERA_X]
+        ld      A                   E
         and     %11111000
-        ld      e, a
+        ld      E                   A
         
-        xor     a`zero                          ;set A to 0
-        sbc     hl, de                          ;is DE > HL?
+        xor     A`zero                                      ;set A to 0
+        sbc     HL                  DE                      ;is DE > HL?
         ret     c
         
-        or      h                               ;is H > 0?
+        or      H                                           ;is H > 0?
         ret     nz
         
-        ld      a, l
-        cp      $08                             ;is L < 8?
+        ld      A                   L
+        cp      $08                                         ;is L < 8?
         ret     c
         
-        ld      d, a
-        ld      a, [$.VDPSCROLL_HORZ]
+        ld      D                   A
+        ld      A                   [$.VDPSCROLL_HORZ]
         and     %11111000
-        ld      e, a
-        add     hl, de
-        srl     h
-        rr      l
-        srl     h
-        rr      l
-        srl     h
-        rr      l
-        ld      a, l
+        ld      E                   A
+        add     HL                  DE
+        srl     H
+        rr      L
+        srl     H
+        rr      L
+        srl     H
+        rr      L
+        ld      A                   L
         and     $1F
-        add     a, a
-        ld      c, a
-        ld      hl, [$.D2AD]
-        ld      a, l
+        add     A                   A
+        ld      C                   A
+        ld      HL                  [$.D2AD]
+        ld      A                   L
         and     $F8
-        ld      l, a
-        ld      de, [$.CAMERA_Y]
-        ld      a, e
+        ld      L                   A
+        ld      DE                  [$.CAMERA_Y]
+        ld      A                   E
         and     $F8
-        ld      e, a
-        xor     a`zero
-        sbc     hl, de
+        ld      E                   A
+        xor     A`zero
+        sbc     HL                  DE
         ret     c
-        or      h
+        or      H
         ret     nz
-        ld      a, l
+        ld      A                   L
         cp      $C0
         ret     nc
-        ld      d, $00
-        ld      a, [$.VDPSCROLL_VERT]
+        ld      D                   $00
+        ld      A                   [$.VDPSCROLL_VERT]
         and     $F8
-        ld      e, a
-        add     hl, de
-        srl     h
-        rr      l
-        srl     h
-        rr      l
-        srl     h
-        rr      l
-        ld      a, l
+        ld      E                   A
+        add     HL                  DE
+        srl     H
+        rr      L
+        srl     H
+        rr      L
+        srl     H
+        rr      L
+        ld      A                   L
         cp      $1C
-        jr      c, ._1
+        jr      c   ._1
         sub     $1C
-._1     ld      l, a
-        ld      h, $00
-        ld      b, h
+._1     ld      L                   A
+        ld      H                   $00
+        ld      B                   H
         rrca
         rrca
-        ld      h, a
+        ld      H                   A
         and     $C0
-        ld      l, a
-        ld      a, h
-        xor     l
-        ld      h, a
-        add     hl, bc
-        ld      bc, $_SMS_VRAM.SCREENNAMETABLE
-        add     hl, bc
-        ld      de, [$.D2AF]
-        ld      b, $02
+        ld      L                   A
+        ld      A                   H
+        xor     L
+        ld      H                   A
+        add     HL                  BC
+        ld      BC                  $_SMS_VRAM.SCREENNAMETABLE
+        add     HL                  BC
+        ld      DE                  [$.D2AF]
+        ld      B                   $02
 
-.loop   ld      a, l
-        out     [$_SMS_PORTS.VDP.CONTROL], a
-        ld      a, h
+.loop   ld      A                           L
+        out     [$_SMS_PORTS.VDP.CONTROL]   A
+        ld      A                           H
         or      %01000000
-        out     [$_SMS_PORTS.VDP.CONTROL], a
+        out     [$_SMS_PORTS.VDP.CONTROL]   A
         
-        ld      a, [de]
-        out     [$_SMS_PORTS.VDP.DATA], a
-        inc     de
+        ld      A                       [DE]
+        out     [$_SMS_PORTS.VDP.DATA]  A
+        inc     DE
         nop
         nop
-        ld      a, [de]
-        out     [$_SMS_PORTS.VDP.DATA], a
-        inc     de
+        ld      A                       [DE]
+        out     [$_SMS_PORTS.VDP.DATA]  A
+        inc     DE
         nop
         nop
-        ld      a, [de]
-        out     [$_SMS_PORTS.VDP.DATA], a
-        inc     de
+        ld      A                       [DE]
+        out     [$_SMS_PORTS.VDP.DATA]  A
+        inc     DE
         nop
         nop
-        ld      a, [de]
-        out     [$_SMS_PORTS.VDP.DATA], a
-        inc     de
+        ld      A                       [DE]
+        out     [$_SMS_PORTS.VDP.DATA]  A
+        inc     DE
         
-        ld      a, b
-        ld      bc, $0040
-        add     hl, bc
-        ld      b, a
+        ld      A                   B
+        ld      BC                  $0040
+        add     HL                  BC
+        ld      B                   A
         djnz    .loop
         
         ret
 }
 
-PROC    :detectCollisionWithSonic               SECTION ::mobs                  ;$3956
-        ;===============================================================================
+PROC    :detectCollisionWithSonic                           SECTION ::mobs                  ;$3956
+        ;===========================================================================================
 HELP ```Tests to see if the given mob has collided with Sonic
         ```
 PARAMS  IX`mob          ``Address of the current mob being processed
@@ -2669,299 +2681,301 @@ PARAMS  IX`mob          ``Address of the current mob being processed
 RETURN  AF`carry        ``Carry flag is clear if collision, otherwise set
 {
         ;is Sonic dead? (no collision detection)
-        bit     0,[IY+#vars.scrollRingFlags]
-        scf                                     ;return carry flag set (no-collision)
-        ret     nz                              ;if Sonic-dead flag on, leave now
+        bit     0   [IY+#vars.scrollRingFlags]
+        scf                                                 ;return carry flag set (no-collision)
+        ret     nz                                          ;if Sonic-dead flag on, leave now
         
-        ;-------------------------------------------------------------------------------
+        ;-------------------------------------------------------------------------------------------
         
         ;calculate the right-hand edge of the mob
          ;(mob X-position + mob width)
-        ld      L`mob_xpos      [IX+#mob.X+0]
-        ld      H`mob_xpos      [IX+#mob.X+1]
-        ld      C`mob_width     [IX+#mob.width]
-        ld      B`mob_width     $00
-        add     HL`mob_xpos     BC`mob_width
+        ld      L`mob_xpos          [IX+#mob.X+0]
+        ld      H`mob_xpos          [IX+#mob.X+1]
+        ld      C`mob_width         [IX+#mob.width]
+        ld      B`mob_width         $00
+        add     HL`mob_xpos         BC`mob_width
         
-        ld      DE`sonic_xpos   [$.SONIC.X]
+        ld      DE`sonic_xpos       [$.SONIC.X]
         
         ;is Sonic to the right of the mob?
-        xor     A`zero                          ;set A to 0, clearing the carry flag
-        sbc     HL`xpos         DE`sonic_xpos
-        ret     c                               ;return carry-set for no-collision
+        xor     A`zero                                      ;set A to 0, clearing the carry flag
+        sbc     HL`xpos             DE`sonic_xpos
+        ret     c                                           ;return carry-set for no-collision
         
-        ;-------------------------------------------------------------------------------
+        ;-------------------------------------------------------------------------------------------
         
-        ;calculate the mob's left edge:
-         ;note that the mob provides an 'indent'. the sprite may well begin at
-         ;a certain X-position but the graphic within may be indented a little
-        ld      L`mob_xpos      [IX+#mob.X+0]
-        ld      H`mob_xpos      [IX+#mob.X+1]
-        ld      A`mob_left      [$.TEMP6]       ;get the mob's left indent
-        ld      C`mob_left      A`zero
-        add     HL`mob_xpos     BC`mob_left     ;combine the two
+        ;; calculate the mob's left edge:
+           note that the mob provides an 'indent'. the sprite may well begin at
+           a certain X-position but the graphic within may be indented a little ;;
+        ld      L`mob_xpos          [IX+#mob.X+0]
+        ld      H`mob_xpos          [IX+#mob.X+1]
+        ld      A`mob_left          [$.TEMP6]               ;get the mob's left indent
+        ld      C`mob_left          A`zero
+        add     HL`mob_xpos         BC`mob_left             ;combine the two
         
-        ;;now swap the mob's X-position with the previous calculation of Sonic's
-          X-position. HL will be Sonic's X-position and DE will be the mob's;;
-        ex      DE`mob_xpos     HL`sonic_xpos
+        ;; now swap the mob's X-position with the previous calculation of Sonic's
+           X-position. HL will be Sonic's X-position and DE will be the mob's ;;
+        ex      DE`mob_xpos         HL`sonic_xpos
         
         ;calculate Sonic's right edge:
-        ld      A`sonic_width   [$.SONIC.width]
-        ld      C`sonic_width   A`sonic_width   ;note that B is still 0
-        add     HL`sonic_xpos   BC`sonic_width
+        ld      A`sonic_width       [$.SONIC.width]
+        ld      C`sonic_width       A`sonic_width           ;note that B is still 0
+        add     HL`sonic_xpos       BC`sonic_width
         
         ;is Sonic to the left of the mob?
-        xor     A`zero                          ;set A to 0, clearing the carry flag
-        sbc     HL`sonic_xpos, DE`mob_xpos
-        ret     c                               ;return carry-set for no-collision
+        xor     A`zero                                      ;set A to 0, clearing the carry flag
+        sbc     HL`sonic_xpos       DE`mob_xpos
+        ret     c                                           ;return carry-set for no-collision
         
-        ;-------------------------------------------------------------------------------
+        ;-------------------------------------------------------------------------------------------
         
         ;calculate the mob's bottom edge
-        ld      L`mob_ypos      [IX+#mob.Y+0]
-        ld      H`mob_ypos      [IX+#mob.Y+1]
-        ld      C`mob_height    [IX+#mob.height]
-        add     HL`mob_ypos     BC`mob_height
+        ld      L`mob_ypos          [IX+#mob.Y+0]
+        ld      H`mob_ypos          [IX+#mob.Y+1]
+        ld      C`mob_height        [IX+#mob.height]
+        add     HL`mob_ypos         BC`mob_height
         
-        ld      DE`sonic_ypos   [$.SONIC.Y]
-        xor     A`zero                          ;set A to 0, clearing the carry flag
-        sbc     HL`ypos         DE`sonic_ypos
-        ret     c                               ;return carry-set for no-collision
+        ld      DE`sonic_ypos       [$.SONIC.Y]
+        xor     A`zero                                      ;set A to 0, clearing the carry flag
+        sbc     HL`ypos             DE`sonic_ypos
+        ret     c                                           ;return carry-set for no-collision
         
         ;calculate the mob's top edge (including the indent)
-        ld      L`mob_ypos      [IX+#mob.Y+0]
-        ld      H`mob_ypos      [IX+#mob.Y+1]
-        ld      A`mob_top       [$.TEMP7]
-        ld      C`mob_top       A`mob_top
-        add     HL`mob_ypos     BC`mob_top
+        ld      L`mob_ypos          [IX+#mob.Y+0]
+        ld      H`mob_ypos          [IX+#mob.Y+1]
+        ld      A`mob_top           [$.TEMP7]
+        ld      C`mob_top           A`mob_top
+        add     HL`mob_ypos         BC`mob_top
         
-        ex      DE              HL
+        ex      DE                  HL
         
-        ld      A               [$.SONIC.height]
-        ld      C               A
-        add     HL              BC
-        xor     A`zero                          ;set A to 0, clearing the carry flag
-        sbc     HL              DE
+        ld      A                   [$.SONIC.height]
+        ld      C                   A
+        add     HL                  BC
+        xor     A`zero                                      ;set A to 0, clearing the carry flag
+        sbc     HL                  DE
         
-        ret                                     ;return carry-set for no-collision
+        ret                                                 ;return carry-set for no-collision
 }
 
-PROC    :increaseRings                          SECTION ::mobs                  ;$39AC
-        ;===============================================================================
+PROC    :increaseRings                                      SECTION ::mobs                  ;$39AC
+        ;===========================================================================================
         ;NOTE: why does this not just use DAA?
 PARAMS  A`count         ``Number of rings to add
 {
         ;add the given number to the total ring count
-        ld      C`count         A`count
-        ld      A`rings         [$.RINGS]
-        add     A`rings         C`count
-        ld      C`rings         A`rings         ;move the new total to C
+        ld      C`count             A`count
+        ld      A`rings             [$.RINGS]
+        add     A`rings             C`count
+        ld      C`rings             A`rings                 ;move the new total to C
         
-        and     %00001111                       ;look at the last digit $0-$F
-        cp      10                              ;is it above $A? (11-16)
-        jr      c,.is100rings                           
+        and     %00001111                                   ;look at the last digit $0-$F
+        cp      10                                          ;is it above $A? (11-16)
+        jr      c   .is100rings                           
         
-        ld      A`rings         C`rings
-        add     A`rings         $06             ;TODO: WHY????
-        ld      C`rings         A`rings
+        ld      A`rings             C`rings
+        add     A`rings             $06                     ;TODO: WHY????
+        ld      C`rings             A`rings
         
-        ;-------------------------------------------------------------------------------
+        ;-------------------------------------------------------------------------------------------
         
 .is100rings
-        ld      A`rings         C`rings
+        ld      A`rings             C`rings
         cp      $A0
-        jr      c,.pickupRing                   ;if not yet 100, keep going
+        jr      c   .pickupRing                             ;if not yet 100, keep going
         
         ;subtract 100 rings
         sub     $A0
-        ld      [$.RINGS]       A`rings
+        ld      [$.RINGS]           A`rings
         
         ;add 1 to the lives count
-        ld      A`lives         [$.LIVES]
+        ld      A`lives             [$.LIVES]
         inc     A`lives
-        ld      [$.LIVES]       A`lives
+        ld      [$.LIVES]           A`lives
         
         ;play the 1-up sound effect
-        ld      A`sfx           $09
+        ld      A`sfx               $09
         rst     :rst_playSFX
         
         ret
         
-        ;-------------------------------------------------------------------------------
+        ;-------------------------------------------------------------------------------------------
         
 .pickupRing
         ;update the ring total
-        ld      [$.RINGS]       A`rings
+        ld      [$.RINGS]           A`rings
         ;play the pickup-ring sound
-        ld      A`sfx           $02
+        ld      A`sfx               $02
         rst     :rst_playSFX
         
         ret
 }
 
-PROC    :increaseScore                          SECTION ::mobs                  ;$39D8
-        ;===============================================================================
+PROC    :increaseScore                                      SECTION ::mobs                  ;$39D8
+        ;===========================================================================================
 PARAMS  C`thousands     ``Thousands to add to the score
         D`hundreds      ``Hundreds to add to the score
         E`tens          ``Tens to add to the score 
 {
-        ld      HL`score        $.SCORE_TENS    ;read the tens unit of the score
-        ld      A`tens          E`tens          ;handle the amount to add
-        add     A`tens          [HL`score]      ;add the tens to the score
-        daa                                     ;adjust to binary-coded-decimal
-        ld      [HL`score]      A`tens          ;save the new tens value
-        
-        dec     HL`score                        ;move down to hundreds units
-        ld      A`hundreds      D`hundreds      ;handle the amount to add
-        adc     A`hundreds      [HL`score]      ;add the hundreds to the score
-        daa                                     ;adjust to binary-coded-decimal
-        ld      [HL`score]      A`hundreds      ;save the new hundreds value
-        
-        dec     HL`score                        ;move down to thousands units
-        ld      A`thousands     C`thousands     ;handle the amount to add
-        adc     A`thousands     [HL`score]      ;add the thousands to the score
-        daa                                     ;adjust to binary-coded-decimal
-        ld      [HL`score]      A`thousands     ;save the new thousands value
+        ld      HL`score            $.SCORE_TENS            ;read the tens unit of the score
+        ld      A`tens              E`tens                  ;handle the amount to add
+        add     A`tens              [HL`score]              ;add the tens to the score
+        daa                                                 ;adjust to binary-coded-decimal
+        ld      [HL`score]          A`tens                  ;save the new tens value
+                    
+        dec     HL`score                                    ;move down to hundreds units
+        ld      A`hundreds          D`hundreds              ;handle the amount to add
+        adc     A`hundreds          [HL`score]              ;add the hundreds to the score
+        daa                                                 ;adjust to binary-coded-decimal
+        ld      [HL`score]          A`hundreds              ;save the new hundreds value
+                    
+        dec     HL`score                                    ;move down to thousands units
+        ld      A`thousands         C`thousands             ;handle the amount to add
+        adc     A`thousands         [HL`score]              ;add the thousands to the score
+        daa                                                 ;adjust to binary-coded-decimal
+        ld      [HL`score]          A`thousands             ;save the new thousands value
         
         ;push the current thousands value to the side
-        ld      C`thousands     A`thousands
+        ld      C`thousands         A`thousands
         
-        dec     HL`score                        ;move down to millions units
-        ld      A`millions      $00
-        adc     A`millions      [HL`score]
+        dec     HL`score                                    ;move down to millions units
+        ld      A`millions          $00
+        adc     A`millions          [HL`score]
         daa     
-        ld      [HL`score]      A`millions
+        ld      [HL`score]          A`millions
         
-        ;-------------------------------------------------------------------------------
+        ;-------------------------------------------------------------------------------------------
         
         ;check if current score qualifies for an extra life
-        ld      HL`score_1up    $.SCORE_1UP
-        ld      A`thousands     C`thousands
+        ld      HL`score_1up        $.SCORE_1UP
+        ld      A`thousands         C`thousands
         cp      [HL`score_1up]
         ret     c
         
         ;increase the score requirement for an extra life to the next multiple
-        ld      A`score_1up     !SCORE_1UP
-        add     A`score_1up     [HL`score_1up]
-        daa                                     ;adjust to binary-coded-decimal
-        ld      [HL`score_1up]  A`score_1up
+        ld      A`score_1up         !SCORE_1UP
+        add     A`score_1up         [HL`score_1up]
+        daa                                                 ;adjust to binary-coded-decimal
+        ld      [HL`score_1up]      A`score_1up
         
         ;add an extra life
-        ld      HL`lives        $.LIVES
+        ld      HL`lives            $.LIVES
         inc     [HL`lives]
         ;play extra life sound effect
-        ld      A`sfx           $09
+        ld      A`sfx               $09
         rst     :rst_playSFX
         
         ret
 }
 
-PROC    :updateTime                             SECTION ::mobs                  ;$3A03
-        ;===============================================================================
+PROC    :updateTime                                         SECTION ::mobs                  ;$3A03
+        ;===========================================================================================
         ;called only by `:_LABEL_1CED_131`; main game loop?
         
 PARAMS  IY`vars         ``Address of the common variables (used throughout)
 {        
         ;is Sonic dead? if so, exit now
-        bit     0,[IY`vars+#vars.scrollRingFlags]
+        bit     0   [IY`vars+#vars.scrollRingFlags]
         ret     nz
         
         ;address of level time?
-        ld      HL              $.TIME_FRAMES
+        ld      HL                  $.TIME_FRAMES
         
         ;is the time counting down? (special stages)
-        bit     0,[IY+#vars.timeLightningFlags]
-        jr      nz .countdown
+        bit     0   [IY+#vars.timeLightningFlags]
+        jr      nz  .countdown
         
         ;time is counting up:
-        ;-------------------------------------------------------------------------------
+        ;-------------------------------------------------------------------------------------------
         
         ;wait 60 frames for a second
          ;(TODO: detect PAL/NTSC and use the correct frame rate)
-        ld      A`frames        [HL`time]       ;load the current frame-count
-        inc     A`frames                        ;add another frame
-        cp      60                              ;is it 60 or less?
-        jr      c ._1                           ;if so, keep going
-        xor     A`zero                          ;otherwise, set frame-count to 0
-._1     ld      [HL`time]       A`frames        ;update the frame counter
+        ld      A`frames            [HL`time]               ;load the current frame-count
+        inc     A`frames                                    ;add another frame
+        cp      60                                          ;is it 60 or less?
+        jr      c   ._1                                     ;if so, keep going
+        xor     A`zero                                      ;otherwise, set frame-count to 0
+._1     ld      [HL`time]           A`frames                ;update the frame counter
         
         ;increase seconds counter:
-        dec     HL`time                         ;move down to the seconds counter
-        ccf                                     ;flip the carry flag
-        ld      A`seconds       [HL`time]       ;read the number of seconds
-        adc     A`seconds       $00             ;if frame count hit 60, add a second
-        daa                                     ;adjust up to binary-coded-decimal
-        cp      $60                             ;60 seconds? (BCD)
-        jr      c ._2                           ;if not, keep going
-        xor     A`zero                          ;otherwise, set A to 0
-._2     ld      [HL`time]       A`seconds       ;update the seconds counter
+        dec     HL`time                                     ;move down to the seconds counter
+        ccf                                                 ;flip the carry flag
+        ld      A`seconds           [HL`time]               ;read the number of seconds
+        adc     A`seconds           $00                     ;if frame count hit 60, add a second
+        daa                                                 ;adjust up to binary-coded-decimal
+        cp      $60                                         ;60 seconds? (BCD)
+        jr      c   ._2                                     ;if not, keep going
+        xor     A`zero                                      ;otherwise, set A to 0
+._2     ld      [HL`time]           A`seconds               ;update the seconds counter
         
         ;increase minutes counter:
-        dec     HL`time                         ;move down to the minute counter
-        ccf                                     ;flip the carry flag
-        ld      A`minutes       [HL`time]       ;read the number of minutes
-        adc     A`minutes       $00             ;if seconds hit 60, add a minute
-        daa                                     ;adjust up to binary-coded-decimal
-        cp      $10                             ;10 minutes?
-        jr      c ._3                           ;if not, keep going
+        dec     HL`time                                     ;move down to the minute counter
+        ccf                                                 ;flip the carry flag
+        ld      A`minutes           [HL`time]               ;read the number of minutes
+        adc     A`minutes           $00                     ;if seconds hit 60, add a minute
+        daa                                                 ;adjust up to binary-coded-decimal
+        cp      $10                                         ;10 minutes?
+        jr      c   ._3                                     ;if not, keep going
         
-        push    HL`time                         ;put the minute counter addr aside
-        call    :hitPlayer.kill                 ;go do out-of-time
-        pop     HL`time                         ;go back to the minute counter addr
-        xor     A`zero                          ;reset to 0
+        push    HL`time                                     ;put the minute counter addr aside
+        call    :hitPlayer.kill                             ;go do out-of-time
+        pop     HL`time                                     ;go back to the minute counter addr
+        xor     A`zero                                      ;reset to 0
         
-._3     ld      [HL`time]       A`minutes       ;update the minute counter
-        ret                                     ;exit!
+._3     ld      [HL`time]           A`minutes               ;update the minute counter
+        ret                                                 ;exit!
         
         ;time is counting down:
-        ;-------------------------------------------------------------------------------
+        ;-------------------------------------------------------------------------------------------
 .countdown
         ;wait 60 frames for a second
          ;(TODO: this is a repeat of above, so could be re-organised to share)
-        ld      A`frames        [HL`time]       ;load the current frame-count
-        inc     A`frames                        ;add another frame
-        cp      60                              ;is it 60 or less?
-        jr      c ._5                           ;if so, keep going
-        xor     A`zero                          ;otherwise, set frame-count to 0
-._5     ld      [HL`time]       A`frames        ;update the frame counter
+        ld      A`frames            [HL`time]               ;load the current frame-count
+        inc     A`frames                                    ;add another frame
+        cp      60                                          ;is it 60 or less?
+        jr      c   ._5                                     ;if so, keep going
+        xor     A`zero                                      ;otherwise, set frame-count to 0
+._5     ld      [HL`time]           A`frames                ;update the frame counter
         
-        dec     HL`time                         ;move down to the seconds counter
-        ccf                                     ;flip the carry flag
-        ld      A`seconds       [HL`time]       ;read the number of seconds
-        sbc     A`seconds       $00             ;if frame count hit 60 remove a second
-        daa                                     ;adjust up to binary-coded-decimal
-        cp      $60                             ;when seconds hit zero, no carry
-        jr      c ._6                           ;above 0 seconds, keep going
-        ld      A`seconds       $59             ;otherwise, loop around to 59 seconds
-._6     ld      [HL`time]       A`seconds       ;update the seconds counter
+        dec     HL`time                                     ;move down to the seconds counter
+        ccf                                                 ;flip the carry flag
+        ld      A`seconds           [HL`time]               ;read the number of seconds
+        sbc     A`seconds           $00                     ;if frame count hit 60 remove a second
+        daa                                                 ;adjust up to binary-coded-decimal
+        cp      $60                                         ;when seconds hit zero, no carry
+        jr      c   ._6                                     ;above 0 seconds, keep going
+        ld      A`seconds           $59                     ;otherwise, loop around to 59 seconds
+._6     ld      [HL`time]           A`seconds               ;update the seconds counter
         
-        dec     HL`time                         ;move down to the minutes counter
-        ccf                                     ;flip the carry flag
-        ld      A`minutes       [HL`time]       ;read the number of minutes
-        sbc     A`minutes       $00             ;if seconds hit 0, remove a minute
-        daa                                     ;adjust up to binary-coded-decimal
-        cp      $60                             ;when minutes hit zero, no carry
-        jr      c ._7                           ;above 0 minutes, keep going
+        dec     HL`time                                     ;move down to the minutes counter
+        ccf                                                 ;flip the carry flag
+        ld      A`minutes           [HL`time]               ;read the number of minutes
+        sbc     A`minutes           $00                     ;if seconds hit 0, remove a minute
+        daa                                                 ;adjust up to binary-coded-decimal
+        cp      $60                                         ;when minutes hit zero, no carry
+        jr      c   ._7                                     ;above 0 minutes, keep going
         
         ;set some flags?
-        ld      A               $01
-        ld      [$.D289]        A
-        set     2,[IY+#vars.flags9]
+        ld      A                   $01
+        ld      [$.D289]            A
+        set     2   [IY+#vars.flags9]
         
         xor     A`zero
-._7     ld      [HL`time]       A`zero
+._7     ld      [HL`time]           A`zero
         
         ret
 }
 
         ;seemingly unused?
-TABLE   :_3a62                                  SECTION ::mobs                  ;$3A62
+TABLE   :_3a62                                              SECTION ::mobs                  ;$3A62
+        ;-------------------------------------------------------------------------------------------
 {
-        BYTE    $01, $30, $00
+        BYTE    $01 $30 $00
 }
 
 ;solidity pointer table
-TABLE   :S1_Solidity_Blocks                     SECTION ::mobs                  ;$3A65
+TABLE   :S1_Solidity_Blocks                                 SECTION ::mobs                  ;$3A65
+        ;-------------------------------------------------------------------------------------------
 {
         WORD    .greenHill      .bridge         .jungle
         WORD    .labyrinth      .scrapBrain     .skyBaseInterior
@@ -3689,50 +3703,60 @@ INCLUDE "mobs\meta_trip.oz80"
 INCLUDE "mobs\flower.oz80"
 INCLUDE "mobs\meta_blink.oz80"
 
-PROC    :_7c41                                  SECTION ::mobs                  ;$7C41
-        ;===============================================================================
+PROC    :animateMob                                         SECTION ::mobs                  ;$7C41
+        ;===========================================================================================
 PARAMS  IX`mob          ``Address of the current mob being processed
-        de              ;e.g. $7DE1
-        bc              ;e.g. $7DDC
+        DE              ;a set of sprite layouts? e.g. $7DE1
+        BC              ;some kind of $FF terminated data stream? e.g. $7DDC
 {
-        ld      l,[ix+#mob.unknown17]
-
-._1     ld      h,$00
-        add     hl,bc
-        ld      a,[hl]
-        cp      $ff
-        jr      nz,._2
-        ld      l,$00
-        ld      [ix+#mob.unknown17],l
+        ld      L                   [IX`mob+#mob.unknown17]
+        
+._1     ld      H                   $00
+        add     HL                  BC                      ;get position within data-stream?
+        
+        ld      A                   [HL]
+        cp      $FF
+        jr      nz  ._2
+        
+        ld      L                       $00
+        ld      [IX`mob+#mob.unknown17] L
+        
         jp      ._1
         
-._2     inc     hl
-        push    hl
-        ld      l,a
-        ld      h,$00
-        add     hl,hl
-        ld      c,l
-        ld      b,h
-        add     hl,hl
-        add     hl,hl
-        add     hl,hl
-        add     hl,bc
-        add     hl,de
-        ld      [ix+#mob.spriteLayout+0],l
-        ld      [ix+#mob.spriteLayout+1],h
-        pop     hl
-        inc     [ix+#mob.unknown16]
-        ld      a,[hl]
-        cp      [ix+#mob.unknown16]
+        ;-------------------------------------------------------------------------------------------
+        
+._2     inc     HL
+        push    HL
+        
+        ld      L                   A
+        ld      H                   $00
+        add     HL                  HL                      ;x2
+        ld      C                   L
+        ld      B                   H
+        
+        add     HL                  HL                      ;x4
+        add     HL                  HL                      ;x8
+        add     HL                  HL                      ;x16
+        add     HL                  BC
+        add     HL                  DE
+        ld      [IX`mob+#mob.spriteLayout+0]    L
+        ld      [IX`mob+#mob.spriteLayout+1]    H
+        
+        pop     HL
+        inc     [IX`mob+#mob.unknown16]
+        ld      A                   [HL]
+        cp      [IX`mob+#mob.unknown16]
         ret     nc
-        ld      [ix+#mob.unknown16],$00
-        inc     [ix+#mob.unknown17]
-        inc     [ix+#mob.unknown17]
+        
+        ld      [IX`mob+#mob.unknown16] $00
+        inc     [IX`mob+#mob.unknown17]
+        inc     [IX`mob+#mob.unknown17]
+        
         ret
 }       
 
-PROC    :findEmptyMob                           SECTION ::mobs                  ;$7C7B
-        ;===============================================================================
+PROC    :findEmptyMob                                       SECTION ::mobs                  ;$7C7B
+        ;===========================================================================================
 HELP ```search through the mob storage and find the first empty mob available
         (this is used when spawning new mobs, such as bullets)
         ```
@@ -3740,18 +3764,18 @@ RETURN  AF              ``carry is set if no mob was found
         B               ``mob slot index number (0-31)
         HL              ``address of the empty mob slot selected
 {
-        ld      hl,$.MOBS
-        ld      de,#mob.size
-        ld      b, 31                           ;number of mob slots, less Sonic?
+        ld      HL                  $.MOBS
+        ld      DE                  #mob.size
+        ld      B                   31                      ;number of mob slots, less Sonic?
         
-.loop   ld      a,[hl]
-        cp      $FF                             ;"No Mob" number
-        ret     z                               ;if = $FF then exit, empty slot found
-        add     hl,de
+.loop   ld      A                   [HL]
+        cp      $FF                                         ;"No Mob" number
+        ret     z                                           ;if = $FF then exit, empty slot found
+        add     HL                  DE
         djnz    .loop
         
         ;no free mob place found!
-        scf                                     ;set the carry as a return flag
+        scf                                                 ;set the carry as a return flag
         ret
 }
 
@@ -5233,7 +5257,7 @@ PARAMS  IX`mob          ``Address of the current mob being processed
         ld      [ix+#mob.unknown16],$00
 ._1     ld      bc,:_a2d7
 ._2     ld      de,:_a2da
-        call    :_7c41
+        call    :animateMob
         ld      a,[ix+#mob.unknown11]
         cp      $ed
         jp      nz,._6
@@ -5276,7 +5300,7 @@ PARAMS  IX`mob          ``Address of the current mob being processed
         ld      [ix+#mob.unknown16],$00
 ._4     ld      bc,:_a2d7
 ._5     ld      de,:_a30b
-        call    :_7c41
+        call    :animateMob
         ld      a,[ix+#mob.unknown11]
         cp      $ed
         jr      nz,._6
@@ -5385,7 +5409,7 @@ PARAMS  IX`mob          ``Address of the current mob being processed
         jr      nc,._2
         ld      bc,:_a3b1
         ld      de,:_a3bb
-        call    :_7c41
+        call    :animateMob
         jp      ._4
         
 ._2     jr      nz,._3
@@ -5394,7 +5418,7 @@ PARAMS  IX`mob          ``Address of the current mob being processed
         rst     :rst_playSFX
 ._3     ld      bc,:_a3b4
         ld      de,:_a3bb
-        call    :_7c41
+        call    :animateMob
 ._4     inc     [ix+#mob.unknown11]
         ld      a,[ix+#mob.unknown11]
         cp      $a5
@@ -5829,7 +5853,7 @@ PARAMS  IX`mob          ``Address of the current mob being processed
         ld      [$.LEVEL_LEFT],hl
         ld      de,:_baf9
         ld      bc,:_a9b7
-        call    :_7c41
+        call    :animateMob
         ld      l,[ix+#mob.X+0]
         ld      h,[ix+#mob.X+1]
         ld      de,[$.SONIC.X]
@@ -6115,7 +6139,7 @@ PARAMS  IX`mob          ``Address of the current mob being processed
         ld      [ix+#mob.Xdirection],$ff
         ld      de,:_ad0b
         ld      bc,:_acf1
-        call    :_7c41
+        call    :animateMob
         jp      ._7
         
 ._2     ld      a,[ix+#mob.unknown11]
@@ -6128,7 +6152,7 @@ PARAMS  IX`mob          ``Address of the current mob being processed
         jr      nc,._3
         ld      de,:_ad0b
         ld      bc,:_ad01
-        call    :_7c41
+        call    :animateMob
         jp      ._7
         
 ._3     ld      [ix+#mob.spriteLayout+0],LO :_ad53
@@ -6185,7 +6209,7 @@ PARAMS  IX`mob          ``Address of the current mob being processed
         ld      [ix+#mob.Xdirection],a`zero
         ld      de,:_ad0b
         ld      bc,:_acf6
-        call    :_7c41
+        call    :animateMob
         jr      ._7
         
 ._5     ld      a,[ix+#mob.unknown11]
@@ -6196,7 +6220,7 @@ PARAMS  IX`mob          ``Address of the current mob being processed
         ld      [ix+#mob.Xdirection],$00
         ld      de,:_ad0b
         ld      bc,:_acf9
-        call    :_7c41
+        call    :animateMob
         jr      ._7
         
 ._6     ld      [ix+#mob.Xspeed+0],$00
@@ -6204,7 +6228,7 @@ PARAMS  IX`mob          ``Address of the current mob being processed
         ld      [ix+#mob.Xdirection],$00
         ld      de,:_ad0b
         ld      bc,:_acfe
-        call    :_7c41
+        call    :animateMob
 ._7     ld      [ix+#mob.Yspeed+0],$80
         ld      [ix+#mob.Yspeed+1],$00
         ld      [ix+#mob.Ydirection],$00
@@ -6897,25 +6921,29 @@ PARAMS  IX`mob          ``Address of the current mob being processed
         inc     hl
         ld      b,[hl]
         inc     hl
+        
         exx     
-        ld      e,[ix+#mob.X+0]
-        ld      d,[ix+#mob.X+1]
-        ld      hl,[$.SONIC.X]
-        and     a
-        sbc     hl,de
-        ld      a,h
+        ld      E'                  [IX`mob+#mob.X+0]
+        ld      D'                  [IX`mob+#mob.X+1]
+        ld      HL'                 [$.SONIC.X]
+        and     A
+        sbc     HL'                 DE'
+        ld      A                   H'
         exx     
+        
         cp      [hl]
         ret     nz
         inc     hl
+        
         exx     
-        ld      e,[ix+#mob.Y+0]
-        ld      d,[ix+#mob.Y+1]
-        ld      hl,[$.SONIC.Y]
-        and     a
-        sbc     hl,de
-        ld      a,h
+        ld      E'                  [IX`mob+#mob.Y+0]
+        ld      D'                  [IX`mob+#mob.Y+1]
+        ld      HL'                 [$.SONIC.Y]
+        and     A
+        sbc     HL'                 DE'
+        ld      A                   H'
         exx     
+        
         cp      [hl]
         ret     nz
         call    :_b5c2

@@ -354,7 +354,7 @@ PARAMS  IX`mob          ``Address of the current mob being processed
         ld      [ix+#mob.Ydirection],c
         ld      bc,._ba28
         ld      de,:_baf9
-        call    :_7c41
+        call    :animateMob
         ret
         
 ._20    ld      [iy+#vars.joypad],$ff

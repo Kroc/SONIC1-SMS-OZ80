@@ -58,7 +58,7 @@ PARAMS  IX`mob          ``Address of the current mob being processed
         ld      [ix+#mob.Ydirection],a`zero
         ld      de,._69be
         ld      bc,._69b7
-        call    :_7c41
+        call    :animateMob
         inc     [ix+#mob.unknown11]
         ld      a,[ix+#mob.unknown11]
         cp      $18

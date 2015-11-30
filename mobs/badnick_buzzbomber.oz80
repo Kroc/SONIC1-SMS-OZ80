@@ -8,194 +8,201 @@
 
 ;badnick - buzz bomber
 
-PROC    :mob_badnick_buzzBomber                 SECTION ::mobs                  ;$6B74
-        ;==============================================================================
+PROC    :mob_badnick_buzzBomber                             SECTION ::mobs                  ;$6B74
+        ;===========================================================================================
 PARAMS  IX`mob          ``Address of the current mob being processed
 {        
-        set     5,[ix+#mob.flags]               ;mob does not collide with the floor
-        bit     0,[ix+#mob.flags]
-        jr      nz,._1
-        ld      e,[ix+#mob.X+0]
-        ld      d,[ix+#mob.X+1]
-        ld      [ix+#mob.unknown14],e
-        ld      [ix+#mob.unknown15],d
+        set     5   [IX`mob+#mob.flags]                     ;mob does not collide with the floor
         
-        xor     a`zero
-        ld      [ix+#mob.spriteLayout+0],a`zero
-        ld      [ix+#mob.spriteLayout+1],a`zero
-        ld      [ix+$12],a`zero
-        ld      [ix+#mob.Xspeed+0],a`zero
-        ld      [ix+#mob.Xspeed+1],a`zero
-        ld      [ix+#mob.Xdirection],a`zero
+        bit     0   [IX`mob+#mob.flags]
+        jr      nz  ._1
+        ld      E                   [IX`mob+#mob.X+0]
+        ld      D                   [IX`mob+#mob.X+1]
+        ld      [IX`mob+#mob.unknown14] E
+        ld      [IX`mob+#mob.unknown15] D
         
-        ld      hl,[$.CAMERA_X]
-        ld      bc,$0100
-        add     hl,bc
-        sbc     hl,de
+        xor     A`zero
+        ld      [IX`mob+#mob.spriteLayout+0]    A`zero
+        ld      [IX`mob+#mob.spriteLayout+1]    A`zero
+        ld      [IX`mob+$12]                    A`zero
+        ld      [IX`mob+#mob.Xspeed+0]          A`zero
+        ld      [IX`mob+#mob.Xspeed+1]          A`zero
+        ld      [IX`mob+#mob.Xdirection]        A`zero
+        
+        ld      HL                  [$.CAMERA_X]
+        ld      BC                  $0100
+        add     HL                  BC
+        sbc     HL                  DE
         ret     nc
-        set     0,[ix+#mob.flags]
-._1     ld      [ix+#mob.width], 20
-        ld      [ix+#mob.height],32
-        ld      l,[ix+#mob.X+0]
-        ld      h,[ix+#mob.X+1]
-        ld      de,[$.SONIC.X]
-        and     a
-        sbc     hl,de
-        jr      c,._2
-        ld      de,$0040
-        sbc     hl,de
-        jr      nc,._2
-        ld      a,[ix+$12]
+        set     0   [IX`mob+#mob.flags]
+._1     ld      [IX`mob+#mob.width]     20
+        ld      [IX`mob+#mob.height]    32
+        ld      L                   [IX`mob+#mob.X+0]
+        ld      H                   [IX`mob+#mob.X+1]
+        ld      DE                  [$.SONIC.X]
+        and     A
+        sbc     HL                  DE
+        jr      c   ._2
+        ld      DE                  $0040
+        sbc     HL                  DE
+        jr      nc  ._2
+        ld      A                   [IX`mob+$12]
         cp      $05
-        jr      nc,._2
-        ld      [ix+$12],$05
-._2     ld      e,[ix+$12]
-        ld      d,$00
+        jr      nc  ._2
+        ld      [IX`mob+$12]        $05
+._2     ld      E                   [IX`mob+$12]
+        ld      D                   $00
         
-._3     ld      hl,$6cd7
-        add     hl,de
-        ld      [$.TEMP6],hl
-        ld      a,[hl]
-        and     a
-        jr      nz,._4
-        ld      [ix+$12],a
-        ld      e,a
+._3     ld      HL                  $6CD7
+        add     HL                  DE
+        ld      [$.TEMP6]           HL
+        ld      A                   [HL]
+        and     A
+        jr      nz                  ._4
+        ld      [IX`mob+$12]        A
+        ld      E                   A
         jp      ._3
         
-._4     dec     a
-        jr      nz,._6
-        ld      l,[ix+#mob.X+0]
-        ld      h,[ix+#mob.X+1]
-        ld      de,$0030
-        add     hl,de
-        ld      de,[$.CAMERA_X]
-        xor     a`zero
-        sbc     hl,de
-        jr      nc,._5
-        ld      [ix+#mob.spriteLayout+0],a`zero
-        ld      [ix+#mob.spriteLayout+1],a`zero
-        ld      a,[ix+#mob.unknown14]
-        ld      [ix+#mob.X+0],a
-        ld      a,[ix+#mob.unknown15]
-        ld      [ix+#mob.X+1],a
-        res     0,[ix+#mob.flags]
+._4     dec     A
+        jr      nz  ._6
+        ld      L                   [IX`mob+#mob.X+0]
+        ld      H                   [IX`mob+#mob.X+1]
+        ld      DE                  $0030
+        add     HL                  DE
+        ld      DE                  [$.CAMERA_X]
+        xor     A`zero
+        sbc     HL                  DE
+        jr      nc  ._5
+        ld      [IX`mob+#mob.spriteLayout+0]    A`zero
+        ld      [IX`mob+#mob.spriteLayout+1]    A`zero
+        ld      A                   [IX`mob+#mob.unknown14]
+        ld      [IX`mob+#mob.X+0]   A
+        ld      A                   [IX`mob+#mob.unknown15]
+        ld      [IX`mob+#mob.X+1]   A
+        res     0   [IX`mob+#mob.flags]
         ret
         
-._5     ld      c,$ff
-        ld      hl,$fe00
+._5     ld      C                   $FF
+        ld      HL                  $FE00
         jp      ._8
         
-._6     dec     a
-        jr      nz,._7
-        ld      c,$00
-        ld      l,c
-        ld      h,c
+._6     dec     A
+        jr      nz  ._7
+        ld      C                   $00
+        ld      L                   C
+        ld      H                   C
         jp      ._8
         
-._7     ld      a,[ix+#mob.unknown11]
+._7     ld      A                   [IX`mob+#mob.unknown11]
         cp      $20
-        jp      nz,._9
+        jp      nz  ._9
         call    :findEmptyMob
-        jp      c,._9
-        push    bc
-        ld      e,[ix+#mob.X+0]
-        ld      d,[ix+#mob.X+1]
-        ld      c,[ix+#mob.Y+0]
-        ld      b,[ix+#mob.Y+1]
-        push    ix
-        push    hl
-        pop     ix
+        jp      c   ._9
+        push    BC
+        ld      E                   [IX`mob+#mob.X+0]
+        ld      D                   [IX`mob+#mob.X+1]
+        ld      C                   [IX`mob+#mob.Y+0]
+        ld      B                   [IX`mob+#mob.Y+1]
+        push    IX
+        push    HL
+        pop     IX
         
-        xor     a`zero                          ;set A to 0
-        ld      [ix+#mob.type],$0D              ;unknown object
-        ld      [ix+#mob.Xsubpixel],a`zero
-        ld      [ix+#mob.X+0],e
-        ld      [ix+#mob.X+1],d
-        ld      [ix+#mob.Ysubpixel],a`zero
-        ld      hl,$0020
-        add     hl,bc
-        ld      [ix+#mob.Y+0],l
-        ld      [ix+#mob.Y+1],h
-        ld      [ix+#mob.unknown11],a`zero
-        ld      [ix+#mob.unknown13],a`zero
-        ld      [ix+#mob.unknown14],a`zero
-        ld      [ix+#mob.unknown15],a`zero
-        ld      [ix+#mob.unknown16],a`zero
-        ld      [ix+#mob.unknown17],a`zero
-        ld      [ix+#mob.Xspeed+0],$00
-        ld      [ix+#mob.Xspeed+1],$ff
-        ld      [ix+#mob.Xdirection],$ff
-        ld      [ix+#mob.Yspeed+0],$80
-        ld      [ix+#mob.Yspeed+1],$01
-        ld      [ix+#mob.Ydirection],a`zero
+        xor     A`zero                                      ;set A to 0
+        ld      [IX`mob+#mob.type]          $0D             ;unknown object
+        ld      [IX`mob+#mob.Xsubpixel]     A`zero
+        ld      [IX`mob+#mob.X+0]           E
+        ld      [IX`mob+#mob.X+1]           D
+        ld      [IX`mob+#mob.Ysubpixel]     A`zero
+        ld      HL                          $0020
+        add     HL                          BC
+        ld      [IX`mob+#mob.Y+0]           L
+        ld      [IX`mob+#mob.Y+1]           H
+        ld      [IX`mob+#mob.unknown11]     A`zero
+        ld      [IX`mob+#mob.unknown13]     A`zero
+        ld      [IX`mob+#mob.unknown14]          A`zero
+        ld      [IX`mob+#mob.unknown15]     A`zero
+        ld      [IX`mob+#mob.unknown16]     A`zero
+        ld      [IX`mob+#mob.unknown17]     A`zero
+        ld      [IX`mob+#mob.Xspeed+0]      $00
+        ld      [IX`mob+#mob.Xspeed+1]      $FF
+        ld      [IX`mob+#mob.Xdirection]    $FF
+        ld      [IX`mob+#mob.Yspeed+0]      $80
+        ld      [IX`mob+#mob.Yspeed+1]      $01
+        ld      [IX`mob+#mob.Ydirection]    A`zero
         
-        pop     ix, bc
-        ld      a,$0a
+        pop     IX  BC
+        
+        ld      A                   $0A
         rst     :rst_playSFX
-        ld      c,$00
-        ld      l,c
-        ld      h,c
         
-._8     ld      [ix+#mob.Xspeed+0],l
-        ld      [ix+#mob.Xspeed+1],h
-        ld      [ix+#mob.Xdirection],c
-._9     ld      l,[ix+#mob.unknown11]
-        ld      h,[ix+$12]
-        ld      de,$0008
-        add     hl,de
-        ld      [ix+#mob.unknown11],l
-        ld      [ix+$12],h
-        ld      hl,[$.TEMP6]
-        ld      a,[hl]
-        add     a,a
-        ld      e,a
-        ld      hl,._6ce2
-        add     hl,de
-        ld      c,[hl]
-        inc     hl
-        ld      b,[hl]
-        ld      de,._6cf9
-        call    :_7c41
-        ld      hl,$1000
-        ld      [$.TEMP6],hl
+        ld      C                   $00
+        ld      L                   C
+        ld      H                   C
+        
+._8     ld      [IX`mob+#mob.Xspeed+0]      L
+        ld      [IX`mob+#mob.Xspeed+1]      H
+        ld      [IX`mob+#mob.Xdirection]    C
+        
+._9     ld      L                   [IX`mob+#mob.unknown11]
+        ld      H                   [IX`mob+$12]
+        ld      DE                  $0008
+        add     HL                  DE
+        ld      [IX`mob+#mob.unknown11] L
+        ld      [IX`mob+$12]            H
+        ld      HL                  [$.TEMP6]
+        ld      A                   [HL]
+        add     A                   A
+        ld      E                   A
+        ld      HL                  ._6ce2
+        add     HL                  DE
+        ld      C                   [HL]
+        inc     HL
+        ld      B                   [HL]
+        ld      DE                  ._6cf9
+        call    :animateMob
+        
+        ld      HL                  $1000
+        ld      [$.TEMP6]           HL
         call    :detectCollisionWithSonic
-        ld      hl,$1004
-        ld      [$.TEMP1],hl
-        call    nc,:hitPlayer
+        
+        ld      HL                  $1004
+        ld      [$.TEMP1]           HL
+        call    nc  :hitPlayer
+        
         ret
         
         ;no reference to this?
-._6cd7  BYTE $01, $01, $01, $01, $00, $02, $02, $03, $01, $01, $00
+._6cd7  BYTE    $01, $01, $01, $01, $00, $02, $02, $03, $01, $01, $00
         
         ;animation frame order
-._6ce2  WORD ._6cea, ._6cea, ._6cef, ._6cf4
-._6cea  BYTE $00, $02, $01, $02, $FF
-._6cef  BYTE $02, $02, $03, $02, $FF
-._6cf4  BYTE $04, $02, $05, $02, $FF
+._6ce2  WORD    ._6cea, ._6cea, ._6cef, ._6cf4
+._6cea  BYTE    $00, $02, $01, $02, $FF
+._6cef  BYTE    $02, $02, $03, $02, $FF
+._6cf4  BYTE    $04, $02, $05, $02, $FF
 
 ;sprite layout
-._6cf9  BYTE $FE, $0A, $FF, $FF, $FF, $FF
-        BYTE $0C, $0E, $10, $FF, $FF, $FF
-        BYTE $FF, $FF, $FF, $FF, $FF, $FF
-        
-        BYTE $FE, $FF, $FF, $FF, $FF, $FF
-        BYTE $0C, $0E, $2C, $FF, $FF, $FF
-        BYTE $FF, $FF, $FF, $FF, $FF, $FF
-        
-        BYTE $FE, $0A, $FF, $FF, $FF, $FF
-        BYTE $12, $14, $16, $FF, $FF, $FF
-        BYTE $32, $34, $FF, $FF, $FF, $FF
-        
-        BYTE $FE, $FF, $FF, $FF, $FF, $FF
-        BYTE $12, $14, $16, $FF, $FF, $FF
-        BYTE $32, $34, $FF, $FF, $FF, $FF
-        
-        BYTE $FE, $0A, $FF, $FF, $FF, $FF
-        BYTE $12, $14, $16, $FF, $FF, $FF
-        BYTE $30, $34, $FF, $FF, $FF, $FF
-        
-        BYTE $FE, $FF, $FF, $FF, $FF, $FF
-        BYTE $12, $14, $16, $FF, $FF, $FF
-        BYTE $30, $34, $FF, $FF, $FF, $FF
+._6cf9  BYTE    $FE, $0A, $FF, $FF, $FF, $FF
+        BYTE    $0C, $0E, $10, $FF, $FF, $FF
+        BYTE    $FF, $FF, $FF, $FF, $FF, $FF
+            
+        BYTE    $FE, $FF, $FF, $FF, $FF, $FF
+        BYTE    $0C, $0E, $2C, $FF, $FF, $FF
+        BYTE    $FF, $FF, $FF, $FF, $FF, $FF
+            
+        BYTE    $FE, $0A, $FF, $FF, $FF, $FF
+        BYTE    $12, $14, $16, $FF, $FF, $FF
+        BYTE    $32, $34, $FF, $FF, $FF, $FF
+            
+        BYTE    $FE, $FF, $FF, $FF, $FF, $FF
+        BYTE    $12, $14, $16, $FF, $FF, $FF
+        BYTE    $32, $34, $FF, $FF, $FF, $FF
+            
+        BYTE    $FE, $0A, $FF, $FF, $FF, $FF
+        BYTE    $12, $14, $16, $FF, $FF, $FF
+        BYTE    $30, $34, $FF, $FF, $FF, $FF
+            
+        BYTE    $FE, $FF, $FF, $FF, $FF, $FF
+        BYTE    $12, $14, $16, $FF, $FF, $FF
+        BYTE    $30, $34, $FF, $FF, $FF, $FF
 
 }

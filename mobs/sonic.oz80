@@ -295,7 +295,7 @@ PARAMS  IX`mob          ``Address of the current mob being processed
         bit     7   [IY`vars+#vars.flags6]
         call    nz  ._50e8
         
-        ld      [IX`mob+#mob.unknown14] $05
+        ld      [IX`mob+#mob.unknown14]  $05
         ld      HL`idleTime         [$.IDLE_TIME]
         ld      DE`idleWait         !IDLE_TIME              ;idle time until waiting animation
         and     A`zero                                      ;clear the carry flag for below
@@ -346,7 +346,7 @@ PARAMS  IX`mob          ``Address of the current mob being processed
         or      B
         jr      z   ._4b1b
         
-        ld      [IX`mob+#mob.unknown14] $01
+        ld      [IX`mob+#mob.unknown14]  $01
         bit     7   B
         jr      nz  ._9
         
@@ -379,7 +379,7 @@ PARAMS  IX`mob          ``Address of the current mob being processed
         inc     DE
         ld      C                   $FF
         ld      A                   [$.D216]
-        ld      [IX`mob+#mob.unknown14] A
+        ld      [IX`mob+#mob.unknown14]  A
         jp      ._4b1b
         
 ._9     ld      DE                  [$.TEMP4]
@@ -403,7 +403,7 @@ PARAMS  IX`mob          ``Address of the current mob being processed
         jr      c   ._4b1b
         ld      DE                  [$.TEMP1]
         ld      A                   [$.D216]
-        ld      [IX`mob+#mob.unknown14] A
+        ld      [IX`mob+#mob.unknown14]  A
 ._4b1b
         ld      A                   B
         and     A
@@ -545,9 +545,9 @@ PARAMS  IX`mob          ``Address of the current mob being processed
         jr      nz  ._21
         bit     7   [IX`mob+#mob.Ydirection]
         jr      z   ._20
-        ld      [IX`mob+#mob.unknown14] $13
+        ld      [IX`mob+#mob.unknown14]  $13
         jr      ._21
-._20    ld      [IX`mob+#mob.unknown14] $01
+._20    ld      [IX`mob+#mob.unknown14]  $01
 ._21    ld      BC                  $000c
         ld      DE                  $0008
         call    :getFloorLayoutRAMAddressForMob
@@ -915,7 +915,7 @@ PARAMS  IX`mob          ``Address of the current mob being processed
         rlca    
         ret     nc
         
-        ld      [IX+#mob.unknown14] $0C
+        ld      [IX+#mob.unknown14]      $0C
         ld      DE                  [$.D2B7]
         bit     7   D
         jr      nz  ._38
@@ -936,13 +936,13 @@ PARAMS  IX`mob          ``Address of the current mob being processed
         jr      nz  ._39
         ld      DE                  [$.TEMP1]
         ld      C                   $00
-        ld      [IX`mob+#mob.unknown14] $01
+        ld      [IX`mob+#mob.unknown14]  $01
         push    HL
         exx     
-        pop     HL
-        ld      DE                  [$.D240]
+        pop     HL'
+        ld      DE'                 [$.D240]
         xor     A`zero
-        sbc     HL                  DE
+        sbc     HL'                 DE'
         exx     
         jp      c   ._4b1b
         ld      B   A
@@ -951,7 +951,7 @@ PARAMS  IX`mob          ``Address of the current mob being processed
         ld      C   A
         ld      HL  [$.D240]
         ld      A   [$.D216]
-        ld      [IX`mob+#mob.unknown14] A
+        ld      [IX`mob+#mob.unknown14]  A
         jp      ._4b1b
         
         ;-------------------------------------------------------------------------------------------
@@ -994,19 +994,21 @@ PARAMS  IX`mob          ``Address of the current mob being processed
         ld      c,$ff
         ld      [ix+#mob.unknown14],$01
         push    hl
+        
         exx     
-        pop     hl
-        ld      a,l
+        pop     HL'
+        ld      A                   L'
         cpl     
-        ld      l,a
-        ld      a,h
+        ld      L'                  A
+        ld      A                   H'
         cpl     
-        ld      h,a
-        inc     hl
-        ld      de,[$.D240]
-        xor     a`zero
-        sbc     hl,de
+        ld      H'                  A
+        inc     HL'
+        ld      DE'                 [$.D240]
+        xor     A`zero
+        sbc     HL'                 DE
         exx     
+        
         jp      c,._4b1b
         ld      e,a
         ld      d,a
@@ -1036,12 +1038,14 @@ PARAMS  IX`mob          ``Address of the current mob being processed
         inc     de
         ld      c,$ff
         push    hl
+        
         exx     
-        pop     hl
-        ld      bc,$0100
-        and     a
-        sbc     hl,bc
+        pop     HL'
+        ld      BC'                 $0100
+        and     A
+        sbc     HL'                 BC'
         exx     
+        
         jp      nc,._4b1b
         set     1,[ix+#mob.flags]
         ld      [ix+#mob.unknown14],$01
@@ -1198,9 +1202,10 @@ PARAMS  IX`mob          ``Address of the current mob being processed
         ;-------------------------------------------------------------------------------
 
 ._50af  exx                                                                     ;$50AF
-        ld      hl,[$.SONIC.Y]
-        ld      [$.D2D9],hl
+        ld      HL'                 [$.SONIC.Y]
+        ld      [$.D2D9]            HL
         exx     
+        
         bit     2,[ix+#mob.flags]
         ret     z
         res     2,[ix+#mob.flags]

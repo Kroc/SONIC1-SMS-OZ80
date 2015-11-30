@@ -55,7 +55,7 @@ PARAMS  IX`mob          ``Address of the current mob being processed
         jr      nc,._3
         ld      bc,._82c1
         ld      de,._82cd
-        call    :_7c41
+        call    :animateMob
         ret
         
 ._3     jr      nz,._4
@@ -73,7 +73,7 @@ PARAMS  IX`mob          ``Address of the current mob being processed
         
         ld      bc,._82c6
         ld      de,:_a3bb
-        call    :_7c41
+        call    :animateMob
         
         ld      a,[ix+$12]
         add     a,$12

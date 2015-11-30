@@ -102,7 +102,7 @@ PARAMS  IX`mob          ``Address of the current mob being processed
 ._6     inc     [ix+#mob.unknown11]
 ._7     ld      bc,._bdc7
         ld      de,._bdce
-        call    :_7c41
+        call    :animateMob
         bit     4,[iy+#vars.unknown0]
         ret     nz
 ._8     ld      [ix+#mob.type],$FF      ;remove object?

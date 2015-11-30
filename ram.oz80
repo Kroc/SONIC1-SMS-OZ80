@@ -7,442 +7,440 @@
 ;;
 
 TYPE    #levelHeader
+        ;-------------------------------------------------------------------------------------------
 [
-    .solidity                   BYTE            ;solidity data index
-    .floorWidth                 WORD            ;width of the floor in blocks
-    .floorHeight                WORD            ;height of the floor in blocks
-    .levelLeft                  WORD            ;left side of level on the floor px
-    .levelRight                 WORD            ;right side of level on the floor (px)
-    .levelTop                   WORD            ;top of the level on the floor (px)
-    .levelBottom                WORD            ;bottom of the level on the floor (px)
-    .startX                     BYTE            ;Sonic's starting X position in blocks
-    .startY                     BYTE            ;Sonic's starting Y position in blocks
-    .floorLayout                WORD            ;address of the floor layout data
-    .floorSize                  WORD            ;size in bytes of the compressed data
-    .blockMapping               WORD            ;address for level's block mappings
-    .levelArt                   WORD            ;address of compressed level art
-    .spriteArt                  WORD            ;address of compressed sprite art
-    .bank                       BYTE            ;bank number for sprite art (always 9)
-    .initialPalette             BYTE            ;index of initial level palette
-    .cycleSpeed                 BYTE            ;speed of palette animation
-    .cycleCount                 BYTE            ;number of palettes in cycle
-    .cyclePalette               BYTE            ;index of cycle palette
-    .objectLayout               WORD            ;address of Object layout data
-    .scrollRingFlags            BYTE            
-    .underwaterFlag             BYTE    
-    .timeLightningFlags         BYTE    
-    .zero                       BYTE    
-    .music                      BYTE            ;index of music
+        .solidity                   BYTE                    ;solidity data index
+        .floorWidth                 WORD                    ;width of the floor in blocks
+        .floorHeight                WORD                    ;height of the floor in blocks
+        .levelLeft                  WORD                    ;left side of level on the floor px
+        .levelRight                 WORD                    ;right side of level on the floor (px)
+        .levelTop                   WORD                    ;top of the level on the floor (px)
+        .levelBottom                WORD                    ;bottom of the level on the floor (px)
+        .startX                     BYTE                    ;Sonic's starting X position in blocks
+        .startY                     BYTE                    ;Sonic's starting Y position in blocks
+        .floorLayout                WORD                    ;address of the floor layout data
+        .floorSize                  WORD                    ;size in bytes of the compressed data
+        .blockMapping               WORD                    ;address for level's block mappings
+        .levelArt                   WORD                    ;address of compressed level art
+        .spriteArt                  WORD                    ;address of compressed sprite art
+        .bank                       BYTE                    ;bank number for sprite art (always 9)
+        .initialPalette             BYTE                    ;index of initial level palette
+        .cycleSpeed                 BYTE                    ;speed of palette animation
+        .cycleCount                 BYTE                    ;number of palettes in cycle
+        .cyclePalette               BYTE                    ;index of cycle palette
+        .objectLayout               WORD                    ;address of Object layout data
+        .scrollRingFlags            BYTE                    
+        .underwaterFlag             BYTE            
+        .timeLightningFlags         BYTE            
+        .zero                       BYTE            
+        .music                      BYTE                    ;index of music
 ]
 
-;---------------------------------------------------------------------------------------
-
-;;the programmers use the IY register as a short-cut to $D200
-  to access commonly used variables and flags;;   
-TYPE    #vars                           ;$D200:
+;; the programmers use the IY register as a short-cut to $D200
+   to access commonly used variables and flags ;;
+TYPE    #vars                                                                               ;$D200:
+        ;-------------------------------------------------------------------------------------------
 [
-    ;program flow control / loading flags?
-    .flags0                         BYTE    ;IY+$00
-            ;bit 0 - `waitForInterrupt` will loop until the bit is set
-            ;bit 1 - unknown (set at level load)
-            ;bit 3 - flag to load palette on IRQ
-            ;bit 5 - unknown
-            ;bit 6 - set when the camera has moved left
-            ;bit 7 - set when the camera has moved up
-            
-    ;this is used only as the comparison byte in `:loadFloorLayout`
-    .temp                           BYTE    ;IY+$01
-    
-    .flags2                         BYTE    ;IY+$02
-            ;bit 0 - unknown
-            ;bit 1 - unknown
-            ;bit 2 - unknown
-    
-    ;value of joypad port 1 - the bits are 1 for unpressed and 0 for pressed
-    .joypad                         BYTE    ;IY+$03
-            ;bit 0 - joypad 1 up
-            ;bit 1 - joypad 1 down
-            ;bit 2 - joypad 1 left
-            ;bit 3 - joypad 1 right
-            ;bit 4 - joypad button A
-            ;bit 5 - joypad button B
-    
-    ;this does not appear referenced in any code
-    .unused                         BYTE    ;IY+$04
-    
-    ;taken from the level header, this controls screen scrolling and the
-    ;presence of the "rings" count on the HUD
-    .scrollRingFlags                BYTE    ;IY+$05
-            ;bit 0 - death flag
-            ;bit 1 - demo mode
-            ;bit 2 - ring count displayed in HUD, rings visible in the level
-            ;bit 3 - automatic scrolling to the right
-            ;bit 4 - automatic scrolling upwards
-            ;bit 5 - smooth scrolling
-            ;bit 6 - up and down wave scrolling
-            ;bit 7 - screen does not scroll down
-    
-    .flags6                         BYTE    ;IY+$06
-            ;bit 0 - make Sonic upside down! (some incomplete functionality left in)
-            ;bit 1 - disable controls
-            ;bit 2 - unknown
-            ;bit 3 - clock is active when set
-            ;bit 4 - unknown
-            ;bit 5 - shield active
-            ;bit 6 - Sonic is in damage state
-            ;bit 7 - level underwater flag (enables water line)
-    
-    ;taken from the level header, this controls the presence of the time on
-    ;the HUD and if the lightning effect is in use
-    .timeLightningFlags             BYTE    ;IY+$07
-            ;bit 0 - centres the time in the screen on special stages
-            ;bit 1 - enables the lightning effect
-            ;bit 2 - unknown
-            ;bit 3 - unknown
-            ;bit 4 - use the boss underwater palette (specially for Labyrinth Act 3)
-            ;bit 5 - time is displayed in the HUD
-            ;bit 6 - locks the screen, no scrolling
-            ;bit 7 - 0 = timer counts up, 1 = timer counts down (e.g. special stage)
-    
-    ;part of the level header -- always "0" for all levels, but unknown function
-    .unknown0                       BYTE    ;IY+$08
-            ;bit 1 - unknown, set at ":mob_sonic._4e88"
-    
-    .flags9                         BYTE    ;IY+$09
-            ;bit 0 - unknown
-            ;bit 1 - enables interrupts during `decompressArt`
-            ;bit 2 - set when special stage timer reaches zero
-            ;bit 3 - unknown -- reset at ":_1719"
-    
-    .spriteUpdateCount              BYTE    ;IY+$0A, # sprites requiring updates
-    .origScrollRingFlags            BYTE    ;IY+$0B, copy made during level loading UNUSED
-    .origFlags6                     BYTE    ;IY+$0C, copy made during level loading
-    
-    ;currently unknown purpose
-    .unknown_0D                     BYTE    ;IY+$0D
+        ;program flow control / loading flags?
+        .flags0                     BYTE                    ;IY+$00
+        ;bit 0 - `waitForInterrupt` will loop until the bit is set
+        ;bit 1 - unknown (set at level load)
+        ;bit 3 - flag to load palette on IRQ
+        ;bit 5 - unknown
+        ;bit 6 - set when the camera has moved left
+        ;bit 7 - set when the camera has moved up
+                
+        ;this is used only as the comparison byte in `:loadFloorLayout`
+        .temp                       BYTE                    ;IY+$01
+        
+        .flags2                     BYTE                    ;IY+$02
+        ;bit 0 - unknown
+        ;bit 1 - unknown
+        ;bit 2 - unknown
+        
+        ;value of joypad port 1 - the bits are 1 for unpressed and 0 for pressed
+        .joypad                     BYTE                    ;IY+$03
+        ;bit 0 - joypad 1 up
+        ;bit 1 - joypad 1 down
+        ;bit 2 - joypad 1 left
+        ;bit 3 - joypad 1 right
+        ;bit 4 - joypad button A
+        ;bit 5 - joypad button B
+        
+        ;this does not appear referenced in any code
+        .unused                     BYTE                    ;IY+$04
+        
+        ;taken from the level header, this controls screen scrolling and the
+        ;presence of the "rings" count on the HUD
+        .scrollRingFlags            BYTE                    ;IY+$05
+        ;bit 0 - death flag
+        ;bit 1 - demo mode
+        ;bit 2 - ring count displayed in HUD, rings visible in the level
+        ;bit 3 - automatic scrolling to the right
+        ;bit 4 - automatic scrolling upwards
+        ;bit 5 - smooth scrolling
+        ;bit 6 - up and down wave scrolling
+        ;bit 7 - screen does not scroll down
+        
+        .flags6                     BYTE                    ;IY+$06
+        ;bit 0 - make Sonic upside down! (some incomplete functionality left in)
+        ;bit 1 - disable controls
+        ;bit 2 - unknown
+        ;bit 3 - clock is active when set
+        ;bit 4 - unknown
+        ;bit 5 - shield active
+        ;bit 6 - Sonic is in damage state
+        ;bit 7 - level underwater flag (enables water line)
+        
+        ;taken from the level header, this controls the presence of the time on
+        ;the HUD and if the lightning effect is in use
+        .timeLightningFlags         BYTE                    ;IY+$07
+        ;bit 0 - centres the time in the screen on special stages
+        ;bit 1 - enables the lightning effect
+        ;bit 2 - unknown
+        ;bit 3 - unknown
+        ;bit 4 - use the boss underwater palette (specially for Labyrinth Act 3)
+        ;bit 5 - time is displayed in the HUD
+        ;bit 6 - locks the screen, no scrolling
+        ;bit 7 - 0 = timer counts up, 1 = timer counts down (e.g. special stage)
+        
+        ;part of the level header -- always "0" for all levels, but unknown function
+        .unknown0                   BYTE                    ;IY+$08
+        ;bit 1 - unknown, set at ":mob_sonic._4e88"
+        
+        .flags9                     BYTE                    ;IY+$09
+        ;bit 0 - unknown
+        ;bit 1 - enables interrupts during `decompressArt`
+        ;bit 2 - set when special stage timer reaches zero
+        ;bit 3 - unknown -- reset at ":_1719"
+        
+        .spriteUpdateCount          BYTE                    ;IY+$0A, # sprites requiring updates
+        .origScrollRingFlags        BYTE                    ;IY+$0B, copy made during level loading UNUSED
+        .origFlags6                 BYTE                    ;IY+$0C, copy made during level loading
+        
+        ;currently unknown purpose
+        .unknown_0D                 BYTE                    ;IY+$0D
 ]
 
-;---------------------------------------------------------------------------------------
-
-RAM ;name                       ;size                                           ;addr
+RAM     ;name                       ;size                                                   ;addr
 [       
-    ;; the floor layout (i.e. the tiles Sonic runs around on).
-       a 'level' is a sub-portion of this floor layout since sometimes multiple
-       levels are crammed into one layout (such as the special stages) ;;
-    .FLOORLAYOUT                BYTE x 4 KB                                     ;$C000
-    
-    ;X/Y/I data for the 64 sprites
-    .SPRITETABLE                BYTE x 64*3                                     ;$D000
-    
-    .D0C0                       BYTE x 64                                       ;UNUSED
-    
-    ;; when the screen scrolls and new tiles need to be filled in, they are pulled from
-       these caches which have the necessary tiles already in horizontal / vertical
-       order for speed ;;
-    ;(NOTE: though these are 128 bytes each, I don't think that much is used)
-    .OVERSCROLLCACHE_VERT       BYTE x 128                                      ;$D100
-    .OVERSCROLLCACHE_HORZ       BYTE x 128                                      ;$D180
-    
-    ;; throughout the codebase, IY is used as a shorthand to $D200 where many
-       commonly used RAM variables exist. therefore these use the `[iy+#VARS.abc]`
-       form of addressing. for the sake of completeness, we'll also define the
-       absolute location of these variables too, i.e. `$.VARS.abc` ;;
-    .VARS                       TYPE #vars                                      ;$D200
-    
-    ;; these temporary variables are reused throughout, some times for passing
-       extra parameters to a function and sometimes as extra working space within
-       a function ;;
-    .TEMP1                      BYTE                                            ;$D20E
-    .TEMP2                      BYTE                                            ;$D20F
-    .TEMP3                      WORD                                            ;$D210
-    .TEMP4                      BYTE                                            ;$D212
-    .TEMP5                      BYTE                                            ;$D213
-    .TEMP6                      BYTE                                            ;$D214
-    .TEMP7                      BYTE                                            ;$D215
-    
-    .D216                       WORD ;UNKNOWN                                   ;$D216
-    
-    .VDPREGISTER_0              BYTE ;RAM cache of the VDP register 0           ;$D218
-    .VDPREGISTER_1              BYTE ;RAM cache of the VDP register 1           ;$D219
-    
-    ;though the code copies the VDP registers here, these ones are not recalled
-    .VDPREGISTER_2              BYTE                                            ;$D21A
-    .VDPREGISTER_3              BYTE                                            ;$D21B
-    .VDPREGISTER_4              BYTE                                            ;$D21C
-    .VDPREGISTER_5              BYTE                                            ;$D21D
-    .VDPREGISTER_6              BYTE                                            ;$D21E
-    .VDPREGISTER_7              BYTE                                            ;$D21F
-    .VDPREGISTER_8              BYTE                                            ;$D220
-    .VDPREGISTER_9              BYTE                                            ;$D221
-    .VDPREGISTER_10             BYTE                                            ;$D222
-    
-    .FRAMECOUNT                 WORD ;a 16-bit continual frame count            ;$D223
-    
-    ;referenced only by unused function ":unused_0323"
-    .UNUSED_D225                WORD                                            ;$D225
-    .UNUSED_D227                WORD                                            ;$D227
-    .UNUSED_D229                WORD                                            ;$D229
-    
-    ;; `:loadPaletteOnInterrupt` and `:loadPaletteFromInterrupt`
-       use these to pass parameters ;;
-    .LOADPALETTE_ADDRESS        WORD                                            ;$D22B
-    .D22D                       WORD                                            ;UNUSED
-    .LOADPALETTE_FLAGS          BYTE                                            ;$D22F
-    
-    ;; `:loadPalette` uses these to pass the addresses of the
-       tile/sprite palettes to load ;;
-    .LOADPALETTE_TILE           WORD                                            ;$D230
-    .LOADPALETTE_SPRITE         WORD                                            ;$D232
-    
-    .D234                       BYTE                                            ;UNUSED
-    
-    ;these keep track of which bank is in which slot; slot 0 is always bank 0
-    .SLOT1                      BYTE                                            ;$D235
-    .SLOT2                      BYTE                                            ;$D236
-    
-    .D237                       BYTE                                            ;UNUSED
-    
-    .LEVEL_FLOORWIDTH           WORD ;width of the floor layout in blocks       ;$D238
-    .LEVEL_FLOORHEIGHT          WORD ;height of the floor layout in blocks      ;$D23A
-    
-    .SPRITETABLE_ADDR           WORD ;pointer to which sprite table to use      ;$D23C
-    
-    .CURRENT_LEVEL              BYTE                                            ;$D23E
-    
-    .D23F                       BYTE ;UNKNOWN                                   ;$D23F
-    .D240                       WORD ;UNKNOWN                                   ;$D240
-    .D242                       WORD ;UNKNOWN                                   ;$D242
-    .D244                       WORD ;UNKNOWN                                   ;$D244
-    
-    ;NOTE: some code accesses this value using two-bytes, not one!?
-    .LIVES                      BYTE ;player's lives count                      ;$D246
-    
-    .RASTERSPLIT_STEP           BYTE                                            ;$D247
-    .RASTERSPLIT_LINE           BYTE                                            ;$D248
-    
-    .D249                       BYTE x 6                                        ;UNUSED
-    
-    ;absolute address of the block mappings when in page 1 (i.e. $4000)
-    .BLOCKMAPPINGS              WORD                                            ;$D24F
-    
-    .VDPSCROLL_HORZ             BYTE                                            ;$D251
-    .VDPSCROLL_VERT             BYTE                                            ;$D252
-    
-    .D253                       BYTE x 4                                        ;UNUSED
-    
-    .BLOCK_X                    BYTE ;number of blocks across the camera is     ;$D257
-    .BLOCK_Y                    BYTE ;number of blocks down the camera is       ;$D258
-    
-    .D259                       BYTE                                            ;UNUSED
-    
-    .CAMERA_X                   WORD                                            ;$D25A
-    .D25C                       BYTE ;UNKNOWN?? (read as $D25C/D)               ;$D25C
-    .CAMERA_Y                   WORD                                            ;$D25D
-    
-    .D25F                       WORD ;UNKNOWN                                   ;$D25F
-    .D261                       WORD ;UNKNOWN                                   ;$D261
-    .D263                       WORD ;UNKNOWN                                   ;$D263
-    .D265                       WORD ;UNKNOWN                                   ;$D265
-    .D267                       WORD ;UNKNOWN                                   ;$D267
-    .D269                       WORD ;UNKNOWN                                   ;$D269
-    .D26B                       WORD ;UNKNOWN                                   ;$D26B
-    .D26D                       WORD ;UNKNOWN                                   ;$D26D
-    
-    .CAMERA_X_LEFT              WORD ;used to check if the camera went left     ;$D26F
-    .CAMERA_Y_UP                WORD ;used to check if the camera went up       ;$D271
-    
-    .LEVEL_LEFT                 WORD                                            ;$D273
-    ;; prevents the level scrolling past this left-most point (i.e. sets an
-       effective right-hand limit to the level -- this + width of the screen) ;;
-    .LEVEL_RIGHT                WORD                                            ;$D275
-    .LEVEL_TOP                  WORD                                            ;$D277
-    .LEVEL_BOTTOM               WORD                                            ;$D279
-    
-    ;a point to move the camera to
-    .CAMERA_X_GOTO              WORD                                            ;$D27B
-    .CAMERA_Y_GOTO              WORD                                            ;$D27D
-    
-    .D27F                       BYTE ;UNKNOWN ($D27F/80)                        ;$D27F
-    .D280                       BYTE ;UNKNOWN ($D280/1)                         ;$D280
-    .D281                       BYTE ;UNKNOWN ($D281/2)                         ;$D281
-    .D282                       BYTE ;UNKNOWN ($D282/3)                         ;$D282
-    .D283                       BYTE ;UNKNOWN                                   ;$D283
-    .D284                       BYTE ;UNKNOWN ($D284/5)                         ;$D284
-    .D285                       BYTE ;UNKNOWN ($D285/6)                         ;$D285
-    .D286                       BYTE ;UNKNOWN                                   ;$D286 
-    .D287                       BYTE ;UNKNOWN ($D287/8)                         ;$D287
-    .D288                       BYTE ;UNKNOWN                                   ;$D288
-    .D289                       BYTE ;UNKNOWN - looks like flags                ;$D289
-    .D28A                       BYTE ;UNKNOWN                                   ;$D28A
-    .D28B                       BYTE ;UNKNOWN                                   ;$D28B
-    .D28C                       BYTE ;UNKNOWN                                   ;$D28C
-    .D28D                       BYTE ;UNKNOWN ($D28D/E)                         ;$D28D
-    .D28E                       BYTE ;UNKNOWN                                   ;$D28E
-    
-    .SONIC_CURRENT_FRAME        WORD                                            ;$D28F
-    .SONIC_PREVIOUS_FRAME       WORD                                            ;$D291
-    
-    .RING_CURRENT_FRAME         WORD                                            ;$D293
-    .RING_PREVIOUS_FRAME        WORD                                            ;$D295
-    
-    .D297                       BYTE ;UNKNOWN                                   ;$D297
-    .D298                       BYTE ;UNKNOWN ($D298/9)                         ;$D298
-    .IDLE_TIME                  WORD ;UNKNOWN                                   ;$D299
-    .D29B                       WORD ;UNKNOWN                                   ;$D29B
-    .D29D                       WORD ;UNKNOWN                                   ;$D29D
-    
-    .TIME                       WORD ;the level's time                          ;$D29F
-    
-    .D2A1                       BYTE ;UNKNOWN ($D2A1/2)                         ;$D2A1
-    .D2A2                       BYTE ;UNKNOWN ($D2A2/3)                         ;$D2A2
-    .D2A3                       BYTE ;UNKNOWN                                   ;$D2A3
-    
-    .CYCLEPALETTE_COUNTER       BYTE ;counter for applying the speed            ;$D2A4
-    .CYCLEPALETTE_SPEED         BYTE ;number of frames between each palette     ;$D2A5
-    
-    .CYCLEPALETTE_INDEX         WORD ;current palette in the cycle palette      ;$D2A6
-    .CYCLEPALETTE_POINTER       WORD ;address where cycle palette begins        ;$D2A8
-    
-    .RINGS                      BYTE ;player's ring count                       ;$D2AA
-    
-    .D2AB                       WORD ;UNKNOWN                                   ;$D2AB
-    .D2AD                       WORD ;UNKNOWN                                   ;$D2AD
-    .D2AF                       WORD ;UNKNOWN                                   ;$D2AF
-    .D2B1                       WORD ;UNKNOWN                                   ;$D2B1
-    .D2B3                       BYTE ;UNKNOWN                                   ;$D2B3
-    
-    .ACTIVESPRITECOUNT          BYTE ;number of hardware sprites "in use"       ;$D2B4
-    
-    .D2B5                       WORD ;UNKNOWN                                   ;$D2B5
-    .D2B7                       WORD ;UNKNOWN                                   ;$D2B7
-    .D2B9                       BYTE ;UNKNOWN                                   ;$D2B9
-    
-    .SCORE_MILLIONS             BYTE                                            ;$D2BA
-    .SCORE_THOUSANDS            BYTE                                            ;$D2BB
-    .SCORE_HUNDREDS             BYTE                                            ;$D2BC
-    .SCORE_TENS                 BYTE                                            ;$D2BD
-    
-    .LAYOUT_BUFFER              BYTE x 5                                        ;$D2BE
-    
-    ;UNKNOWN - probably text in RAM
-    .D2C3                       BYTE x 11                                       ;$D2C3
-    
-    .TIME_MINUTES               BYTE ;level timer - minutes                     ;$D2CE
-    .TIME_SECONDS               BYTE ;level timer - seconds                     ;$D2CF
-    .TIME_FRAMES                BYTE ;level timer - frames                      ;$D2D0
-    
-    .D2D1                       BYTE                                            ;UNUSED
-    
-    ;; the previous song played is checked during level load to avoid starting
-       the same song again (for example, when teleporting in Scrap Brain) ;;
-    .PREVIOUS_MUSIC             BYTE                                            ;$D2D2
-    
-    .D2D3                       BYTE ;UNKNOWN                                   ;$D2D3
-    
-    .LEVEL_SOLIDITY             BYTE                                            ;$D2D4
-    
-    .D2D5                       WORD ;UNKNOWN                                   ;$D2D5
-    .D2D7                       WORD ;UNKNOWN                                   ;$D2D7
-    .D2D9                       WORD ;UNKNOWN                                   ;$D2D9
-    
-    .WATERLINE                  BYTE                                            ;$D2DB
-    
-    .D2DC                       WORD ;UNKNOWN                                   ;$D2DC
-    .D2DE                       BYTE ;UNKNOWN                                   ;$D2DE
-    .D2DF                       BYTE ;UNKNOWN                                   ;$D2DF
-    .D2E0                       BYTE ;UNKNOWN                                   ;$D2E0
-    .D2E1                       BYTE ;UNKNOWN                                   ;$D2E1
-    .D2E2                       WORD ;UNKNOWN                                   ;$D2E2
-    .D2E4                       WORD ;UNKNOWN                                   ;$D2E4
-    .D2E6                       WORD ;UNKNOWN                                   ;$D2E6
-    .D2E8                       BYTE ;UNKNOWN                                   ;$D2E8
-    .D2E9                       WORD ;UNKNOWN                                   ;$D2E9
-    
-    .D2EB                       BYTE                                            ;UNUSED
-    
-    .D2EC                       BYTE ;used by boss objects                      ;$D2EC
-    .D2ED                       WORD ;UNKNOWN                                   ;$D2ED
-    
-    .D2EF                       BYTE x 3                                        ;UNUSED
-    
-    .D2F2                       BYTE ;used as temporary in :loadObjectLayout    ;$D2F2
-    .D2F3                       BYTE ;used by Sonic                             ;$D2F3
-    
-    .D2F4                       BYTE x 3                                        ;$D2F4
-    
-    .D2F7                       BYTE ;used by Sonic                             ;$D2F7
-    
-    .D2F8                       BYTE x 3                                        ;UNUSED
-    
-    .D2FB                       BYTE                                            ;$D2FB
-    ;; a copy of the level music index is kept so that the music can be started
-       again (?) after other sound events like invincibility ;;
-    .LEVEL_MUSIC                BYTE                                            ;$D2FC
-    .SCORE_1UP                  BYTE ;number of thousands of pts for exta life  ;$D2FD
-    .D2FE                       BYTE                                            ;$D2FE
-    .D2FF                       BYTE                                            ;$D2FF
-    
-    .D300                       BYTE x 2                                        ;UNUSED
-    
-    .D302                       BYTE                                            ;$D302
-    
-    .D303                       BYTE x 2                                        ;$D303
-    
-    ;these are a series of bit flags, each set assigns one bit per-level
-    .D305                       BYTE x 6     ;set by life monitor               ;$D305
-    .D30B                       BYTE x 6     ;set by emerald                    ;$D30B
-    .D311                       BYTE x 6     ;set by continue monitor           ;$D311
-    .D317                       BYTE x 6     ;set by switch                     ;$D317
-    
-    .D31D                       WORD                                            ;$D31D
-    .D31F                       WORD ;used by Sonic                             ;$D31F
-    .D321                       BYTE ;used by Sonic                             ;$D321
-    
-    .D322                       BYTE ;used in credits screen?                   ;$D322
-    
-    ;note: 11 bytes is typical of text storage
-    .D323                       BYTE x 11                                       ;UNUSED
-    
-    ;2-bytes per level, 19 levels (excluding warps and special stages)
-    .D32E                       WORD x 19                                       ;$D32E
-    
-    ;; the level's header is copied here, though little of it seems actually used;
-       other addresses are used as duplicates of these values. NOTE: 40 bytes are
-       copied instead of 37, the header was probably reduced during development) ;;
-    .LEVEL_HEADER               TYPE #levelHeader                               ;$D354
-                                ;.solidity                               ;$D354 ;UNUSED
-                                ;.floorWidth                             ;$D355 ;UNUSED
-                                ;.floorHeight                            ;$D357 ;UNUSED
-                                ;.levelLeft                              ;$D359 ;UNUSED
-                                ;.levelRight                             ;$D35B ;UNUSED
-                                ;.levelTop                               ;$D35D ;UNUSED
-                                ;.levelBottom                            ;$D35F ;UNUSED
-                                ;.startX                                 ;$D361 ;UNUSED
-                                ;.startY                                 ;$D362 ;UNUSED
-                                ;.floorLayout                            ;$D363 ;UNUSED
-                                ;.floorSize                              ;$D365 ;UNUSED
-                                ;.blockMapping                           ;$D367 ;UNUSED
-                                ;.levelArt                               ;$D369 ;UNUSED
-                                ;.spriteArt                              ;$D36B ;UNUSED
-                                ;.bank                                   ;$D36D ;UNUSED
-                                ;.initialPalette                         ;$D36E ;UNUSED
-                                ;.cycleSpeed                             ;$D36F ;UNUSED
-                                ;.cycleCount                             ;$D370 ;UNUSED
-                                ;.cyclePalette                           ;$D371 ;UNUSED
-                                ;.objectLayout                           ;$D372 ;UNUSED
-                                ;.scrollRingFlags                        ;$D374 ;UNUSED
-                                ;.underwaterFlag                         ;$D375 ;UNUSED
-                                ;.timeLightningFlags                     ;$D376 ;UNUSED
-                                ;.zero                                   ;$D377 ;UNUSED
-                                ;.music                                  ;$D378 ;UNUSED
-    
-    .D379                       BYTE x 3                                        ;UNUSED
-    
-    ;a list of the active mobs in the level?
-    .ACTIVEMOBS                 WORD x 32                                       ;$D37C
-    
-    ;a working-copy of the palette, for fade effects
-    .PALETTE                    BYTE x 32                                       ;$D3BC
-    
-    .D3DE                       BYTE x 32                                       ;UNUSED
+        ;; the floor layout (i.e. the tiles Sonic runs around on).
+           a 'level' is a sub-portion of this floor layout since sometimes multiple
+           levels are crammed into one layout (such as the special stages) ;;
+        .FLOORLAYOUT                BYTE x 4 KB                                             ;$C000
+        
+        ;X/Y/I data for the 64 sprites
+        .SPRITETABLE                BYTE x 64*3                                             ;$D000
+        
+        .D0C0                       BYTE x 64                                               ;UNUSED
+        
+        ;; when the screen scrolls and new tiles need to be filled in, they are pulled from
+           these caches which have the necessary tiles already in horizontal / vertical
+           order for speed ;;
+        ;(NOTE: though these are 128 bytes each, I don't think that much is used)
+        .OVERSCROLLCACHE_VERT       BYTE x 128                                              ;$D100
+        .OVERSCROLLCACHE_HORZ       BYTE x 128                                              ;$D180
+        
+        ;; throughout the codebase, IY is used as a shorthand to $D200 where many
+           commonly used RAM variables exist. therefore these use the `[iy+#VARS.abc]`
+           form of addressing. for the sake of completeness, we'll also define the
+           absolute location of these variables too, i.e. `$.VARS.abc` ;;
+        .VARS                       TYPE #vars                                              ;$D200
+        
+        ;; these temporary variables are reused throughout, some times for passing
+           extra parameters to a function and sometimes as extra working space within
+           a function ;;
+        .TEMP1                      BYTE                                                    ;$D20E
+        .TEMP2                      BYTE                                                    ;$D20F
+        .TEMP3                      WORD                                                    ;$D210
+        .TEMP4                      BYTE                                                    ;$D212
+        .TEMP5                      BYTE                                                    ;$D213
+        .TEMP6                      BYTE                                                    ;$D214
+        .TEMP7                      BYTE                                                    ;$D215
+        
+        .D216                       WORD ;UNKNOWN                                           ;$D216
+        
+        .VDPREGISTER_0              BYTE ;RAM cache of the VDP register 0                   ;$D218
+        .VDPREGISTER_1              BYTE ;RAM cache of the VDP register 1                   ;$D219
+        
+        ;though the code copies the VDP registers here, these ones are not recalled
+        .VDPREGISTER_2              BYTE                                                    ;$D21A
+        .VDPREGISTER_3              BYTE                                                    ;$D21B
+        .VDPREGISTER_4              BYTE                                                    ;$D21C
+        .VDPREGISTER_5              BYTE                                                    ;$D21D
+        .VDPREGISTER_6              BYTE                                                    ;$D21E
+        .VDPREGISTER_7              BYTE                                                    ;$D21F
+        .VDPREGISTER_8              BYTE                                                    ;$D220
+        .VDPREGISTER_9              BYTE                                                    ;$D221
+        .VDPREGISTER_10             BYTE                                                    ;$D222
+        
+        .FRAMECOUNT                 WORD ;a 16-bit continual frame count                    ;$D223
+        
+        ;referenced only by unused function ":unused_0323"
+        .UNUSED_D225                WORD                                                    ;$D225
+        .UNUSED_D227                WORD                                                    ;$D227
+        .UNUSED_D229                WORD                                                    ;$D229
+        
+        ;; `:loadPaletteOnInterrupt` and `:loadPaletteFromInterrupt`
+           use these to pass parameters ;;
+        .LOADPALETTE_ADDRESS        WORD                                                    ;$D22B
+        .D22D                       WORD                                                    ;UNUSED
+        .LOADPALETTE_FLAGS          BYTE                                                    ;$D22F
+        
+        ;; `:loadPalette` uses these to pass the addresses of the
+           tile/sprite palettes to load ;;
+        .LOADPALETTE_TILE           WORD                                                    ;$D230
+        .LOADPALETTE_SPRITE         WORD                                                    ;$D232
+        
+        .D234                       BYTE                                                    ;UNUSED
+        
+        ;these keep track of which bank is in which slot; slot 0 is always bank 0
+        .SLOT1                      BYTE                                                    ;$D235
+        .SLOT2                      BYTE                                                    ;$D236
+        
+        .D237                       BYTE                                                    ;UNUSED
+        
+        .LEVEL_FLOORWIDTH           WORD ;width of the floor layout in blocks               ;$D238
+        .LEVEL_FLOORHEIGHT          WORD ;height of the floor layout in blocks              ;$D23A
+        
+        .SPRITETABLE_ADDR           WORD ;pointer to which sprite table to use              ;$D23C
+        
+        .CURRENT_LEVEL              BYTE                                                    ;$D23E
+        
+        .D23F                       BYTE ;UNKNOWN                                           ;$D23F
+        .D240                       WORD ;UNKNOWN                                           ;$D240
+        .D242                       WORD ;UNKNOWN                                           ;$D242
+        .D244                       WORD ;UNKNOWN                                           ;$D244
+        
+        ;NOTE: some code accesses this value using two-bytes, not one!?
+        .LIVES                      BYTE ;player's lives count                              ;$D246
+        
+        .RASTERSPLIT_STEP           BYTE                                                    ;$D247
+        .RASTERSPLIT_LINE           BYTE                                                    ;$D248
+        
+        .D249                       BYTE x 6                                                ;UNUSED
+        
+        ;absolute address of the block mappings when in page 1 (i.e. $4000)
+        .BLOCKMAPPINGS              WORD                                                    ;$D24F
+        
+        .VDPSCROLL_HORZ             BYTE                                                    ;$D251
+        .VDPSCROLL_VERT             BYTE                                                    ;$D252
+        
+        .D253                       BYTE x 4                                                ;UNUSED
+        
+        .BLOCK_X                    BYTE ;number of blocks across the camera is             ;$D257
+        .BLOCK_Y                    BYTE ;number of blocks down the camera is               ;$D258
+        
+        .D259                       BYTE                                                    ;UNUSED
+        
+        .CAMERA_X                   WORD                                                    ;$D25A
+        .D25C                       BYTE ;UNKNOWN?? (read as $D25C/D)                       ;$D25C
+        .CAMERA_Y                   WORD                                                    ;$D25D
+        
+        .D25F                       WORD ;UNKNOWN                                           ;$D25F
+        .D261                       WORD ;UNKNOWN                                           ;$D261
+        .D263                       WORD ;UNKNOWN                                           ;$D263
+        .D265                       WORD ;UNKNOWN                                           ;$D265
+        .D267                       WORD ;UNKNOWN                                           ;$D267
+        .D269                       WORD ;UNKNOWN                                           ;$D269
+        .D26B                       WORD ;UNKNOWN                                           ;$D26B
+        .D26D                       WORD ;UNKNOWN                                           ;$D26D
+        
+        .CAMERA_X_LEFT              WORD ;used to check if the camera went left             ;$D26F
+        .CAMERA_Y_UP                WORD ;used to check if the camera went up               ;$D271
+        
+        .LEVEL_LEFT                 WORD                                                    ;$D273
+        ;; prevents the level scrolling past this left-most point (i.e. sets an
+           effective right-hand limit to the level -- this + width of the screen) ;;
+        .LEVEL_RIGHT                WORD                                                    ;$D275
+        .LEVEL_TOP                  WORD                                                    ;$D277
+        .LEVEL_BOTTOM               WORD                                                    ;$D279
+        
+        ;a point to move the camera to
+        .CAMERA_X_GOTO              WORD                                                    ;$D27B
+        .CAMERA_Y_GOTO              WORD                                                    ;$D27D
+        
+        .D27F                       BYTE ;UNKNOWN ($D27F/80)                                ;$D27F
+        .D280                       BYTE ;UNKNOWN ($D280/1)                                 ;$D280
+        .D281                       BYTE ;UNKNOWN ($D281/2)                                 ;$D281
+        .D282                       BYTE ;UNKNOWN ($D282/3)                                 ;$D282
+        .D283                       BYTE ;UNKNOWN                                           ;$D283
+        .D284                       BYTE ;UNKNOWN ($D284/5)                                 ;$D284
+        .D285                       BYTE ;UNKNOWN ($D285/6)                                 ;$D285
+        .D286                       BYTE ;UNKNOWN                                           ;$D286 
+        .D287                       BYTE ;UNKNOWN ($D287/8)                                 ;$D287
+        .D288                       BYTE ;UNKNOWN                                           ;$D288
+        .D289                       BYTE ;UNKNOWN - looks like flags                        ;$D289
+        .D28A                       BYTE ;UNKNOWN                                           ;$D28A
+        .D28B                       BYTE ;UNKNOWN                                           ;$D28B
+        .D28C                       BYTE ;UNKNOWN                                           ;$D28C
+        .D28D                       BYTE ;UNKNOWN ($D28D/E)                                 ;$D28D
+        .D28E                       BYTE ;UNKNOWN                                           ;$D28E
+        
+        .SONIC_CURRENT_FRAME        WORD                                                    ;$D28F
+        .SONIC_PREVIOUS_FRAME       WORD                                                    ;$D291
+        
+        .RING_CURRENT_FRAME         WORD                                                    ;$D293
+        .RING_PREVIOUS_FRAME        WORD                                                    ;$D295
+        
+        .D297                       BYTE ;UNKNOWN                                           ;$D297
+        .D298                       BYTE ;UNKNOWN ($D298/9)                                 ;$D298
+        .IDLE_TIME                  WORD ;UNKNOWN                                           ;$D299
+        .D29B                       WORD ;UNKNOWN                                           ;$D29B
+        .D29D                       WORD ;UNKNOWN                                           ;$D29D
+        
+        .TIME                       WORD ;the level's time                                  ;$D29F
+        
+        .D2A1                       BYTE ;UNKNOWN ($D2A1/2)                                 ;$D2A1
+        .D2A2                       BYTE ;UNKNOWN ($D2A2/3)                                 ;$D2A2
+        .D2A3                       BYTE ;UNKNOWN                                           ;$D2A3
+        
+        .CYCLEPALETTE_COUNTER       BYTE ;counter for applying the speed                    ;$D2A4
+        .CYCLEPALETTE_SPEED         BYTE ;number of frames between each palette             ;$D2A5
+        
+        .CYCLEPALETTE_INDEX         WORD ;current palette in the cycle palette              ;$D2A6
+        .CYCLEPALETTE_POINTER       WORD ;address where cycle palette begins                ;$D2A8
+        
+        .RINGS                      BYTE ;player's ring count                               ;$D2AA
+        
+        .D2AB                       WORD ;UNKNOWN                                           ;$D2AB
+        .D2AD                       WORD ;UNKNOWN                                           ;$D2AD
+        .D2AF                       WORD ;UNKNOWN                                           ;$D2AF
+        .D2B1                       WORD ;UNKNOWN                                           ;$D2B1
+        .D2B3                       BYTE ;UNKNOWN                                           ;$D2B3
+        
+        .ACTIVESPRITECOUNT          BYTE ;number of hardware sprites "in use"               ;$D2B4
+        
+        .D2B5                       WORD ;UNKNOWN                                           ;$D2B5
+        .D2B7                       WORD ;UNKNOWN                                           ;$D2B7
+        .D2B9                       BYTE ;UNKNOWN                                           ;$D2B9
+        
+        .SCORE_MILLIONS             BYTE                                                    ;$D2BA
+        .SCORE_THOUSANDS            BYTE                                                    ;$D2BB
+        .SCORE_HUNDREDS             BYTE                                                    ;$D2BC
+        .SCORE_TENS                 BYTE                                                    ;$D2BD
+        
+        .LAYOUT_BUFFER              BYTE x 5                                                ;$D2BE
+        
+        ;UNKNOWN - probably text in RAM
+        .D2C3                       BYTE x 11                                               ;$D2C3
+        
+        .TIME_MINUTES               BYTE ;level timer - minutes                             ;$D2CE
+        .TIME_SECONDS               BYTE ;level timer - seconds                             ;$D2CF
+        .TIME_FRAMES                BYTE ;level timer - frames                              ;$D2D0
+        
+        .D2D1                       BYTE                                                    ;UNUSED
+        
+        ;; the previous song played is checked during level load to avoid starting
+           the same song again (for example, when teleporting in Scrap Brain) ;;
+        .PREVIOUS_MUSIC             BYTE                                                    ;$D2D2
+        
+        .D2D3                       BYTE ;UNKNOWN                                           ;$D2D3
+        
+        .LEVEL_SOLIDITY             BYTE                                                    ;$D2D4
+        
+        .D2D5                       WORD ;UNKNOWN                                           ;$D2D5
+        .D2D7                       WORD ;UNKNOWN                                           ;$D2D7
+        .D2D9                       WORD ;UNKNOWN                                           ;$D2D9
+        
+        .WATERLINE                  BYTE                                                    ;$D2DB
+        
+        .D2DC                       WORD ;UNKNOWN                                           ;$D2DC
+        .D2DE                       BYTE ;UNKNOWN                                           ;$D2DE
+        .D2DF                       BYTE ;UNKNOWN                                           ;$D2DF
+        .D2E0                       BYTE ;UNKNOWN                                           ;$D2E0
+        .D2E1                       BYTE ;UNKNOWN                                           ;$D2E1
+        .D2E2                       WORD ;UNKNOWN                                           ;$D2E2
+        .D2E4                       WORD ;UNKNOWN                                           ;$D2E4
+        .D2E6                       WORD ;UNKNOWN                                           ;$D2E6
+        .D2E8                       BYTE ;UNKNOWN                                           ;$D2E8
+        .D2E9                       WORD ;UNKNOWN                                           ;$D2E9
+        
+        .D2EB                       BYTE                                                    ;UNUSED
+        
+        .D2EC                       BYTE ;used by boss objects                              ;$D2EC
+        .D2ED                       WORD ;UNKNOWN                                           ;$D2ED
+        
+        .D2EF                       BYTE x 3                                                ;UNUSED
+        
+        .D2F2                       BYTE ;used as temporary in :loadObjectLayout            ;$D2F2
+        .D2F3                       BYTE ;used by Sonic                                     ;$D2F3
+        
+        .D2F4                       BYTE x 3                                                ;$D2F4
+        
+        .D2F7                       BYTE ;used by Sonic                                     ;$D2F7
+        
+        .D2F8                       BYTE x 3                                                ;UNUSED
+        
+        .D2FB                       BYTE                                                    ;$D2FB
+        ;; a copy of the level music index is kept so that the music can be started
+           again (?) after other sound events like invincibility ;;
+        .LEVEL_MUSIC                BYTE                                                    ;$D2FC
+        .SCORE_1UP                  BYTE ;number of thousands of pts for exta life          ;$D2FD
+        .D2FE                       BYTE                                                    ;$D2FE
+        .D2FF                       BYTE                                                    ;$D2FF
+        
+        .D300                       BYTE x 2                                                ;UNUSED
+        
+        .D302                       BYTE                                                    ;$D302
+        
+        .D303                       BYTE x 2                                                ;$D303
+        
+        ;these are a series of bit flags, each set assigns one bit per-level
+        .D305                       BYTE x 6     ;set by life monitor                       ;$D305
+        .D30B                       BYTE x 6     ;set by emerald                            ;$D30B
+        .D311                       BYTE x 6     ;set by continue monitor                   ;$D311
+        .D317                       BYTE x 6     ;set by switch                             ;$D317
+        
+        .D31D                       WORD                                                    ;$D31D
+        .D31F                       WORD ;used by Sonic                                     ;$D31F
+        .D321                       BYTE ;used by Sonic                                     ;$D321
+        
+        .D322                       BYTE ;used in credits screen?                           ;$D322
+        
+        ;note: 11 bytes is typical of text storage
+        .D323                       BYTE x 11                                               ;UNUSED
+        
+        ;2-bytes per level, 19 levels (excluding warps and special stages)
+        .D32E                       WORD x 19                                               ;$D32E
+        
+        ;; the level's header is copied here, though little of it seems actually used;
+           other addresses are used as duplicates of these values. NOTE: 40 bytes are
+           copied instead of 37, the header was probably reduced during development) ;;
+        .LEVEL_HEADER               TYPE #levelHeader                                       ;$D354
+                                    ;.solidity                                       ;$D354 ;UNUSED
+                                    ;.floorWidth                                     ;$D355 ;UNUSED
+                                    ;.floorHeight                                    ;$D357 ;UNUSED
+                                    ;.levelLeft                                      ;$D359 ;UNUSED
+                                    ;.levelRight                                     ;$D35B ;UNUSED
+                                    ;.levelTop                                       ;$D35D ;UNUSED
+                                    ;.levelBottom                                    ;$D35F ;UNUSED
+                                    ;.startX                                         ;$D361 ;UNUSED
+                                    ;.startY                                         ;$D362 ;UNUSED
+                                    ;.floorLayout                                    ;$D363 ;UNUSED
+                                    ;.floorSize                                      ;$D365 ;UNUSED
+                                    ;.blockMapping                                   ;$D367 ;UNUSED
+                                    ;.levelArt                                       ;$D369 ;UNUSED
+                                    ;.spriteArt                                      ;$D36B ;UNUSED
+                                    ;.bank                                           ;$D36D ;UNUSED
+                                    ;.initialPalette                                 ;$D36E ;UNUSED
+                                    ;.cycleSpeed                                     ;$D36F ;UNUSED
+                                    ;.cycleCount                                     ;$D370 ;UNUSED
+                                    ;.cyclePalette                                   ;$D371 ;UNUSED
+                                    ;.objectLayout                                   ;$D372 ;UNUSED
+                                    ;.scrollRingFlags                                ;$D374 ;UNUSED
+                                    ;.underwaterFlag                                 ;$D375 ;UNUSED
+                                    ;.timeLightningFlags                             ;$D376 ;UNUSED
+                                    ;.zero                                           ;$D377 ;UNUSED
+                                    ;.music                                          ;$D378 ;UNUSED
+        
+        .D379                       BYTE x 3                                                ;UNUSED
+        
+        ;a list of the active mobs in the level?
+        .ACTIVEMOBS                 WORD x 32                                               ;$D37C
+        
+        ;a working-copy of the palette, for fade effects
+        .PALETTE                    BYTE x 32                                               ;$D3BC
+        
+        .D3DE                       BYTE x 32                                               ;UNUSED
 ]

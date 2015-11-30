@@ -68,6 +68,7 @@ PARAMS  IY`vars         ``Address of the common variables (used throughout)
         
         ;level time HUD / lightning flags
         ld      A`pauseStatus       [IY`vars+#vars.timeLightningFlags]
+        ;TODO: use a defined bit mask here
         xor     %00001000                                   ;flip bit 3 (the pause bit)
         ;save it back
         ld      [IY`vars+#vars.timeLightningFlags]  A`pauseStatus
@@ -493,11 +494,11 @@ RETURN  IY`vars         ``Address of the common variables (used throughout)
         ld      HL                  $.FLOORLAYOUT           ;starting from $C000,
         ld      DE                  $.FLOORLAYOUT+1         ;and copying one byte to the next byte,
         ld      BC                  $1FEF                   ;copy 8'175 bytes ($C000-$DFEF),
-        ld      [HL]                L                       ;using a value of 0 (the #$00 from the $C000)
+        ld      [HL]                L                       ;using a value of 0 (the $00 from $C000)
         ldir                                                ;--it's faster to read a register than RAM
         
-        ld      SP                  HL                      ;place the stack at the top of RAM ($DFEF)
-                                                            ;(note that LDIR increased the HL register)
+        ld      SP                  HL                      ;place the stack atop the RAM ($DFEF)
+                                                            ;(note LDIR increased the HL register)
         
         ;initialize the VDP:
         ld      HL                  :initVDPRegisterValues
@@ -605,7 +606,7 @@ TABLE   :initVDPRegisterValues                              SECTION ::interrupts
             ;..x.....    enable vsync interrupt
             ;.x......    disable screen (no display)                    
             ;x.......    unknown                                                    ;these caches
-                                                                                    ;are not used
+                                                                                     ;are not used
         BYTE $FF        ;VDP Reg#2: place screen at VRAM:$3800                              ;$D21A
         BYTE $FF        ;VDP Reg#3: unused                                                  ;$D21B
         BYTE $FF        ;VDP Reg#4: unused                                                  ;$D21C
@@ -828,8 +829,8 @@ PARAMS  A               ;bank number for page 1, A+1 will be used as the bank nu
         or      C
         jp      nz  ._1
         
-        ;disable interrupts so that stuff does not get
-         ;changed mid-way through restoring the pages
+        ;; disable interrupts so that stuff does not get
+           changed mid-way through restoring the pages ;;
 ._5     di
         
         ;restore bank numbers

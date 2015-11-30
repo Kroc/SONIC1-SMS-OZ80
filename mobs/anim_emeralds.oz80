@@ -8,84 +8,87 @@
 
 ;all emeralds animation
 
-PROC    :mob_anim_emeralds                      SECTION ::mobs                  ;$BF4C
-        ;==============================================================================
+PROC    :mob_anim_emeralds                                  SECTION ::mobs                  ;$BF4C
+        ;===========================================================================================
 PARAMS  IX`mob          ``Address of the current mob being processed
 {
-        set     5,[ix+#mob.flags]               ;mob does not collide with the floor
-        ld      hl,$5400                        ;$15400 - emerald image
+        set     5   [IX`mob+#mob.flags]                     ;mob does not collide with the floor
+        
+        ;; load the emerald image into VRAM,
+           not more than one power-up can be on screen at a time ;;
+        ld      HL                  $5400                   ;$15400 - emerald image
         call    ::main:loadPowerUpIcon
         
-        bit     0,[ix+#mob.flags]
-        jr      nz,._1
+        bit     0   [IX`mob+#mob.flags]
+        jr      nz  ._1
         
-        xor     a`zero                          ;set A to 0
-        ld      [ix+#mob.spriteLayout+0],a`zero
-        ld      [ix+#mob.spriteLayout+1],a`zero
-        ld      [ix+#mob.Xspeed+0],a`zero
-        ld      [ix+#mob.Xspeed+1],a`zero
-        ld      [ix+#mob.Xdirection],a`zero
+        xor     A`zero                                      ;set A to 0
+        ld      [IX`mob+#mob.spriteLayout+0]    A`zero
+        ld      [IX`mob+#mob.spriteLayout+1]    A`zero
+        ld      [IX`mob+#mob.Xspeed+0]          A`zero
+        ld      [IX`mob+#mob.Xspeed+1]          A`zero
+        ld      [IX`mob+#mob.Xdirection]        A`zero
         
-        inc     [ix+#mob.unknown11]
-        ld      a,[ix+#mob.unknown11]
+        inc     [IX`mob+#mob.unknown11]
+        ld      A                   [IX`mob+#mob.unknown11]
         cp      $50
         ret     c
-        set     0,[ix+#mob.flags]
-        ld      [ix+#mob.unknown11],$64
+        set     0   [IX`mob+#mob.flags]
+        ld      [IX`mob+#mob.unknown11] $64
         ret
         
-._1     ld      a,[ix+#mob.unknown11]
-        and     a
-        jr      z,._2
-        dec     [ix+#mob.unknown11]
+._1     ld      A                   [IX`mob+#mob.unknown11]
+        and     A
+        jr      z   ._2
+        dec     [IX`mob+#mob.unknown11]
         jr      ._3
         
-._2     ld      [ix+#mob.Yspeed+0],$80
-        ld      [ix+#mob.Yspeed+1],$ff
-        ld      [ix+#mob.Ydirection],$ff
-._3     ld      hl,._bff1
-        ld      a,[$.FRAMECOUNT]
+._2     ld      [IX`mob+#mob.Yspeed+0]      $80
+        ld      [IX`mob+#mob.Yspeed+1]      $FF
+        ld      [IX`mob+#mob.Ydirection]    $FF
+._3     ld      HL                  ._bff1
+        ld      A                   [$.FRAMECOUNT]
         rrca    
-        jr      nc,._4
-        ld      a,[iy+#vars.spriteUpdateCount]
-        ld      hl,[$.SPRITETABLE_ADDR]
-        push    af
-        push    hl
-        ld      hl,$.SPRITETABLE
-        ld      [$.SPRITETABLE_ADDR],hl
-        ld      l,[ix+#mob.Y+0]
-        ld      h,[ix+#mob.Y+1]
-        ld      de,[$.CAMERA_Y]
-        and     a
-        sbc     hl,de
-        ex      de,hl
-        ld      l,[ix+#mob.X+0]
-        ld      h,[ix+#mob.X+1]
-        ld      bc,[$.CAMERA_X]
-        and     a
-        sbc     hl,bc
-        ld      bc,._bff1                       ;address of sprite layout
+        jr      nc  ._4
+        ld      A                   [IY`vars+#vars.spriteUpdateCount]
+        ld      HL                  [$.SPRITETABLE_ADDR]
+        push    AF
+        push    HL
+        ld      HL                  $.SPRITETABLE
+        ld      [$.SPRITETABLE_ADDR]    HL
+        ld      L                   [IX`mob+#mob.Y+0]
+        ld      H                   [IX`mob+#mob.Y+1]
+        ld      DE                  [$.CAMERA_Y]
+        and     A
+        sbc     HL                  DE
+        ex      DE                  HL
+        ld      L                   [IX`mob+#mob.X+0]
+        ld      H                   [IX`mob+#mob.X+1]
+        ld      BC                  [$.CAMERA_X]
+        and     A
+        sbc     HL                  BC
+        ld      BC                  ._bff1                  ;address of sprite layout
         call    :processSpriteLayout
-        pop     hl
-        pop     af
-        ld      [$.SPRITETABLE_ADDR],hl
-        ld      [iy+#vars.spriteUpdateCount],a
-._4     ld      l,[ix+#mob.Y+0]
-        ld      h,[ix+#mob.Y+1]
-        ld      de,$0020
-        add     hl,de
-        ld      de,[$.CAMERA_Y]
-        and     a
-        sbc     hl,de
+        pop     HL
+        pop     AF
+        ld      [$.SPRITETABLE_ADDR]    HL
+        ld      [IY`vars+#vars.spriteUpdateCount]   A
+._4     ld      L                   [IX`mob+#mob.Y+0]
+        ld      H                   [IX`mob+#mob.Y+1]
+        ld      DE                  $0020
+        add     HL                  DE
+        ld      DE                  [$.CAMERA_Y]
+        and     A
+        sbc     HL                  DE
         ret     nc
-        ld      a,$01
-        ld      [$.D289],a
-        set     2,[iy+#vars.unknown_0D]
+        ld      A                   $01
+        ld      [$.D289]            A
+        set     2   [IY`vars+#vars.unknown_0D]
         ret
 
 ;sprite layout
-._bff1  BYTE $5C, $5E, $FF, $FF, $FF, $FF
-        BYTE $FF
+._bff1  BYTE    $5C $5E $FF $FF $FF $FF
+        BYTE    $FF
 
-        BYTE $49, $43, $20, $54, $48, $45, $20, $48
+        BYTE    $49 $43 $20 $54 $48 $45 $20 $48
 }
