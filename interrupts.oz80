@@ -11,13 +11,13 @@
    and the interrupt handling code ;;
 
 START                                                                                       ;$0000
+;===================================================================================================
 {
         di                                                  ;disable interrupts
         im      1                                           ;; set the interrupt mode to 1 --
                                                                $0038 will be called at 50/60Hz ;;
-    
-.wait
-        ;wait for the scanline to reach 176 (no idea why)
+        
+.wait   ;wait for the scanline to reach 176 (no idea why)
         in      A`scanline          [$_SMS_PORTS.SCANLINE]
         cp      176
         jr      nz  .wait
@@ -27,28 +27,28 @@ START                                                                           
 
 
 PROC    :rst_playMusic                                      INTERRUPT $18                   ;$0018
-        ;===========================================================================================
+;===================================================================================================
 PARAMS  A`musicID
-{
+{       ;-------------------------------------------------------------------------------------------
         jp      ::interrupts:playMusic
 }
 
 PROC    :rst_muteSound                                      INTERRUPT $20                   ;$0020
-        ;===========================================================================================
+;===================================================================================================
 {
         jp      ::interrupts:muteSound
 }
 
 PROC    :rst_playSFX                                        INTERRUPT $28                   ;$0028
-        ;===========================================================================================
+;===================================================================================================
 PARAMS  A`sfxID
-{
+{       ;-------------------------------------------------------------------------------------------
         jp      ::interrupts:playSFX
 }
 
 ;the hardware interrupt generator jumps here
 PROC    :IRQ                                                INTERRUPT $38                   ;$0038
-        ;===========================================================================================
+;===================================================================================================
 {
         jp      ::interrupts:interruptHandler
     
@@ -58,11 +58,11 @@ PROC    :IRQ                                                INTERRUPT $38       
 }
 
 PROC    :pause                                              INTERRUPT $66                   ;$0066
-        ;===========================================================================================
+;===================================================================================================
 HELP    ``Pressing the Pause button causes an interrupt and jumps to $0066
         
 PARAMS  IY`vars         ``Address of the common variables (used throughout)
-{
+{       ;-------------------------------------------------------------------------------------------
         di                                                  ;disable interrupts
         push    AF`stack
         
@@ -80,9 +80,9 @@ PARAMS  IY`vars         ``Address of the common variables (used throughout)
 }
 
 PROC    :interruptHandler                                   SECTION ::interrupts            ;$0073
-        ;===========================================================================================
+;===================================================================================================
 PARAMS  IY`vars         ``Address of the common variables (used throughout)
-{       
+{       ;-------------------------------------------------------------------------------------------
         di                                                  ;disable interrupts during interrupt!
         
         ;; push everything we're going to use to the stack so that when we return from the
@@ -147,7 +147,7 @@ PARAMS  IY`vars         ``Address of the common variables (used throughout)
         
         ;if the main thread is not held up at the `:waitForInterrupt` routine
         bit     0   [IY`vars+#vars.flags0]
-        call    nz  :_LABEL_1A0_18
+        call    nz  :loadPaletteFromInterrupt_water
         ;and if it is...
         bit     0   [IY`vars+#vars.flags0]
         call    z   :_LABEL_F7_25
@@ -189,7 +189,7 @@ PARAMS  IY`vars         ``Address of the common variables (used throughout)
 }
 
 PROC    :setJoypadButtonB                                   SECTION ::interrupts            ;$00F2
-        ;-------------------------------------------------------------------------------------------
+;===================================================================================================
 PARAMS  IY`vars         ``Address of the common variables (used throughout)
 {
         res     5   [IY`vars+#vars.joypad]                  ;set joypad button 2 as on
@@ -197,9 +197,9 @@ PARAMS  IY`vars         ``Address of the common variables (used throughout)
 }
 
 PROC    :_LABEL_F7_25                                       SECTION ::interrupts            ;$00F7
-        ;-------------------------------------------------------------------------------------------
+;===================================================================================================
 PARAMS  IY`vars         ``Address of the common variables (used throughout)
-{       
+{       ;-------------------------------------------------------------------------------------------
         ;blank the screen (remove bit 6 of VDP register 1)
         ld      A`vdpData           [$.VDPREGISTER_1]       ;get our cache value from RAM
         and     %10111111                                   ;remove bit 6
@@ -226,8 +226,8 @@ PARAMS  IY`vars         ``Address of the common variables (used throughout)
         bit     5   [IY`vars+#vars.flags0]                    
         call    nz  :loadPaletteFromInterrupt
         
-        ;turn the screen back on 
-        ;(or if it was already blank before this function, leave it blank)
+        ;; turn the screen back on 
+          (or if it was already blank before this function, leave it blank) ;;
         ld      A`vdpData                   [$.VDPREGISTER_1]
         out     [$_SMS_PORTS.VDP.CONTROL]   A`vdpData
         ld      A`vdpControl                !VDP_REGISTER_1
@@ -240,8 +240,8 @@ PARAMS  IY`vars         ``Address of the common variables (used throughout)
         ld      [$_SMS.MAPPER.SLOT2]    A`bank
         ld      [$.SLOT2]               A`bank
         
-        ;does the Sonic sprite need updating?
-        ;(the particular frame of animation is copied to the VRAM)
+        ;; does the Sonic sprite need updating?
+           (the particular frame of animation is copied to the VRAM) ;;
         bit     7   [IY`vars+#vars.timeLightningFlags]
         call    nz  ::mobs:updateSonicSpriteFrame
         
@@ -271,13 +271,13 @@ PARAMS  IY`vars         ``Address of the common variables (used throughout)
 }
         
 PROC    :loadPaletteFromInterrupt                           SECTION ::interrupts            ;$0174
-        ;-------------------------------------------------------------------------------------------
+;===================================================================================================
         ;load a palette using the parameters set by ':loadPaletteOnInterrupt'
         
 PARAMS  IY`vars                 ``Address of the common variables (used throughout)
         $.LOADPALETTE_ADDRESS   ;address to the palette data
         $.LOADPALETTE_FLAGS     ;flags to load tile / sprite palettes or both
-{       
+{       ;-------------------------------------------------------------------------------------------
         ld      A`bank                  1
         ld      [$_SMS.MAPPER.SLOT1]    A`bank
         ld      [$.SLOT1]               A`bank
@@ -300,16 +300,18 @@ PARAMS  IY`vars                 ``Address of the common variables (used througho
         res     3   [IY`vars+#vars.flags0]                  ;unset flag so it doesn't happen again
         ret
         
+        ;-------------------------------------------------------------------------------------------
+        
         ;; when the level is underwater, different logic controls loading the palette
            as we have to deal with the water line ;;
-._1     call    :loadPaletteFromInterrupt_water
+._1     call    :loadPaletteFromInterrupt_water.do
         ret
 }
 
-PROC    :_LABEL_1A0_18                                      SECTION ::interrupts            ;$10AD
-        ;-------------------------------------------------------------------------------------------
+PROC    :loadPaletteFromInterrupt_water                     SECTION ::interrupts            ;$10AD
+;===================================================================================================
 PARAMS  IY`vars         ``Address of the common variables (used throughout)
-{       
+{       ;-------------------------------------------------------------------------------------------
         bit     7   [IY`vars+#vars.flags6]                  ;check the underwater flag
         ret     z                                           ;if off, leave now
         
@@ -326,17 +328,8 @@ PARAMS  IY`vars         ``Address of the common variables (used throughout)
         ld      B                   $00
 .nop    nop
         djnz    .nop
-    
-        ;NOTE: fall through the procedure below...
-}
-
-PROC    :loadPaletteFromInterrupt_water         SECTION ::interrupts                        ;$01BA
-        ;-------------------------------------------------------------------------------------------
-        ;called only from `loadPaletteFromInterrupt`
-
-PARAMS  IY`vars         ``Address of the common variables (used throughout)
-{       
-        ;get the position of the water line on screen
+        
+.do     ;get the position of the water line on screen                                       ;$01BA
         ld      A`waterline         [$.WATERLINE]
         and     A`waterline
         jr      z   ._2                                     ;is it 0? (above the screen)
@@ -345,7 +338,7 @@ PARAMS  IY`vars         ``Address of the common variables (used throughout)
         
         ;below water:
         ;-------------------------------------------------------------------------------------------
-        ;below the water line a fixed palette is used without cycles
+        ;below the water line a fixed palette is used without colour cycles
         
         ;; select the palette:
            labyrinth Act 1 & 2 share an underwater palette and Labyrinth Act 3
@@ -384,10 +377,10 @@ PARAMS  IY`vars         ``Address of the common variables (used throughout)
 }
 
 PROC    :doRasterSplit                                      SECTION ::interrupts            ;$01F2
-        ;-------------------------------------------------------------------------------------------
+;===================================================================================================
 PARAMS  IY`vars         ``Address of the common variables (used throughout)
         A`step          ;the raster split step number (counts down from 3)
-{       
+{       ;-------------------------------------------------------------------------------------------
         ;step 1?
         cp      1
         jr      z   ._2
@@ -462,22 +455,22 @@ PARAMS  IY`vars         ``Address of the common variables (used throughout)
 }
 
 TABLE   :S1_UnderwaterPalette                               SECTION ::interrupts            ;$024B
-        ;===========================================================================================
+;===================================================================================================
 {
 .tile   BYTE    $10 $14 $14 $18 $35 $34 $2C $39 $21 $20 $1E $09 $04 $1E $10 $3F
 .sprite BYTE    $00 $20 $35 $2E $29 $3A $00 $3F $14 $29 $3A $14 $3E $3A $19 $25
 }
 TABLE   :S1_UnderwaterPalette_Boss                          SECTION ::interrupts            ;$026B
-        ;===========================================================================================
+;===================================================================================================
 {
 .tile   BYTE    $10 $14 $14 $18 $35 $34 $2C $39 $21 $20 $1E $09 $04 $1E $10 $3F
 .sprite BYTE    $10 $20 $35 $2E $29 $3A $00 $3F $24 $3D $1F $17 $14 $3A $19 $00
 }
 
 PROC    :init                                               SECTION ::interrupts            ;$028B
-        ;===========================================================================================
+;===================================================================================================
 RETURN  IY`vars         ``Address of the common variables (used throughout)
-{       
+{       ;-------------------------------------------------------------------------------------------
         ;tell the SMS the cartridge has no RAM and to use ROM banking
         ld      A                   %10000000
         ld      [$_SMS.MAPPER]      A
@@ -532,11 +525,11 @@ RETURN  IY`vars         ``Address of the common variables (used throughout)
 }
 
 PROC    :playMusic                                          SECTION ::interrupts            ;$02D7
-        ;===========================================================================================
+;===================================================================================================
         ;the `rst $18` instruction ends up here
         
 PARAMS  A`songIndex     ;index number of song to play
-{       
+{       ;-------------------------------------------------------------------------------------------
         di                                                  ;disable interrupts
         push    AF`songIndex
         
@@ -556,7 +549,7 @@ PARAMS  A`songIndex     ;index number of song to play
 }
 
 PROC    :muteSound                                          SECTION ::interrupts            ;$02ED
-        ;===========================================================================================
+;===================================================================================================
         ;the `rst $20` instruction ends up here
 {
         di                                                  ;disable interrupts
@@ -573,10 +566,10 @@ PROC    :muteSound                                          SECTION ::interrupts
 }
 
 PROC    :playSFX                                            SECTION ::interrupts            ;$02FE
-        ;===========================================================================================
+;===================================================================================================
         ;the `rst $28` instruction ends up here
 PARAMS  A`SFXIndex
-{
+{       ;-------------------------------------------------------------------------------------------
         di      
         push    AF`SFXIndex
         
@@ -594,7 +587,7 @@ PARAMS  A`SFXIndex
 }
 
 TABLE   :initVDPRegisterValues                              SECTION ::interrupts            ;$031B
-        ;===========================================================================================
+;===================================================================================================
 {                                                                                           ;cache:
         BYTE %00100110   ;VDP Reg#0:                                                        ;$D218
             ;......x.    stretch screen (33 columns)
@@ -619,12 +612,12 @@ TABLE   :initVDPRegisterValues                              SECTION ::interrupts
 }
 
 PROC    :waitForInterrupt                                   SECTION ::interrupts            ;$031C
-        ;===========================================================================================
-        ;; a commonly used routine to essentially 'refresh the screen' by halting main
-           execution until the interrupt handler has done its work ;;
-
+;===================================================================================================
+HELP ```A commonly used routine to essentially 'refresh the screen' by halting main
+        execution until the interrupt handler has done its work
+        ```
 PARAMS  IY`vars         ``Address of the common variables (used throughout)
-{
+{       ;-------------------------------------------------------------------------------------------
         ;test bit 0 of the IY parameter (IY=$D200)
         bit     0   [IY`vars+#vars.flags0]
         ;if bit 0 is off, then wait!
@@ -633,9 +626,9 @@ PARAMS  IY`vars         ``Address of the common variables (used throughout)
 }
 
 PROC    :unused_0323                                        SECTION ::interrupts            ;$0323
-        ;===========================================================================================
+;===================================================================================================
 PARAMS  IY`vars         ``Address of the common variables (used throughout)        
-{        
+{       ;-------------------------------------------------------------------------------------------
         set     2   [IY`vars+#vars.flags0]
         ld      [$.UNUSED_D225]     HL                      ;unused RAM location!
         ld      [$.UNUSED_D227]     DE                      ;unused RAM location!
@@ -644,11 +637,11 @@ PARAMS  IY`vars         ``Address of the common variables (used throughout)
 }
 
 PROC    :loadPaletteOnInterrupt                             SECTION ::interrupts            ;$0333
-        ;===========================================================================================
+;===================================================================================================
 PARAMS  IY`vars         ``Address of the common variables (used throughout)
         A`flags
         HL`addr
-{       
+{       ;-------------------------------------------------------------------------------------------
         set     3   [IY`vars+#vars.flags0]                  ;set the flag for the interrupt handler
         ;store the parameters
         ld      [$.LOADPALETTE_FLAGS]   A`flags
@@ -657,11 +650,10 @@ PARAMS  IY`vars         ``Address of the common variables (used throughout)
 }
 
 PROC    :updateVDPSprites                                   SECTION ::interrupts            ;$033E
-        ;===========================================================================================
+;===================================================================================================
 PARAMS  IY`vars         ``Address of the common variables (used throughout)        
-{       
+{       ;-------------------------------------------------------------------------------------------
         ;sprite Y positions:
-        ;-------------------------------------------------------------------------------------------
         
         ;set the VDP address to $3F00 (sprite info table, Y-positions)
         ld      A                   (LO $3F00)
@@ -739,13 +731,13 @@ PARAMS  IY`vars         ``Address of the common variables (used throughout)
 }
 
 PROC    :unused_0397                                        SECTION ::interrupts            ;$0397
-        ;===========================================================================================
+;===================================================================================================
         ;fill VRAM from memory?
         
 PARAMS  BC              ;number of bytes to copy
         DE              ;VDP address
         HL              ;memory location to copy from
-{
+{       ;-------------------------------------------------------------------------------------------
         di      
         ld      A                           E
         out     [$_SMS_PORTS.VDP.CONTROL]   A
@@ -767,11 +759,11 @@ PARAMS  BC              ;number of bytes to copy
 }
         
 PROC    :unused_03ac                                        SECTION ::interrupts            ;$03AC
-        ;===========================================================================================
+;===================================================================================================
 PARAMS  A               ;bank number for page 1, A+1 will be used as the bank number for page 2
         DE              ;VDP address
         HL              ;?
-{
+{       ;-------------------------------------------------------------------------------------------
         di      
         push    AF
 

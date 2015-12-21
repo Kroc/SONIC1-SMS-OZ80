@@ -60,8 +60,8 @@ PARAMS  IX`mob          ``Address of the current mob being processed
         pop     af
         ld      [$.SPRITETABLE_ADDR],hl
         ld      [iy+#vars.spriteUpdateCount],a
-        ld      [ix+#mob.width],$0a
-        ld      [ix+#mob.height],$0c
+        ld      [ix+#mob.width],9
+        ld      [ix+#mob.height],12
         ld      a,[ix+$12]
         and     a
         jr      z,._4

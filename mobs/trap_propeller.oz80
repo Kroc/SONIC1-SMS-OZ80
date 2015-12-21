@@ -11,8 +11,8 @@ PROC    :mob_trap_propeller                     SECTION ::mobs                  
 PARAMS  IX`mob          ``Address of the current mob being processed
 {
         set     5,[ix+#mob.flags]               ;mob does not collide with the floor
-        ld      [ix+#mob.width],$05
-        ld      [ix+#mob.height],$14
+        ld      [ix+#mob.width],5
+        ld      [ix+#mob.height],20
         bit     0,[ix+#mob.flags]
         jr      nz,._1
         ld      l,[ix+#mob.X+0]

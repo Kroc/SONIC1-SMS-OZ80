@@ -11,8 +11,8 @@ PROC    :_9b75                                  SECTION ::mobs                  
 PARAMS  IX`mob          ``Address of the current mob being processed
 {
         set     5,[ix+#mob.flags]               ;mob does not collide with the floor
-        ld      [ix+#mob.width],$1e
-        ld      [ix+#mob.height],$60
+        ld      [ix+#mob.width],30
+        ld      [ix+#mob.height],96
         ld      hl,$0000
         ld      [$.TEMP6],hl
         call    :detectCollisionWithSonic

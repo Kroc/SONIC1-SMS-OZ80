@@ -105,7 +105,7 @@ PARAMS  IX`mob          ``Address of the current mob being processed
         res     6   [IY`vars+#vars.timeLightningFlags]
         set     0   [IX`mob+#mob.flags]
         ld      [IX`mob+#mob.unknown11] $01
-        ld      a                   $01
+        ld      A                   $01
         rst     :rst_playSFX
         
 ._4     call    :_79fa

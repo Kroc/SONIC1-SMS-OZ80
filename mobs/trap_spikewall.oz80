@@ -20,8 +20,8 @@ PARAMS  IX`mob          ``Address of the current mob being processed
         ld      [ix+#mob.unknown11],l
         ld      [ix+$12],h
         set     0,[ix+#mob.flags]
-._1     ld      [ix+#mob.width],$0c
-        ld      [ix+#mob.height],$2e
+._1     ld      [ix+#mob.width],12
+        ld      [ix+#mob.height],46
         ld      [ix+#mob.spriteLayout+0],LO ._b45b
         ld      [ix+#mob.spriteLayout+1],HI ._b45b
         ld      hl,$0202

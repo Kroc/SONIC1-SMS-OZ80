@@ -23,8 +23,9 @@
 
 ;; each of the five tracks have a large set of variables for managing their state.
    below is the general definition of the track variables, which is duplicated five
-   times in the RAM (see the Enum that follows this structure) ;;
+   times in the RAM ;;
 TYPE    #track
+;===================================================================================================
 [
         .channelFrequencyPSG        BYTE                    ;+$00
         ;; to set a frequency on the PSG a data byte is written to the sound port with
@@ -74,10 +75,12 @@ TYPE    #track
 ]
 
 ;define the variables in RAM:
-;---------------------------------------------------------------------------------------------------
+
 ;(NB: in the original ROM, $DC00-$DC03 go unused)
 ;TODO: Set this to $DC04
+
 RAM
+;---------------------------------------------------------------------------------------------------
 [
         .playbackMode               BYTE                    ;bit 4 dis/enables fading out
         .overriddenTrack            BYTE                    ;which music track the SFX is overriding
@@ -119,29 +122,30 @@ RAM
    in other Ancient games, or it could be a 3rd-party piece of code
 ;;
 PROC    :public                                             SECTION ::sound
+;===================================================================================================
 {
 .update
-    jp      :doUpdate
+        jp      :doUpdate
 .loadMusic
-    jp      :doLoadMusic                                    ;this public call is not used in-game
+        jp      :doLoadMusic                                ;this public call is not used in-game
 .stop 
-    jp      :doStop
+        jp      :doStop
 .unpause
-    jp      :doUnpause
+        jp      :doUnpause
 .fadeOut
-    jp      :doFadeOut
+        jp      :doFadeOut
 .loadSFX
-    jp      :doLoadSFX                                      ;this public call is not used in-game
+        jp      :doLoadSFX                                  ;this public call is not used in-game
 .playMusic
-    jp      :doPlayMusic                                    ;this is used externally to start a song
+        jp      :doPlayMusic                                ;this is used externally to start a song
 .playSFX
-    jp      :doPlaySFX                                      ;this is used externally to start SFX
+        jp      :doPlaySFX                                  ;this is used externally to start SFX
 }
 
 PROC    :doLoadMusic                                        SECTION ::sound
-        ;===========================================================================================
+;===================================================================================================
 PARAMS  HL              ;address of song data to load
-{
+{       ;-------------------------------------------------------------------------------------------
         push    AF  BC  DE  HL  IX
         
         ;remember the song's base address in BC for later use
@@ -234,10 +238,10 @@ PARAMS  HL              ;address of song data to load
         ret
 }
 
-;---------------------------------------------------------------------------------------------------
 ;this data is used by `loadMusic` to initialise the values of the 5 tracks
 
 TABLE   :initTrackValues_words                              SECTION ::sound
+;===================================================================================================
 {
         ;; set the master loop address to 0 so that the song will, by default, loop wholly:
            the point of the master loop can be set by the '88' command in the music data ;;
@@ -275,7 +279,7 @@ TABLE   :initTrackValues_words                              SECTION ::sound
 }
 
 TABLE   :initTrackValues_bytes                              SECTION ::sound
-        ;===========================================================================================
+;===================================================================================================
 {
         WORD    $.track0vars.channelFrequencyPSG    BYTE    %10000000
         WORD    $.track0vars.channelVolumePSG       BYTE    %10010000
@@ -291,7 +295,7 @@ TABLE   :initTrackValues_bytes                              SECTION ::sound
         WORD    $.track3vars.flags                  BYTE    %00000010
         WORD    $.track4vars.flags                  BYTE    %00000000
     
-        ;; is there a reason this var is not set using the WORD table above
+        ;; TODO: is there a reason this var is not set using the WORD table above
            instead of two separate bytes as is the case here? ;;
         WORD    $.track0vars.initModulationDelay+0  BYTE    $00
         WORD    $.track1vars.initModulationDelay+0  BYTE    $00
@@ -311,7 +315,7 @@ TABLE   :initTrackValues_bytes                              SECTION ::sound
 }
 
 TABLE   :initPSGValues                                      SECTION ::sound
-        ;===========================================================================================
+;===================================================================================================
 {
         ;        +xx+yyyy   ;set channel xx volume to yyyy (0000 is max, 1111 is off)
         BYTE    %10011111   ;mute channel 0
@@ -321,7 +325,7 @@ TABLE   :initPSGValues                                      SECTION ::sound
 }
 
 PROC    :doStop                                             SECTION ::sound
-        ;===========================================================================================
+;===================================================================================================
 {          
         ;put any current values for these registers aside
         push    AF  HL  BC
@@ -355,6 +359,8 @@ PROC    :doStop                                             SECTION ::sound
         ld      B                   4
         ld      C                   $_SMS_PORTS.PSG
         ld      HL                  :initPSGValues
+        ;; TODO: 4x `oti` will be faster. we could even use `out` with static values
+           (instead of `:initPSGValues` table), so that we no longer need to PUSH/POP BC & HL ;;
         otir
         
         ld      A                   [$.playbackMode]
@@ -367,8 +373,8 @@ PROC    :doStop                                             SECTION ::sound
 }
 
 PROC    :doLoadSFX                                          SECTION ::sound
-        ;===========================================================================================
-PARAMS  A               ``Priority level of SFX being loaded
+;===================================================================================================
+PARAMS  A`priority      ``Priority level of SFX being loaded
         HL              ``Address of SFX data
 {
         push    AF  DE  HL
@@ -453,7 +459,7 @@ PARAMS  A               ``Priority level of SFX being loaded
 }
 
 TABLE   :PSGchannelBits                                     SECTION ::sound
-        ;===========================================================================================
+;===================================================================================================
 {
         BYTE    %10000000
         BYTE    %10010000
@@ -466,7 +472,7 @@ TABLE   :PSGchannelBits                                     SECTION ::sound
 }
 
 PROC    :doUnpause                                          SECTION ::sound
-        ;===========================================================================================
+;===================================================================================================
 {
         push    AF
         
@@ -506,7 +512,7 @@ PROC    :doUnpause                                          SECTION ::sound
 }
 
 PROC    :doFadeOut                                          SECTION ::sound
-        ;===========================================================================================
+;===================================================================================================
 {
         push    AF  HL
         
@@ -522,7 +528,7 @@ PROC    :doFadeOut                                          SECTION ::sound
 }
 
 PROC    :doUpdate                                           SECTION ::sound
-        ;===========================================================================================
+;===================================================================================================
 {
         ;track 1
         ld      IX                  $.track0vars
@@ -601,7 +607,7 @@ PROC    :doUpdate                                           SECTION ::sound
 }
 
 PROC    :doUpdateTrack                                      SECTION ::sound
-        ;===========================================================================================
+;===================================================================================================
 {
         bit     1   [IX+#track.flags]
         ret     z
@@ -628,7 +634,7 @@ PROC    :doUpdateTrack                                      SECTION ::sound
 }
 
 PROC    :doNoiseNote                                        SECTION ::sound
-        ;===========================================================================================
+;===================================================================================================
 {
         push    DE  IX
         pop     HL
@@ -658,7 +664,7 @@ PROC    :doNoiseNote                                        SECTION ::sound
 }
 
 PROC    :doNote                                             SECTION ::sound
-        ;===========================================================================================
+;===================================================================================================
 {
         and     $0F
         ld      HL                  :PSGfrequencyValues
@@ -729,13 +735,13 @@ PROC    :doNote                                             SECTION ::sound
 }
 
 TABLE   :noiseNoteValues                                    SECTION ::sound
-        ;===========================================================================================
+;===================================================================================================
 {
         BYTE    $05 $FF $BE $0A $04 $05 $02 $00 $05 $E6 $24 $5A $14 $28 $08 $00
 }
 
 PROC    :doProcessTrack                                     SECTION ::sound
-        ;===========================================================================================
+;===================================================================================================
 {
         bit     1   [IX+#track.flags]
         ret     z
@@ -755,7 +761,7 @@ PROC    :doProcessTrack                                     SECTION ::sound
 }
 
 PROC    :doTrackSoundOut                        SECTION ::sound
-        ;===========================================================================================
+;===================================================================================================
 {
         ld      A                   [IX+#track.channelFrequencyPSG]
         cp      $E0
@@ -879,14 +885,14 @@ PROC    :doTrackSoundOut                        SECTION ::sound
 }
 
 TABLE   :PSGfrequencyValues                                 SECTION ::sound
-        ;===========================================================================================
+;===================================================================================================
 {
         WORD    $0356, $0326, $02F9, $02CE, $02A5, $0280, $025C, $023A
         WORD    $021A, $01FB, $01DF, $01C4, $03F7, $03BE, $0388
 }
 
 PROC    :doCommand                                          SECTION ::sound
-        ;===========================================================================================
+;===================================================================================================
 {
         cp      $FF
         jp      z   :cmdFF_stopMusic
@@ -906,7 +912,7 @@ PROC    :doCommand                                          SECTION ::sound
 }
 
 PROC    :cmdFF_stopMusic                                    SECTION ::sound
-        ;===========================================================================================
+;===================================================================================================
 {
         ld      L                   [IX+#track.masterLoopAddress+0]
         ld      H                   [IX+#track.masterLoopAddress+1]
@@ -918,7 +924,7 @@ PROC    :cmdFF_stopMusic                                    SECTION ::sound
 }
 
 PROC    :cmdFE_stopSFX                                      SECTION ::sound
-        ;===========================================================================================
+;===================================================================================================
 {
         xor     A
         ld      [$.SFXpriority]     A
@@ -932,7 +938,7 @@ PROC    :cmdFE_stopSFX                                      SECTION ::sound
 }
 
 TABLE   :commandPointers                                    SECTION ::sound
-        ;===========================================================================================
+;===================================================================================================
 {
         WORD    :cmd80_tempo
         WORD    :cmd81_volumeSet
@@ -951,7 +957,7 @@ TABLE   :commandPointers                                    SECTION ::sound
 }
 
 PROC    :ADSRenvelopeAttack                                 SECTION ::sound
-        ;===========================================================================================
+;===================================================================================================
 {
         ld      A                   [IX+#track.attackRate]
         add     A                   [IX+#track.envelopeLevel]
@@ -964,7 +970,7 @@ PROC    :ADSRenvelopeAttack                                 SECTION ::sound
 }
     
 PROC    :ADSRenvelopeDecay1                                 SECTION ::sound
-        ;===========================================================================================
+;===================================================================================================
 {
         ld      C                   [IX+#track.decay1Level]
         ld      A                   [IX+#track.envelopeLevel]
@@ -980,7 +986,7 @@ PROC    :ADSRenvelopeDecay1                                 SECTION ::sound
 }
 
 PROC    :ADSRenvelopeDecay2                                 SECTION ::sound
-        ;===========================================================================================
+;===================================================================================================
 {
         ld      C                   [IX+#track.decay2Level]
         ld      A                   [IX+#track.envelopeLevel]
@@ -996,7 +1002,7 @@ PROC    :ADSRenvelopeDecay2                                 SECTION ::sound
 }
 
 PROC    :ADSRenvelopeSustain                                SECTION ::sound
-        ;===========================================================================================
+;===================================================================================================
 {
         ld      A                   [IX+#track.envelopeLevel]
         sub     [IX+#track.sustainRate]
@@ -1008,313 +1014,296 @@ PROC    :ADSRenvelopeSustain                                SECTION ::sound
         jp      :doTrackSoundOut
 }
 
-;---------------------------------------------------------------------------------------
-
-PROC    :cmd80_tempo                            SECTION ::sound
+PROC    :cmd80_tempo                                        SECTION ::sound
+;===================================================================================================
 {
-        ld      a,[de]
-        ld      [ix+#track.tempoDivider+0],a
-        ld      [$.tickMultiplier+0],a
-        inc     de
-        ld      a,[de]
-        ld      [ix+#track.tempoDivider+1],a
-        ld      [$.tickMultiplier+1],a
-        inc     de
-        ld      a,[de]
-        ld      [$.tickDivider1+0],a
-        ld      [$.tickDivider2+0],a
-        inc     de
-        ld      a,[de]
-        ld      [$.tickDivider1+1],a
-        ld      [$.tickDivider2+1],a
-        inc     de
+        ld      A                           [DE]
+        ld      [IX+#track.tempoDivider+0]  A
+        ld      [$.tickMultiplier+0]        A
+        inc     DE
+        ld      A                           [DE]
+        ld      [IX+#track.tempoDivider+1]  A
+        ld      [$.tickMultiplier+1]        A
+        inc     DE
+        ld      A                   [DE]
+        ld      [$.tickDivider1+0]  A
+        ld      [$.tickDivider2+0]  A
+        inc     DE
+        ld      A                   [DE]
+        ld      [$.tickDivider1+1]  A
+        ld      [$.tickDivider2+1]  A
+        inc     DE
         jp      :doUpdateTrack.trackReadLoop
 }
 
-;---------------------------------------------------------------------------------------
-
-PROC    :cmd81_volumeSet                        SECTION ::sound
+PROC    :cmd81_volumeSet                                    SECTION ::sound
+;===================================================================================================
 {
-        ld      a,[de]
-        ld      [ix+#track.channelVolume],a
-        inc     de
-        ld      a,[ix+#track.id]
+        ld      A                           [DE]
+        ld      [IX+#track.channelVolume]   A
+        inc     DE
+        ld      A                   [IX+#track.id]
         cp      $04
-        jr      z,._1
-        ld      a,[$.playbackMode]
+        jr      z   ._1
+        ld      A                   [$.playbackMode]
         and     %00001000
-        jp      nz,:doUpdateTrack.trackReadLoop
+        jp      nz  :doUpdateTrack.trackReadLoop
         
-._1     ld      a,[ix+#track.channelVolume]
-        ld      [ix+#track.fadeTicks+1],a
-        ld      [ix+#track.fadeTicks+0],$00
-        jp      :doUpdateTrack.trackReadLoop
-}
-
-;---------------------------------------------------------------------------------------
-    
-PROC    :cmd82_setADSR                          SECTION ::sound
-{
-        push    ix
-        pop     hl
-        ld      bc,$000e
-        add     hl,bc
-        ex      de,hl
-        ldi     
-        ldi     
-        ldi     
-        ldi     
-        ldi     
-        ldi     
-        ex      de,hl
-        jp      :doUpdateTrack.trackReadLoop
-}
-
-;---------------------------------------------------------------------------------------
-
-PROC    :cmd83_modulation                       SECTION ::sound
-{
-        push    ix
-        pop     hl
-        ld      bc,$0014
-        add     hl,bc
-        ex      de,hl
-        ldi     
-        ldi     
-        ldi     
-        ldi     
-        ldi     
-        ex      de,hl
+._1     ld      A                   [IX+#track.channelVolume]
+        ld      [IX+#track.fadeTicks+1] A
+        ld      [IX+#track.fadeTicks+0] $00
         jp      :doUpdateTrack.trackReadLoop
 }
     
-;---------------------------------------------------------------------------------------
-
-PROC    :cmd84_detune                           SECTION ::sound
+PROC    :cmd82_setADSR                                      SECTION ::sound
+;===================================================================================================
 {
-        ld      a,[de]
-        ld      [ix+#track.detune+0],a
-        inc     de
-        ld      a,[de]
-        ld      [ix+#track.detune+1],a
-        inc     de
+        push    IX
+        pop     HL
+        ld      BC                  $000E
+        add     HL                  BC
+        ex      DE                  HL
+        ldi     
+        ldi     
+        ldi     
+        ldi     
+        ldi     
+        ldi     
+        ex      DE                  HL
         jp      :doUpdateTrack.trackReadLoop
 }
 
-;---------------------------------------------------------------------------------------
-
-PROC    :cmd85_dummy                            SECTION ::sound
+PROC    :cmd83_modulation                                   SECTION ::sound
+;===================================================================================================
 {
-        ld      a,[de]
-        inc     de
+        push    IX
+        pop     HL
+        ld      BC                  $0014
+        add     HL                  BC
+        ex      DE                  HL
+        ldi     
+        ldi     
+        ldi     
+        ldi     
+        ldi     
+        ex      DE                  HL
         jp      :doUpdateTrack.trackReadLoop
 }
 
-;---------------------------------------------------------------------------------------
-
-PROC    :cmd86_loopStart                        SECTION ::sound
+PROC    :cmd84_detune                                       SECTION ::sound
+;===================================================================================================
 {
-        ld      l,[ix+#track.loopAddress+0]
-        ld      h,[ix+#track.loopAddress+1]
-        ld      [hl],$00
-        ld      bc,$0005
-        add     hl,bc
-        ld      [ix+#track.loopAddress+0],l
-        ld      [ix+#track.loopAddress+1],h
+        ld      A                       [DE]
+        ld      [IX+#track.detune+0]    A
+        inc     DE
+        ld      A                       [DE]
+        ld      [IX+#track.detune+1]    A
+        inc     DE
         jp      :doUpdateTrack.trackReadLoop
 }
 
-;---------------------------------------------------------------------------------------
-
-PROC    :cmd87_loopEnd                          SECTION ::sound
+PROC    :cmd85_dummy                                        SECTION ::sound
+;===================================================================================================
 {
-        ld      l,[ix+#track.loopAddress+0]
-        ld      h,[ix+#track.loopAddress+1]
-        ld      bc,$fffb
-        add     hl,bc
-        ld      a,[hl]
-        and     a
-        jr      nz,.loopInit
-        ld      a,[de]
-        dec     a
-        jr      z,._2
-        ld      [hl],a
+        ld      A                   [DE]
+        inc     DE
+        jp      :doUpdateTrack.trackReadLoop
+}
+
+PROC    :cmd86_loopStart                                    SECTION ::sound
+;===================================================================================================
+{
+        ld      L                   [IX+#track.loopAddress+0]
+        ld      H                   [IX+#track.loopAddress+1]
+        ld      [HL]                $00
+        ld      BC                  $0005
+        add     HL                  BC
+        ld      [IX+#track.loopAddress+0]   L
+        ld      [IX+#track.loopAddress+1]   H
+        jp      :doUpdateTrack.trackReadLoop
+}
+
+PROC    :cmd87_loopEnd                                      SECTION ::sound
+;===================================================================================================
+{
+        ld      L                   [IX+#track.loopAddress+0]
+        ld      H                   [IX+#track.loopAddress+1]
+        ld      BC                  $FFFB
+        add     HL                  BC
+        ld      A                   [HL]
+        and     A
+        jr      nz  .loopInit
+        ld      A                   [DE]
+        dec     A
+        jr      z   ._2
+        ld      [HL]                A
         jp      ._1
 
 .loopInit
-        dec     [hl]
-        jr      z,._2
-._1     ex      de,hl
-        inc     hl
-        ld      a,[hl]
-        inc     hl
-        ld      h,[hl]
-        ld      l,a
-        ld      c,[ix+#track.baseAddress+0]
-        ld      b,[ix+#track.baseAddress+1]
-        add     hl,bc
-        ex      de,hl
+        dec     [HL]
+        jr      z   ._2
+._1     ex      DE                  HL
+        inc     HL
+        ld      A                   [HL]
+        inc     HL
+        ld      H                   [HL]
+        ld      L                   A
+        ld      C                   [IX+#track.baseAddress+0]
+        ld      B                   [IX+#track.baseAddress+1]
+        add     HL                  BC
+        ex      DE                  HL
         jp      :doUpdateTrack.trackReadLoop
     
-._2     ld      [ix+#track.loopAddress+0],l
-        ld      [ix+#track.loopAddress+1],h
-        inc     de
-        inc     de
-        inc     de
+._2     ld      [IX+#track.loopAddress+0]   L
+        ld      [IX+#track.loopAddress+1]   H
+        inc     DE
+        inc     DE
+        inc     DE
         jp      :doUpdateTrack.trackReadLoop
 }
 
-;---------------------------------------------------------------------------------------
-
-PROC    :cmd88_masterLoop                       SECTION ::sound
+PROC    :cmd88_masterLoop                                   SECTION ::sound
+;===================================================================================================
 {
-        ld      [ix+#track.masterLoopAddress+0],e
-        ld      [ix+#track.masterLoopAddress+1],d
+        ld      [IX+#track.masterLoopAddress+0] E
+        ld      [IX+#track.masterLoopAddress+1] D
         jp      :doUpdateTrack.trackReadLoop
 }
 
-;---------------------------------------------------------------------------------------
-
-PROC    :cmd89_noiseMode                        SECTION ::sound
+PROC    :cmd89_noiseMode                                    SECTION ::sound
+;===================================================================================================
 {
-        ld      a,[de]
-        ld      [ix+#track.noiseMode],a
-        inc     de
+        ld      A                       [DE]
+        ld      [IX+#track.noiseMode]   A
+        inc     DE
         jp      :doUpdateTrack.trackReadLoop
 }
 
-;--------------------------------------------------------------------------------------
-
-PROC    :cmd8A_noteLength                       SECTION ::sound
+PROC    :cmd8A_noteLength                                   SECTION ::sound
+;===================================================================================================
 {
-        ld      a,[de]
-        ld      [ix+#track.defaultNoteLength],a
-        inc     de
+        ld      A                   [DE]
+        ld      [IX+#track.defaultNoteLength]   A
+        inc     DE
         jp      :doUpdateTrack.trackReadLoop
 }
 
-;--------------------------------------------------------------------------------------
-
-PROC    :cmd8B_volumeUp                         SECTION ::sound
+PROC    :cmd8B_volumeUp                                     SECTION ::sound
+;===================================================================================================
 {
-        ld      a,[ix+#track.channelVolume]
-        inc     a
+        ld      A                   [IX+#track.channelVolume]
+        inc     A
         cp      $10
-        jr      c,._1
-        ld      a,$0f
-._1     ld      [ix+#track.channelVolume],a
-        ld      a,[$.playbackMode]
+        jr      c   ._1
+        ld      A                   $0F
+._1     ld      [IX+#track.channelVolume]   A
+        ld      A                   [$.playbackMode]
         and     %00001000
-        jp      nz,:doUpdateTrack.trackReadLoop
-        ld      a,[ix+#track.channelVolume]
-        ld      [ix+#track.fadeTicks+1],a
+        jp      nz  :doUpdateTrack.trackReadLoop
+        ld      A                   [IX+#track.channelVolume]
+        ld      [IX+#track.fadeTicks+1] A
         jp      :doUpdateTrack.trackReadLoop
 }
 
-;---------------------------------------------------------------------------------------
-
-PROC    :cmd8C_volumeDown                       SECTION ::sound
+PROC    :cmd8C_volumeDown                                   SECTION ::sound
+;===================================================================================================
 {
-        ld      a,[ix+#track.channelVolume]
-        dec     a
+        ld      A                   [IX+#track.channelVolume]
+        dec     A
         cp      $10
-        jr      c,._1
-        xor     a
-._1     ld      [ix+#track.channelVolume],a
-        ld      a,[$.playbackMode]
+        jr      c   ._1
+        xor     A
+._1     ld      [IX+#track.channelVolume]   A
+        ld      A                   [$.playbackMode]
         and     %00001000
-        jp      nz,:doUpdateTrack.trackReadLoop
-        ld      a,[ix+#track.channelVolume]
-        ld      [ix+#track.fadeTicks+1],a
+        jp      nz  :doUpdateTrack.trackReadLoop
+        ld      A                   [IX+#track.channelVolume]
+        ld      [IX+#track.fadeTicks+1] A
         jp      :doUpdateTrack.trackReadLoop
 }
 
-;---------------------------------------------------------------------------------------
-
-PROC    :cmd8D_hold                             SECTION ::sound
+PROC    :cmd8D_hold                                         SECTION ::sound
+;===================================================================================================
 {
-        set     0,[ix+#track.flags]
+        set     0   [IX+#track.flags]
         jp      :doUpdateTrack.trackReadLoop
 }
 
-;_______________________________________________________________________________________
-
-PROC    :calcTickTime                           SECTION ::sound
+PROC    :calcTickTime                                       SECTION ::sound
+;===================================================================================================
 {
-        xor     a
-        ld      b,$07
-        ex      de,hl
-        ld      l,a
-        ld      h,a
+        xor     A
+        ld      B                   $07
+        ex      DE                  HL
+        ld      L                   A
+        ld      H                   A
         
-._1     rl      c
-        jp      nc,._2
-        add     hl,de
-._2     add     hl,hl
+._1     rl      C
+        jp      nc  ._2
+        add     HL                  DE
+._2     add     HL                  HL
         djnz    ._1
         
-        or      c
+        or      C
         ret     z
-        add     hl,de
+        add     HL                  DE
         ret
 }
 
-;_______________________________________________________________________________________
-
-PROC    :doPlayMusic                            SECTION ::sound
+PROC    :doPlayMusic                                        SECTION ::sound
+;===================================================================================================
 PARAMS  A               ;index number of music track to play (see `S1_SFXPointers`)
-{
-        push    hl
+{       ;-------------------------------------------------------------------------------------------
+        push    HL
         
         ;look up the index number in the music list
-        ld      hl,:S1_MusicPointers                ;begin with the table of songs
-        add     a,a                                 ;double the ID (each song is a 16-bit pointer)
-        add     a,l                                 ;add that to the lo-byte of the list address
-        ld      l,a
-        ld      a,$00
-        adc     a,h                                 ;add the carry to the hi-byte so that we
-        ld      h,a                                 ;handle the 8-bit overflow ("$00FF > $0100")
+        ld      HL                  :S1_MusicPointers       ;begin with the table of songs
+        add     A                   A                       ;double the ID (each song is a 16-bit pointer)
+        add     A                   L                       ;add that to the lo-byte of the list address
+        ld      L                   A
+        ld      A                   $00
+        adc     A                   H                       ;add the carry to the hi-byte so that we
+        ld      H                   A                       ;handle the 8-bit overflow ("$00FF > $0100")
         
         ;get the pointer to the song (into HL) from the song list
-        ld      a,[hl]
-        inc     hl
-        ld      h,[hl]
-        ld      l,a
+        ld      A                   [HL]
+        inc     HL
+        ld      H                   [HL]
+        ld      L                   A
         
         call    :doLoadMusic
         
-        pop     hl
+        pop     HL
         ret
 }
 
-;_______________________________________________________________________________________
-
-PROC    :doPlaySFX                              SECTION ::sound
+PROC    :doPlaySFX                                          SECTION ::sound
+;===================================================================================================
 PARAMS  A               ;index number of SFX to play (see `S1_SFXPointers`)
-{
-        push    HL, DE
+{       ;-------------------------------------------------------------------------------------------
+        push    HL  DE
         
         ;look up the index number in the SFX list
-        ld      hl,:S1_SFXPointers                  ;begin with the list of SFX
-        add     a,a                                 ;4x the index number since the SFX list
-        add     a,a                                  ;is 4 bytes each entry instead of 2
-        ld      e,a                                 ;put this index into a 16-bit number
-        ld      d,$00
-        add     hl,de                               ;and offset into the SFX list
+        ld      HL                  :S1_SFXPointers         ;begin with the list of SFX
+        add     A                   A                       ;4x the index number since the SFX list
+        add     A                   A                       ;is 4 bytes each entry instead of 2
+        ld      E                   A                       ;put this index into a 16-bit number
+        ld      D                   $00
+        add     HL                  DE                      ;and offset into the SFX list
         
         ;load DE with the first value -- a pointer to the SFX data
-        ld      e,[hl]
-        inc     hl
-        ld      d,[hl]
-        inc     hl
+        ld      E                   [HL]
+        inc     HL
+        ld      D                   [HL]
+        inc     HL
         ;the next value acts as a priority level
-        ld      a,[hl]
+        ld      A                   [HL]
         ;(note that the SFX list has an extra unused byte on each entry)
         
         ;swap DE & HL,
         ;DE will now be an address to SFX;s entry in the SFX list
         ;HL will now be the address of the SFX's data
-        ex      de,hl
+        ex      DE                  HL
         call    :doLoadSFX
         
         pop     DE, HL

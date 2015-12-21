@@ -13,8 +13,8 @@ PROC    :mob_platform_bumper                    SECTION ::mobs                  
 PARAMS  IX`mob          ``Address of the current mob being processed
 {
         set     5,[ix+#mob.flags]               ;mob does not collide with the floor
-        ld      [ix+#mob.width],$1c
-        ld      [ix+#mob.height],$06
+        ld      [ix+#mob.width],28
+        ld      [ix+#mob.height],6
         ld      [ix+#mob.spriteLayout+0],LO ._9b6e
         ld      [ix+#mob.spriteLayout+1],HI ._9b6e
         ld      hl,$0001

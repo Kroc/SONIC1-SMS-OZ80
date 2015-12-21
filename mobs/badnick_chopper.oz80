@@ -121,11 +121,12 @@ PARAMS  IX`mob          ``Address of the current mob being processed
 ._7ddc  BYTE    $00, $04, $01, $04, $FF
 
         ;this looks like sprite layout data, but isn't quite normal
-._7de1  BYTE    $60, $62, $FF, $FF, $FF, $FF
-        BYTE    $FF, $FF, $FF, $FF, $FF, $FF
-        BYTE    $FF, $FF, $FF, $FF, $FF, $FF
-        BYTE    $64, $66, $FF, $FF
-._7df7  BYTE    $FF, $FF, $FF, $FF, $68, $6A
-        BYTE    $FF, $FF, $FF, $FF, $FF
+._7de1  BYTE    $60 $62 $FF $FF $FF $FF
+        BYTE    $FF $FF $FF $FF $FF $FF
+        BYTE    $FF $FF $FF $FF $FF $FF
+        BYTE    $64 $66 $FF $FF
+        
+._7df7  BYTE    $FF $FF $FF $FF $68 $6A
+        BYTE    $FF $FF $FF $FF $FF
 
 }

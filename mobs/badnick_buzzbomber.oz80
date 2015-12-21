@@ -119,7 +119,7 @@ PARAMS  IX`mob          ``Address of the current mob being processed
         ld      [IX`mob+#mob.Y+1]           H
         ld      [IX`mob+#mob.unknown11]     A`zero
         ld      [IX`mob+#mob.unknown13]     A`zero
-        ld      [IX`mob+#mob.unknown14]          A`zero
+        ld      [IX`mob+#mob.unknown14]     A`zero
         ld      [IX`mob+#mob.unknown15]     A`zero
         ld      [IX`mob+#mob.unknown16]     A`zero
         ld      [IX`mob+#mob.unknown17]     A`zero

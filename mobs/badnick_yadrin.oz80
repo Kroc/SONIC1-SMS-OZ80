@@ -12,54 +12,54 @@ PROC    :mob_badnick_yadrin                     SECTION ::mobs                  
         ;==============================================================================
 PARAMS  IX`mob          ``Address of the current mob being processed
 {
-        ld      [ix+#mob.width], 16
-        ld      [ix+#mob.height],15
-        ld      hl,$0408
-        ld      [$.TEMP6],hl
+        ld      [IX`mob+#mob.width]     16
+        ld      [IX`mob+#mob.height]    15
+        ld      HL                  $0408
+        ld      [$.TEMP6]           HL
         call    :detectCollisionWithSonic
-        call    nc,:hitPlayer._35fd
-        ld      [ix+#mob.width], 20
-        ld      [ix+#mob.height],32
-        ld      hl,$1006
-        ld      [$.TEMP6],hl
+        call    nc  :hitPlayer._35fd
+        ld      [IX`mob+#mob.width]     20
+        ld      [IX`mob+#mob.height]    32
+        ld      HL                  $1006
+        ld      [$.TEMP6]           HL
         call    :detectCollisionWithSonic
-        ld      hl,$0404
-        ld      [$.TEMP1],hl
-        call    nc,:hitPlayer
-        ld      l,[ix+#mob.Yspeed+0]
-        ld      h,[ix+#mob.Yspeed+1]
-        ld      a,[ix+#mob.Ydirection]
-        ld      de,$0020
-        add     hl,de
-        adc     a,$00
-        ld      [ix+#mob.Yspeed+0],l
-        ld      [ix+#mob.Yspeed+1],h
-        ld      [ix+#mob.Ydirection],a
-        ld      a,[ix+#mob.unknown11]
+        ld      HL                  $0404
+        ld      [$.TEMP1]           HL
+        call    nc  :hitPlayer
+        ld      L                   [IX`mob+#mob.Yspeed+0]
+        ld      H                   [IX`mob+#mob.Yspeed+1]
+        ld      A                   [IX`mob+#mob.Ydirection]
+        ld      DE                  $0020
+        add     HL                  DE
+        adc     A                   $00
+        ld      [IX`mob+#mob.Yspeed+0]      L
+        ld      [IX`mob+#mob.Yspeed+1]      H
+        ld      [IX`mob+#mob.Ydirection]    A
+        ld      A                   [IX`mob+#mob.unknown11]
         cp      $50
-        jr      c,._1
-        ld      [ix+#mob.Xspeed+0],$40
-        ld      [ix+#mob.Xspeed+1],$00
-        ld      [ix+#mob.Xdirection],$00
-        ld      de,._837e
-        ld      bc,._8379
+        jr      c   ._1
+        ld      [IX`mob+#mob.Xspeed+0]      $40
+        ld      [IX`mob+#mob.Xspeed+1]      $00
+        ld      [IX`mob+#mob.Xdirection]    $00
+        ld      DE                  ._837e
+        ld      BC                  ._8379
         call    :animateMob
         jp      ._2
         
-._1     ld      [ix+#mob.Xspeed+0],$c0
-        ld      [ix+#mob.Xspeed+1],$ff
-        ld      [ix+#mob.Xdirection],$ff
-        ld      de,._837e
-        ld      bc,._8374
+._1     ld      [IX`mob+#mob.Xspeed+0]      $C0
+        ld      [IX`mob+#mob.Xspeed+1]      $FF
+        ld      [IX`mob+#mob.Xdirection]    $FF
+        ld      DE                  ._837e
+        ld      BC                  ._8374
         call    :animateMob
-._2     ld      a,[$.FRAMECOUNT]
+._2     ld      A                   [$.FRAMECOUNT]
         and     $07
         ret     nz
-        inc     [ix+#mob.unknown11]
-        ld      a,[ix+#mob.unknown11]
-        cp      $a0
+        inc     [IX`mob+#mob.unknown11]
+        ld      A                   [IX`mob+#mob.unknown11]
+        cp      $A0
         ret     c
-        ld      [ix+#mob.unknown11],$00
+        ld      [IX`mob+#mob.unknown11] $00
         ret
         
 ._8374  BYTE $00, $06, $01, $06, $FF

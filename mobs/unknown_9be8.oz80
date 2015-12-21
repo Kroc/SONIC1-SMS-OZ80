@@ -26,8 +26,8 @@ PARAMS  IX`mob          ``Address of the current mob being processed
         ld      a,$18
         rst     :rst_playSFX
         set     0,[ix+#mob.flags]
-._1     ld      [ix+#mob.width],$06
-        ld      [ix+#mob.height],$08
+._1     ld      [ix+#mob.width],6
+        ld      [ix+#mob.height],8
         ld      a,[ix+#mob.unknown13]
         cp      $64
         jr      nc,._2

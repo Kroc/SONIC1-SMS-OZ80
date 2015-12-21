@@ -40,8 +40,8 @@ PARAMS  IX`mob          ``Address of the current mob being processed
         ld      [IX`mob+#mob.Xspeed+1]      $FF
         ld      [IX`mob+#mob.Xdirection]    $FF
         
-        ld      [IX`mob+#mob.width]         $0C
-        ld      [IX`mob+#mob.height]        $0C
+        ld      [IX`mob+#mob.width]         12
+        ld      [IX`mob+#mob.height]        12
         
         ld      HL                  $0202
         ld      [$.TEMP6]           HL

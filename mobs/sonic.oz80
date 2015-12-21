@@ -11,16 +11,16 @@
    via the `!MOBS` enum
 ;;
 ROW     .sonic                                              TABLE :mobPointers              ;=$00
-        ;-------------------------------------------------------------------------------------------
+;---------------------------------------------------------------------------------------------------
 {       ;for the original ROM, `!MOBS.sonic` = $00
         WORD    :mob_sonic                      
 }
 
-;define the off-screen boundaries for this mob:
-;(this table must be in the same order as the ":mobPointers" table mentioned above)
+;; define the off-screen boundaries for this mob:
+   (this table must be in the same order as the ":mobPointers" table mentioned above) ;;
 
 ROW     .                                                   TABLE :mobBounds
-        ;-------------------------------------------------------------------------------------------
+;---------------------------------------------------------------------------------------------------
 {
         ;; 1. the X-distance the mob can be left of the camera without despawning 
            2. the X-distance the mob can be right of the camera without despawning
@@ -33,10 +33,10 @@ ROW     .                                                   TABLE :mobBounds
 }
 
 PROC    :mob_sonic                                          SECTION ::mobs                  ;$49C8
-        ;===========================================================================================
+;===================================================================================================
 PARAMS  IX`mob          ``Address of the current mob being processed
         IY`vars         ``Address of the common variables (used throughout)
-{       
+{       ;-------------------------------------------------------------------------------------------
         res     1   [IY`vars+#vars.unknown0]
         
         bit     7   [IX`mob+#mob.flags]
@@ -49,14 +49,14 @@ PARAMS  IX`mob          ``Address of the current mob being processed
         bit     0   [IY`vars+#vars.scrollRingFlags]
         jp      nz  ._543c
         
-        ;;reduce this number until it hits 0. appears to only be set when changing
-          direction from left to right; something to do with acceleration/skidding?;;
+        ;; reduce this number until it hits 0. appears to only be set when changing
+           direction from left to right; something to do with acceleration/skidding? ;;
         ld      A                   [$.SONIC.unknown16]
         and     A
         call    nz  ._4ff0
         
-        ;;configure the flags on Sonic so that he adheres to the ground.
-          I'm not sure why this is done every frame;;
+        ;; configure the flags on Sonic so that he adheres to the ground.
+           I'm not sure why this is done every frame ;;
         res     5   [IX`mob+#mob.flags]
         
         ;is Sonic in damage state?
@@ -325,8 +325,8 @@ PARAMS  IX`mob          ``Address of the current mob being processed
         add     HL                  DE
         ld      [$.SONIC.Y]         HL
         
-._8     ld      [IX`mob+#mob.width]     $18
-        ld      [IX`mob+#mob.height]    $20
+._8     ld      [IX`mob+#mob.width]     24
+        ld      [IX`mob+#mob.height]    32
         ld      HL                  [$.SONIC.Xspeed]
         ld      B                   [IX`mob+#mob.Xdirection]
         ld      C                   $00
@@ -1372,7 +1372,7 @@ PARAMS  IX`mob          ``Address of the current mob being processed
         ;-------------------------------------------------------------------------------
         
 ._51bc  ld      [ix+#mob.width]     28                                          ;$51BC
-        ld      [ix+#mob.unknown14] $10
+        ld      [ix+#mob.unknown14] 16
         
         bit     7,[ix+#mob.Ydirection]
         ret     nz
@@ -1583,8 +1583,8 @@ PARAMS  IX`mob          ``Address of the current mob being processed
         ld      de,$0008
         add     hl,de
         ld      [$.SONIC.Y],hl
-._55    ld      [ix+#mob.width],$18
-        ld      [ix+#mob.height],$18
+._55    ld      [ix+#mob.width],24
+        ld      [ix+#mob.height],24
         ld      hl,[$.SONIC.Xspeed]
         ld      b,[ix+#mob.Xdirection]
         ld      c,$00

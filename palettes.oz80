@@ -7,7 +7,7 @@
 ;;
 
 TABLE   :S1_Palette_Pointers                                SECTION ::mobs                  ;$627C
-        ;-------------------------------------------------------------------------------------------
+;===================================================================================================
 {
         .greenHill      WORD    :S1_PaletteData.greenHill
         .bridge         WORD    :S1_PaletteData.bridge
@@ -20,7 +20,7 @@ TABLE   :S1_Palette_Pointers                                SECTION ::mobs      
 }
 
 TABLE   :S1_PaletteCycle_Pointers                           SECTION ::mobs                  ;$628C
-        ;-------------------------------------------------------------------------------------------
+;===================================================================================================
 {
         .greenHill      WORD    :S1_PaletteData.greenHill_cycles
         .bridge         WORD    :S1_PaletteData.bridge_cycles
@@ -37,7 +37,7 @@ TABLE   :S1_PaletteCycle_Pointers                           SECTION ::mobs      
            the pointer tables above sort them into an order ;;
         
 TABLE   :S1_PaletteData                                     SECTION ::mobs                  ;$629E
-        ;-------------------------------------------------------------------------------------------
+;===================================================================================================
 {
         .greenHill                                          ;Green Hill                     ;$629E
         BYTE    $38 $01 $06 $0B $04 $08 $0C $3D $3B $34 $3C $3E $3F $0F $00 $3F

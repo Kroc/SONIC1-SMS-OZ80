@@ -98,7 +98,7 @@ PARAMS  IX`mob          ``Address of the current mob being processed
         ld      [$.TEMP6],de
         inc     hl
         ld      a,[hl]
-        ld      [ix+#mob.width],$01
+        ld      [ix+#mob.width],1
         ld      [ix+#mob.height],a
         call    :detectCollisionWithSonic
         call    nc,:hitPlayer._35fd
